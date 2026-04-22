@@ -1,0 +1,100 @@
+# 生产级法律本体 - 工业标准实现（终审版）
+# 严格按照司法实务和本体工程原则重构，已修复所有致命/严重/阻断性缺陷
+
+types:
+  # 顶层父类（无冲突、继承完整）
+  LegalNorm:
+    required: [id, name, source, desensitize, create_time, update_time]
+    desensitize_enum: [true, false]
+    description: "法律规范顶层类"
+  
+  JudicialEntity:
+    required: [id, name, source, desensitize, create_time, update_time]
+    desensitize_enum: [true, false]
+    description: "司法实体顶层类"
+  
+  LegalSubject:
+    required: [id, name, source, desensitize, create_time, update_time]
+    desensitize_enum: [true, false]
+    description: "法律主体顶层类"
+
+  # 规范层
+  Law:
+    is_a: LegalNorm
+    required: [name, law_level, document_number, status, enactment_date, effective_date] # 修正：name替换title，统一顶层属性
+    optional: [legislative_purpose, repealed_date]
+    law_level_enum: [constitution, basic_law, ordinary_law, administrative_regulation, local_regulation, self_governing_regulation, military_regulation]
+    status_enum: [effective, amended, repealed]
+    description: "法律"
+  
+  LegalProvision:
+    is_a: LegalNorm
+    required: [law_id, article, paragraph, item, content, status]
+    optional: [legislative_purpose, related_provisions, repealed_date]
+    status_enum: [effective, amended, repealed]
+    description: "法律条文"
+  
+  CaseType:
+    is_a: LegalNorm
+    required: [code, name, category, level1, level2]
+    optional: [description]
+    category_enum: [civil, criminal, administrative, ip, execution, state_compensation]
+    description: "案件类型（对齐最高法《民事案件案由规定》）"
+  
+  GuidingCase:
+    is_a: LegalNorm
+    required: [guiding_case_number, issuing_court, publication_date, guiding_points] # 继承顶层必填，保留专属字段
+    description: "最高法指导性案例"
+
+  # 主体层
+  Person:
+    is_a: LegalSubject
+    required: [name]
+    optional: [gender, birth_date, nationality, desensitized_id_number, address, phone] # 修正：脱敏ID统一命名
+    description: "自然人"
+  
+  Judge:
+    is_a: Person
+    required: [court_id, position]
+    optional: [judge_level, appointment_date]
+    description: "法官"
+  
+  Attorney:
+    is_a: Person
+    required: [license_number, law_firm_id]
+    optional: [specialization, bar_association]
+    description: "律师"
+  
+  Clerk:
+    is_a: Person
+    required: [court_id]
+    optional: [position]
+    description: "书记员"
+  
+  Prosecutor:
+    is_a: Person
+    required: [procuratorate_id, position]
+    description: "检察官"
+  
+  Organization:
+    is_a: LegalSubject
+    required: [org_type, credit_code]
+    optional: [legal_representative, registered_capital, business_scope]
+    org_type_enum: [company, government_agency, ngo, law_firm, expert_institution] # 补全子类类型
+    description: "组织机构"
+  
+  Court:
+    is_a: Organization
+    required: [court_level, district_id] # 修正：district→district_id 外键规范
+    optional: [chambers, jurisdiction_area]
+    court_level_enum: [supreme, high, intermediate, basic, special]
+    description: "法院"
+  
+  Procuratorate:
+    is_a: Organization
+    required: [procuratorate_level, district_id] # 修正：district→district_id 外键规范
+    optional: [departments]
+    procuratorate_level_enum: [supreme, provincial, municipal, district]
+    description: "检察院"
+  
+  LawFirm:

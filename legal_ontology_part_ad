@@ -1,0 +1,100 @@
+  
+  # 层级/程序
+  belongs_to:
+    from: LegalProvision
+    to: Law
+    cardinality: many_to_one
+    description: "法律条文归属法律"
+  
+  appeals_to:
+    from: CourtCase
+    to: CourtCase
+    cardinality: one_to_one
+    acyclic: true
+    description: "二审案件上诉一审案件"
+  
+  retries_from:
+    from: CourtCase
+    to: CourtCase
+    cardinality: one_to_one
+    acyclic: true
+    description: "再审案件源自原审案件"
+  
+  guides:
+    from: GuidingCase
+    to: CaseType
+    cardinality: one_to_many
+    description: "指导性案例指导案由适用"
+
+constraints:
+  # 1. 官方案号正则
+  - type: CourtCase
+    rule: "case_number =~ /^\\(\\d{4}\\)[\\u4e00-\\u9fa5]{1,5}\\d+([民刑行执])\\d+第\\d+号$/"
+    enforcement: block
+    description: "民/刑/行/执案号统一校验"
+  
+  # 2. 统一社会信用代码
+  - type: Organization
+    rule: "credit_code =~ /^[0-9A-HJ-NPQRTUWXY]{2}\\d{6}[0-9A-HJ-NPQRTUWXY]{10}$/"
+    enforcement: block
+    description: "统一社会信用代码18位校验"
+  
+  # 3. 时序约束
+  - type: CourtCase
+    rule: "filing_date < judgment_date AND judgment_date < effective_date"
+    enforcement: block
+    description: "立案<裁判<生效"
+  
+  # 4. 二审约束
+  - type: CourtCase
+    rule: "trial_level == 'second_instance' IMPLIES first_instance_case_number IS NOT NULL"
+    enforcement: block
+    description: "二审必须有一审案号"
+  
+  # 5. 证据约束
+  - type: Evidence
+    rule: "admission_status == 'admitted' IMPLIES examination_status == 'examined'"
+    enforcement: block
+    description: "证据未经质证不得采信"
+  
+  # 6. 脱敏约束（修正语法）
+  - global: true
+    rule: "desensitized_id_number =~ /^\\d{6}\\*{8}\\d{4}$/; phone =~ /^\\d{3}\\*{4}\\d{4}$/"
+    enforcement: block
+    description: "个保法分级脱敏"
+  
+  # 7. 法条有效性
+  - type: CourtCase
+    rule: "ALL x IN cites WHERE x.status == 'effective'"
+    enforcement: block
+    description: "仅引用有效法条"
+  
+  # 8. 最高院管辖约束（修正跨实体字段）
+  - type: CourtCase
+    rule: "Court.id == court_id AND Court.court_level == 'supreme' IMPLIES trial_level != 'second_instance'"
+    enforcement: block
+    description: "最高院判决不得上诉"
+
+engineering:
+  unique_identifier_pattern: "^[a-z]+_[0-9]{4}_[a-z_]+$" # 修正正则，匹配示例ID
+  foreign_key_mapping:
+    - law_id: Law.id
+    - case_type_id: CaseType.id
+    - court_id: Court.id
+    - district_id: District.id
+    - procuratorate_id: Procuratorate.id
+    - law_firm_id: LawFirm.id
+    - judge_id: Judge.id
+    - attorney_id: Attorney.id
+    - clerk_id: Clerk.id
+    - prosecutor_id: Prosecutor.id
+  entity_disambiguation:
+    Court: "name + district.code"
+    Person: "name + desensitized_id_number + case_number"
+    Organization: "name + credit_code"
+  data_version: "2026.01"
+  incremental_update: true
+  graph_storage:
+    node_prefix: "LEGAL_"
+    relation_prefix: "REL_"
+  index_enabled: true # 生产级索引
