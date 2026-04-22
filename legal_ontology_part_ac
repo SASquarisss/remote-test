@@ -1,0 +1,100 @@
+    description: "法官承办案件"
+  
+  # 主体角色
+  plays_role:
+    from: LegalSubject
+    to: LegalRole
+    cardinality: many_to_many
+    attributes: [case_id, start_time, end_time, role_description]
+    description: "主体在案件中担任角色"
+  
+  # 管辖/公诉
+  has_jurisdiction_over:
+    from: Court
+    to: District
+    cardinality: one_to_one
+    description: "法院管辖辖区"
+  
+  prosecutes:
+    from: Procuratorate
+    to: CourtCase
+    cardinality: one_to_many
+    description: "检察院公诉案件"
+  
+  # 执行/文书
+  based_on:
+    from: ExecutionInfo
+    to: JudgmentResult
+    cardinality: one_to_one
+    description: "执行依据裁判结果"
+  
+  signed_by:
+    from: LegalDocument
+    to: Judge
+    cardinality: many_to_one
+    description: "文书由法官签署"
+  
+  # 案由/法律
+  has_case_type:
+    from: CourtCase
+    to: CaseType
+    cardinality: one_to_many
+    description: "案件具有案由类型"
+  
+  cites:
+    from: CourtCase
+    to: LegalProvision
+    cardinality: many_to_many
+    attributes: [citation_position, citation_purpose, context]
+    description: "案件引用法律条文"
+  
+  judgment_cites:
+    from: JudgmentResult
+    to: LegalProvision
+    cardinality: many_to_many
+    description: "裁判结果依据法律条文"
+  
+  # 代理/雇佣
+  represents:
+    from: Attorney
+    to: LegalSubject
+    cardinality: many_to_many
+    attributes: [case_id, authorization_scope, authorization_period_start, authorization_period_end]
+    description: "律师代理当事人"
+  
+  employs:
+    from: Procuratorate
+    to: Prosecutor
+    cardinality: one_to_many
+    description: "检察院雇佣检察官"
+  
+  employs_attorney:
+    from: LawFirm
+    to: Attorney
+    cardinality: one_to_many
+    description: "律所雇佣律师" # 补全核心关系
+  
+  # 证据/组织
+  submitted_for:
+    from: Evidence
+    to: CourtCase
+    cardinality: many_to_one
+    description: "证据提交给案件"
+  
+  proves_fact:
+    from: Evidence
+    to: [Fact, DisputeFocus]
+    cardinality: many_to_many
+    description: "证据证明案件事实/争议焦点"
+  
+  includes:
+    from: TrialOrganization
+    to: Judge
+    cardinality: one_to_many
+    description: "审判组织包含法官" # 移除脏字符
+  
+  includes_clerk:
+    from: TrialOrganization
+    to: Clerk
+    cardinality: one_to_one
+    description: "审判组织配备书记员"
