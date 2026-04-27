@@ -173,9 +173,9 @@ def main():
                         help="Prompt模板路径")
     parser.add_argument("--api-key", default=os.getenv("OPENAI_API_KEY"),
                         help="OpenAI/Kimi API Key")
-    parser.add_argument("--base-url", default=os.getenv("OPENAI_BASE_URL", "https://api.moonshot.cn/v1"),
+    parser.add_argument("--base-url", default=os.getenv("OPENAI_BASE_URL", "https://api.deepseek.com/v1"),
                         help="API Base URL")
-    parser.add_argument("--model", default="kimi-k2-6", help="模型名称")
+    parser.add_argument("--model", default="deepseek-v4-pro", help="模型名称")
     parser.add_argument("--max-workers", type=int, default=3, help="并发线程数")
     parser.add_argument("--limit", type=int, default=0, help="限制处理条数（0=全部）")
     parser.add_argument("--batch-size", type=int, default=50,
