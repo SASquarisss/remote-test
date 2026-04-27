@@ -49,9 +49,10 @@ types:
   GuidingCase:
     is_a: LegalNorm
     required: [guiding_case_number, issuing_court_id, publication_date, guiding_points, binding_force]
-    optional: [guiding_points_vector, related_case_type_ids]
+    optional: [guiding_points_vector, related_case_type_ids, key_words, trial_procedure, storage_no, source_url, case_level, judgment_mean]
     binding_force_enum: [mandatory, persuasive, reference]
-    description: "最高法指导性案例"
+    case_level_enum: [guiding_case, typical_case, reference_case]
+    description: "最高法指导性案例/典型案例"
 
   SentencingStandard:
     is_a: LegalNorm
@@ -143,15 +144,16 @@ types:
   CourtCase:
     is_a: JudicialEntity
     required: [case_number, case_type_id, filing_date, court_id, status, trial_level]
-    optional: [claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path]
-    trial_level_enum: [first_instance, second_instance, retrial]
+    optional: [claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, trial_procedure]
+    trial_level_enum: [first_instance, second_instance, retrial, execution]
+    trial_procedure_enum: [first_instance, second_instance, retrial, execution_procedure, preservation, compulsory_execution]
     status_enum: [filing, trial, judged, effective, appealed, retried, executing, terminated]
     description: "法院案件（精简节点，全文存ES）"
 
   CaseSummary:
     is_a: JudicialEntity
     required: [case_id, key_facts, disputed_issues, conclusion]
-    optional: [fact_vector, issue_tags, amount_involved, sentencing_referral_id]
+    optional: [fact_vector, issue_tags, amount_involved, sentencing_referral_id, guiding_points]
     description: "案件结构化摘要（用于热层类案相似度计算）"
 
   TrialOrganization:
