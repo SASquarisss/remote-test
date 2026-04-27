@@ -1,0 +1,242 @@
+{
+  "entities": [
+    {
+      "type": "Law",
+      "id": "law_civil_code_2020",
+      "name": "中华人民共和国民法典",
+      "title": "中华人民共和国民法典",
+      "law_level": "basic_law",
+      "document_number": "主席令第四十五号",
+      "status": "effective",
+      "enactment_date": "2020-05-28",
+      "effective_date": "2021-01-01",
+      "source": "全国人大",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "LegalProvision",
+      "id": "provision_civil_code_1042",
+      "law_id": "law_civil_code_2020",
+      "article": "1042",
+      "paragraph": "1",
+      "item": "",
+      "content": "禁止包办、买卖婚姻和其他干涉婚姻自由的行为。禁止借婚姻索取财物。",
+      "status": "effective",
+      "source": "民法典",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "CaseType",
+      "id": "case_type_civil_001",
+      "code": "10101",
+      "name": "离婚纠纷",
+      "category": "civil",
+      "level1": "婚姻家庭纠纷",
+      "level2": "离婚纠纷",
+      "source": "最高法案由规定",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "District",
+      "id": "district_beijing_haidian",
+      "name": "北京市海淀区",
+      "code": "110108",
+      "source": "行政区划代码",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "Court",
+      "id": "court_beijing_haidian",
+      "name": "北京市海淀区人民法院",
+      "org_type": "court",
+      "credit_code": "110108MB1D123456",
+      "court_level": "basic",
+      "district": "district_beijing_haidian",
+      "source": "法院名录",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "Person",
+      "id": "person_zhang_san",
+      "name": "张三",
+      "type": "natural_person",
+      "gender": "male",
+      "birth_date": "1985-03-15",
+      "id_number": "110108********1234",
+      "address": "北京市海淀区****小区",
+      "phone": "138****5678",
+      "source": "当事人信息",
+      "desensitize": true,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "Person",
+      "id": "person_li_si",
+      "name": "李四",
+      "type": "natural_person",
+      "gender": "female",
+      "birth_date": "1987-08-22",
+      "id_number": "110108********5678",
+      "address": "北京市海淀区****大厦",
+      "phone": "139****1234",
+      "source": "当事人信息",
+      "desensitize": true,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "Judge",
+      "id": "judge_wang_wu",
+      "name": "王五",
+      "type": "natural_person",
+      "court_id": "court_beijing_haidian",
+      "position": "审判员",
+      "judge_level": "一级法官",
+      "appointment_date": "2018-06-01",
+      "source": "法官名录",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "Clerk",
+      "id": "clerk_zhao_liu",
+      "name": "赵六",
+      "type": "natural_person",
+      "court_id": "court_beijing_haidian",
+      "position": "书记员",
+      "source": "法院工作人员",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "LegalRole",
+      "id": "role_plaintiff",
+      "name": "原告",
+      "code": "plaintiff",
+      "description": "提起诉讼的一方当事人",
+      "source": "诉讼法",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "LegalRole",
+      "id": "role_defendant",
+      "name": "被告",
+      "code": "defendant",
+      "description": "被诉的一方当事人",
+      "source": "诉讼法",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "TrialOrganization",
+      "id": "trial_org_2026_001",
+      "organization_type": "sole_judge",
+      "case_id": "case_divorce_2026_001",
+      "presiding_judge_id": "judge_wang_wu",
+      "source": "审判组织",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "CourtCase",
+      "id": "case_divorce_2026_001",
+      "case_number": "(2026)京0108民初12345号",
+      "case_type_id": "case_type_civil_001",
+      "filing_date": "2026-01-15",
+      "court_id": "court_beijing_haidian",
+      "status": "pending",
+      "claim_amount": 500000.00,
+      "cause_of_action": "夫妻感情破裂",
+      "summary": "原告张三诉被告李四离婚纠纷案",
+      "source": "立案信息",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    },
+    {
+      "type": "JudgmentResult",
+      "id": "judgment_2026_001",
+      "case_id": "case_divorce_2026_001",
+      "result_type": "liable",
+      "judgment_date": "2026-03-20",
+      "effective_date": "2026-04-05",
+      "compensation_amount": 300000.00,
+      "reasoning": "夫妻感情确已破裂，准予离婚",
+      "source": "裁判文书",
+      "desensitize": false,
+      "create_time": "2026-04-19T21:30:00Z",
+      "update_time": "2026-04-19T21:30:00Z"
+    }
+  ],
+  "relations": [
+    {
+      "type": "tried_by",
+      "from": "case_divorce_2026_001",
+      "to": "trial_org_2026_001"
+    },
+    {
+      "type": "undertakes",
+      "from": "judge_wang_wu",
+      "to": "case_divorce_2026_001"
+    },
+    {
+      "type": "plays_role",
+      "from": "person_zhang_san",
+      "to": "role_plaintiff",
+      "attributes": {
+        "case_id": "case_divorce_2026_001",
+        "start_time": "2026-01-15T00:00:00Z"
+      }
+    },
+    {
+      "type": "plays_role",
+      "from": "person_li_si",
+      "to": "role_defendant",
+      "attributes": {
+        "case_id": "case_divorce_2026_001",
+        "start_time": "2026-01-15T00:00:00Z"
+      }
+    },
+    {
+      "type": "has_jurisdiction_over",
+      "from": "court_beijing_haidian",
+      "to": "district_beijing_haidian"
+    },
+    {
+      "type": "has_case_type",
+      "from": "case_divorce_2026_001",
+      "to": "case_type_civil_001"
+    },
+    {
+      "type": "cites",
+      "from": "case_divorce_2026_001",
+      "to": "provision_civil_code_1042",
+      "attributes": {
+        "citation_position": "判决理由部分",
+        "citation_purpose": "法律依据"
+      }
+    },
+    {
+      "type": "based_on",
+      "from": "execution_info_2026_001",
+      "to": "judgment_2026_001"
+    }
+  ]
+}
