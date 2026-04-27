@@ -86,12 +86,22 @@ JudicialEntity（司法实体顶层）
 
 ```
 remote-test/
-├── ontology/
-│   ├── schemas/
-│   │   └── legal_ontology_v2.yaml    # 核心 Schema（实体、关系、约束）
-│   └── pydantic_models.py             # Pydantic 模型，运行时校验
-├── legal_ontology_example.json        # 示例数据
-└── README.md
+├─── data/                                 # 数据资产
+│   ├─── raw/                              # 原始数据（由用户上传）
+│   │   └─── guiding_cases.csv           # 指导性案例原始 CSV
+│   ├─── processed/                      # 解析后的结构化数据
+│   │   ├─── guiding_cases.json          # JSON 格式
+│   │   └─── guiding_cases_clean.csv     # 清洗后 CSV
+│   └─── schema/                         # 数据字段说明
+│       └─── guiding_cases_fields.md     # 指导性案例 21 列字段说明
+├─── scripts/                              # 解析/处理脚本
+│   └─── parse_guiding_cases.py        # 指导性案例 CSV 解析脚本
+├─── ontology/                             # 本体定义
+│   ├─── schemas/
+│   │   └─── legal_ontology_v2.yaml    # 核心 Schema（实体、关系、约束）
+│   └─── pydantic_models.py             # Pydantic 模型，运行时校验
+├─── legal_ontology_example.json         # 示例数据
+└─── README.md
 ```
 
 ---
