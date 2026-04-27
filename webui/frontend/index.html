@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法律知识图谱可视化</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-popper@2.0.0/cytoscape-popper.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header class="top-bar">
+            <h1>法律知识图谱 · 解析与可视化</h1>
+            <div class="legend">
+                <span class="tag norm">规范层</span>
+                <span class="tag subject">主体层</span>
+                <span class="tag entity">案件层</span>
+            </div>
+        </header>
+
+        <main class="main-grid">
+            <!-- 左侧: 输入区 -->
+            <aside class="panel left-panel">
+                <div class="input-section">
+                    <h3>📝 案例原文输入</h3>
+                    <textarea id="inputText" placeholder="请粘贴案例文本（支持裁判文书、指导性案例等）..."></textarea>
+                    <div class="btn-row">
+                        <button id="parseBtn" class="btn primary">
+                            <span class="btn-text">解析并生成图谱</span>
+                            <span class="spinner hidden"></span>
+                        </button>
+                        <button id="loadSampleBtn" class="btn secondary">加载示例</button>
+                        <button id="clearBtn" class="btn ghost">清空</button>
+                    </div>
+                </div>
+
+                <div class="stats-section hidden" id="statsSection">
+                    <h3>📊 解析概览</h3>
+                    <div class="stat-grid" id="statGrid"></div>
+                </div>
+
+                <div class="json-section hidden" id="jsonSection">
+                    <h3>📦 原始 JSON</h3>
+                    <pre id="jsonPreview"></pre>
+                </div>
+            </aside>
+
+            <!-- 右侧: 图谱区 -->
+            <section class="panel right-panel">
+                <div class="toolbar">
+                    <input type="text" id="searchNode" placeholder="搜索节点..." />
+                    <button id="fitBtn" class="btn small">适应屏幕</button>
+                    <button id="layoutBtn" class="btn small">重新布局</button>
+                    <select id="layoutSelect">
+                        <option value="cose">力导向 (COSE)</option>
+                        <option value="circle">圆形</option>
+                        <option value="grid">网格</option>
+                        <option value="breadthfirst">层次</option>
+                    </select>
+                </div>
+                <div id="cy"></div>
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">🔍</div>
+                    <p>在左侧输入案例文本并点击"解析"，<br>图谱将在此处实时渲染</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- 节点详情浮层 -->
+        <div id="detailPanel" class="detail-panel hidden">
+            <div class="detail-header">
+                <span class="detail-type" id="detailType">Entity</span>
+                <button id="closeDetail" class="btn icon">✕</button>
+            </div>
+            <div class="detail-body" id="detailBody"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
