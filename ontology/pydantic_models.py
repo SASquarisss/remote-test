@@ -109,6 +109,15 @@ class SentencingStandard(LegalNorm):
         return v
 
 
+class LegalProvisionCitation(JudicialEntity):
+    provision_id: str
+    case_id: str
+    citation_position: Literal["judgment_reason", "basic_facts", "judgment_essence", "related_law", "related_info"]
+    citation_purpose: Literal["applicable_law", "reasoning", "rebuttal", "reference"]
+    statute_name: Optional[str] = None
+    context: Optional[str] = None
+
+
 # ==================== 主体层 ====================
 class Person(LegalSubject):
     type: Literal["natural_person", "legal_person"]
@@ -208,6 +217,7 @@ class CourtCase(JudicialEntity):
     first_instance_case_number: Optional[str] = None
     source_text_hash: Optional[str] = None
     source_text_path: Optional[str] = None
+    judgment_date: Optional[date] = None
 
 
 class CaseSummary(JudicialEntity):
@@ -292,3 +302,12 @@ class Fact(JudicialEntity):
     content: str
     fact_type: Optional[Literal["undisputed", "disputed", "to_be_proven"]] = None
     proven_by_evidence_ids: Optional[List[str]] = None
+
+
+class CaseParticipant(JudicialEntity):
+    case_id: str
+    subject_id: str
+    role_code: Literal["plaintiff", "defendant", "third_party", "witness", "agent", "expert_witness", "interpreter", "prosecutor", "applicant", "respondent", "relator"]
+    trial_level: Optional[Literal["first_instance", "second_instance", "retrial", "execution"]] = None
+    is_primary: Optional[bool] = None
+    role_name: Optional[str] = None

@@ -62,6 +62,14 @@ types:
     sentence_unit_enum: [month, year, yuan, percent]
     description: "量刑或赔偿计算标准"
 
+  LegalProvisionCitation:
+    is_a: JudicialEntity
+    required: [provision_id, case_id, citation_position, citation_purpose]
+    optional: [statute_name, context]
+    citation_position_enum: [judgment_reason, basic_facts, judgment_essence, related_law, related_info]
+    citation_purpose_enum: [applicable_law, reasoning, rebuttal, reference]
+    description: "案件中法条引用的具体场景与目的（关系实体）"
+
   # ==================== 主体层 ====================
   Person:
     is_a: LegalSubject
@@ -144,7 +152,7 @@ types:
   CourtCase:
     is_a: JudicialEntity
     required: [case_number, case_type_id, filing_date, court_id, status, trial_level]
-    optional: [claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, trial_procedure]
+    optional: [claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, trial_procedure, judgment_date]
     trial_level_enum: [first_instance, second_instance, retrial, execution]
     trial_procedure_enum: [first_instance, second_instance, retrial, execution_procedure, preservation, compulsory_execution]
     status_enum: [filing, trial, judged, effective, appealed, retried, executing, terminated]
@@ -206,6 +214,13 @@ types:
     optional: [fact_type, proven_by_evidence_ids]
     fact_type_enum: [undisputed, disputed, to_be_proven]
     description: "案件事实"
+
+  CaseParticipant:
+    is_a: JudicialEntity
+    required: [case_id, subject_id, role_code]
+    optional: [trial_level, is_primary, role_name]
+    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator]
+    description: "案件参与人（含审级角色变更）"
 
 relations:
   # 规范层关系
@@ -369,14 +384,54 @@ relations:
     to: CourtCase
     cardinality: one_to_one
     acyclic: true
-    description: "二审案件上诉一审案件"
+    attributes: [judgment_date, result_type, effective_date]
+    description: "上诉至（一审 → 二审）"
 
   retries_from:
     from: CourtCase
     to: CourtCase
     cardinality: one_to_one
     acyclic: true
-    description: "再审案件源自原审案件"
+    attributes: [judgment_date, result_type, effective_date]
+    description: "再审自（原审 → 再审）"
+
+  reinstated_to:
+    from: CourtCase
+    to: CourtCase
+    cardinality: one_to_one
+    acyclic: true
+    attributes: [judgment_date, result_type, effective_date]
+    description: "发回重审（二审 → 一审）"
+
+  has_participant:
+    from: CourtCase
+    to: CaseParticipant
+    cardinality: one_to_many
+    description: "案件具有参与人"
+
+  participant_is:
+    from: CaseParticipant
+    to: LegalSubject
+    cardinality: many_to_one
+    description: "参与人对应法律主体"
+
+  participant_plays_role:
+    from: CaseParticipant
+    to: LegalRole
+    cardinality: many_to_one
+    description: "参与人担任法律角色"
+
+  provision_cited_in:
+    from: LegalProvisionCitation
+    to: LegalProvision
+    cardinality: many_to_one
+    description: "引用关系实体指向具体法条"
+
+  citation_belongs_to_case:
+    from: LegalProvisionCitation
+    to: CourtCase
+    cardinality: many_to_one
+    description: "引用关系实体归属案件"
 
   has_dispute_focus:
     from: CourtCase
