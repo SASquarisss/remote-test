@@ -1,0 +1,240 @@
+{
+  "summary": {
+    "total_samples": 1,
+    "avg_completeness": 98.0,
+    "avg_consistency": 100.0,
+    "avg_accuracy": 100.0,
+    "overall_score": 99.33
+  },
+  "samples": [
+    {
+      "id": "2292",
+      "case_type": "行政-不履行XX职责",
+      "parsed": {
+        "guiding_case": {
+          "guiding_case_number": "",
+          "publication_date": "2022-07-01",
+          "binding_force": "persuasive",
+          "guiding_points": "1.规范性文件不得违反上位法的规定。人民法院在审理单独行政行为诉讼案件时，应当对行政行为依据的规范性文件进行合法性审查。经审查认为不合法的，不得作为认定行政行为合法的依据。 2.在不履行给付基本医疗保险金职责之诉中，地方性规范性文件对产生交通事故的责任类型未予区分，突破上位法将不予补偿范围仅限定于应当由第三人负担范围内的规定的，人民法院不应予以参照适用。",
+          "key_words": [
+            "行政",
+            "不履行给付基本医疗保险金职责",
+            "上位法规定",
+            "地方规范性文件",
+            "主动审查"
+          ],
+          "case_level": "typical_case",
+          "trial_procedure": "再审",
+          "storage_no": "2024-12-3-021-005",
+          "source_url": "",
+          "judgment_mean": ""
+        },
+        "case_type": {
+          "category": "administrative",
+          "level1": "行政",
+          "level2": "不履行XX职责"
+        },
+        "court_cases": [
+          {
+            "case_number": "（2018）苏0925行初186号",
+            "trial_level": "first_instance",
+            "trial_procedure": "一审",
+            "court": {
+              "name": "江苏省建湖县人民法院",
+              "court_level": "basic"
+            },
+            "status": "judged"
+          },
+          {
+            "case_number": "（2019）苏09行终184号",
+            "trial_level": "second_instance",
+            "trial_procedure": "二审",
+            "court": {
+              "name": "江苏省盐城市中级人民法院",
+              "court_level": "intermediate"
+            },
+            "status": "judged"
+          },
+          {
+            "case_number": "（2020）苏行申329号",
+            "trial_level": "retrial",
+            "trial_procedure": "再审审查",
+            "court": {
+              "name": "江苏省高级人民法院",
+              "court_level": "high"
+            },
+            "status": "judged"
+          },
+          {
+            "case_number": "（2021）苏行再30号",
+            "trial_level": "retrial",
+            "trial_procedure": "再审",
+            "court": {
+              "name": "江苏省高级人民法院",
+              "court_level": "high"
+            },
+            "status": "effective"
+          }
+        ],
+        "legal_subjects": [
+          {
+            "name": "孟某",
+            "subject_type": "natural_person",
+            "org_type": "",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "plaintiff",
+                "role_name": "原告",
+                "case_number": "（2018）苏0925行初186号"
+              },
+              {
+                "role_code": "applicant",
+                "role_name": "再审申请人",
+                "case_number": "（2020）苏行申329号"
+              },
+              {
+                "role_code": "applicant",
+                "role_name": "再审申请人",
+                "case_number": "（2021）苏行再30号"
+              }
+            ]
+          },
+          {
+            "name": "滨海县医疗保险基金管理中心",
+            "subject_type": "organization",
+            "org_type": "government_agency",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告",
+                "case_number": "（2018）苏0925行初186号"
+              },
+              {
+                "role_code": "respondent",
+                "role_name": "被申请人",
+                "case_number": "（2020）苏行申329号"
+              },
+              {
+                "role_code": "respondent",
+                "role_name": "被申请人",
+                "case_number": "（2021）苏行再30号"
+              }
+            ]
+          }
+        ],
+        "legal_provisions": [
+          {
+            "case_number": "（2021）苏行再30号",
+            "statute": "社会保险法",
+            "article": "30",
+            "paragraph": "1",
+            "item": "",
+            "citation_position": "judgment_reason",
+            "citation_purpose": "说理依据"
+          },
+          {
+            "case_number": "（2021）苏行再30号",
+            "statute": "江苏省新型农村合作医疗条例",
+            "article": "",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "judgment_reason",
+            "citation_purpose": "说理依据"
+          },
+          {
+            "case_number": "（2021）苏行再30号",
+            "statute": "立法法",
+            "article": "96",
+            "paragraph": "",
+            "item": "2",
+            "citation_position": "related_info",
+            "citation_purpose": "说理依据"
+          },
+          {
+            "case_number": "（2021）苏行再30号",
+            "statute": "社会保险法",
+            "article": "30",
+            "paragraph": "1",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          }
+        ],
+        "case_summary": {
+          "key_facts": "原告孟某系滨海县村民，自2016年参加新型农村合作医疗保险。2017年5月22日，孟某因单方交通事故受伤，交警认定其负全部责任。孟某多次向被告滨海县医保中心申请补偿医疗费用，被告依据地方补偿方案认为交通事故所致费用不予补偿，拒绝支付。孟某遂起诉要求补偿医疗费335049元。",
+          "disputed_issues": "单方交通事故产生的医疗费用是否属于新型农村合作医疗保险基金的补偿范围；地方规范性文件能否突破上位法规定，将此类费用排除在补偿范围之外。",
+          "conclusion": "撤销一、二审判决，判令滨海县医保中心在判决生效之日起60日内依法对孟某履行补偿医疗费用的法定职责。",
+          "amount_involved": "335049元",
+          "guiding_points": ""
+        },
+        "dispute_focuses": [
+          {
+            "content": "单方交通事故产生的医疗费用是否属于新型农村合作医疗保险基金的补偿范围",
+            "focus_category": "法律适用"
+          },
+          {
+            "content": "地方规范性文件能否突破上位法将不补偿范围扩大至应当由第三人负担之外的情形",
+            "focus_category": "法律适用"
+          }
+        ],
+        "facts": [
+          {
+            "content": "孟某系滨海县某村村民，从2016年起参加了滨海县新型农村合作医疗保险并缴纳了保险费用。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "2017年5月22日，孟某驾驶小型轿车因操作不当撞到道路中间护栏，致车辆损坏、孟某身体受伤，交警认定孟某负事故全部责任。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "事故后，孟某经多家医院治疗，用去医疗费用约40余万元。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "孟某于2018年6月初向滨海县医保中心提出书面申请，请求对因交通事故产生的医疗费用进行补偿，滨海县医保中心拒绝补偿。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "《盐城市2015年度新型农村合作医疗实施方案》及《2017年滨海县新型农村合作医疗补偿方案》均规定交通事故所发生的医药费用属于不予补偿的范围。",
+            "fact_type": "undisputed"
+          }
+        ]
+      },
+      "eval_completeness": {
+        "score": 98,
+        "issues": [
+          "legal_provisions[1].article: 缺少或为空"
+        ],
+        "total_issues": 1
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    }
+  ],
+  "recommendations": [
+    "常见问题：",
+    "  - legal_provisions[1].article: 缺少或为空 (出现1次)"
+  ],
+  "metadata": {
+    "prompt_file": "/root/remote-test/scripts/prompts/guiding_case_ontology_aligned.txt",
+    "model": "deepseek-v4-pro",
+    "timestamp": "2026-04-27T22:49:42.278499",
+    "total_samples": 1
+  }
+}
