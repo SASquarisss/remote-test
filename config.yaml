@@ -1,0 +1,67 @@
+# Legal KG Platform 配置
+
+project:
+  name: "legal-kg-platform"
+  version: "0.1.0"
+  data_version: "2026.04.v2"
+
+# 图数据库配置
+graph_store:
+  hot_layer:
+    type: neo4j
+    uri: "bolt://localhost:7687"
+    user: "neo4j"
+    password: "legalkg2026"
+    database: "neo4j"
+  full_layer:
+    type: nebulagraph
+    hosts: ["127.0.0.1:9669"]
+    user: "root"
+    password: "legalkg2026"
+    space: "legal_kg"
+
+# 全文检索
+elasticsearch:
+  hosts: ["http://localhost:9200"]
+  index_prefix: "legal"
+
+# 对象存储
+object_storage:
+  type: minio
+  endpoint: "localhost:9000"
+  access_key: "legalkg"
+  secret_key: "legalkg2026"
+  bucket_raw: "legal-kg-raw"
+  bucket_gold: "legal-kg-gold"
+
+# 数据集版本
+dvc:
+  remote: "s3://legal-kg-dvc"
+
+# 抽取器
+extraction:
+  llm_provider: "deepseek"        # deepseek / openai / anthropic / kimi
+  llm_model: "deepseek-v4-pro"   # deepseek-v4-pro / deepseek-v4-flash
+  base_url: "https://api.deepseek.com/v1"
+  max_tokens: 8192
+  temperature: 0.1
+  batch_size: 10                # 每次LLM处理文书数
+  confidence_threshold_high: 0.92
+  confidence_threshold_medium: 0.75
+
+# 类案推理
+reasoning:
+  min_samples: 30               # 最小类案样本数
+  claim_amount_tolerance: 0.2   # 标的额容差 20%
+  default_filing_date_after: "2021-01-01"
+
+# 脱敏
+privacy:
+  id_number_pattern: "^\\d{6}\\*{8}\\d{4}$"
+  phone_pattern: "^\\d{3}\\*{4}\\d{4}$"
+  address_mask_suffix: 4
+
+# 日志
+logging:
+  level: INFO
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"

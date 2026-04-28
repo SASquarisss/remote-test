@@ -1,0 +1,6 @@
+id,name,org_type,credit_code,court_level,district_id,source,desensitize,create_time,update_time
+court_104b0f3210fb,江苏省高级人民法院,court,cc_104b0f3210fb,high,,指导案例库,false,2026-04-21T00:00:00Z,2026-04-21T00:00:00Z
+court_fa7dd45e462f,鹤岗市工农区人民法院,court,cc_fa7dd45e462f,basic,,指导案例库,false,2026-04-21T00:00:00Z,2026-04-21T00:00:00Z
+court_0bdda3636e00,湖南省湘西土家族苗族自治州中级人民法院,court,cc_0bdda3636e00,intermediate,,指导案例库,false,2026-04-21T00:00:00Z,2026-04-21T00:00:00Z
+court_cc36c8792b01,最高人民法院,court,cc_cc36c8792b01,supreme,,指导案例库,false,2026-04-21T00:00:00Z,2026-04-21T00:00:00Z
+court_b4be5544f1c8,上海市高级人民法院,court,cc_b4be5544f1c8,high,,指导案例库,false,2026-04-21T00:00:00Z,2026-04-21T00:00:00Z

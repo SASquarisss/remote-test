@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: legal-kg-neo4j
+    ports:
+      - "7474:7474"   # HTTP
+      - "7687:7687"   # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/legalkg2026
+      - NEO4J_PLUGINS=["apoc", "gds"]
+      - NEO4J_dbms_memory_heap_max__size=4G
+      - NEO4J_dbms_memory_pagecache_size=2G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - ./deployment/neo4j/conf:/conf
+    networks:
+      - legal-kg-net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: legal-kg-es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - legal-kg-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: legal-kg-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=legalkg
+      - MINIO_ROOT_PASSWORD=legalkg2026
+    volumes:
+      - minio_data:/data
+    networks:
+      - legal-kg-net
+
+  postgres:
+    image: postgres:16
+    container_name: legal-kg-postgres
+    environment:
+      - POSTGRES_USER=legalkg
+      - POSTGRES_PASSWORD=legalkg2026
+      - POSTGRES_DB=legal_kg_meta
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - legal-kg-net
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  es_data:
+  minio_data:
+  postgres_data:
+
+networks:
+  legal-kg-net:
+    driver: bridge
