@@ -280,6 +280,7 @@ def main():
     parser.add_argument("--limit", type=int, default=0, help="0 = all")
     parser.add_argument("--prompt-version", default="v2")
     parser.add_argument("--start", type=int, default=0, help="Start index")
+    parser.add_argument("--append", action="store_true", help="Append to output file instead of overwrite")
     args = parser.parse_args()
 
     config = load_config()
@@ -332,7 +333,8 @@ def main():
             })
 
     # Write JSONL
-    with open(output_path, "w", encoding="utf-8") as f:
+    mode = "a" if args.append else "w"
+    with open(output_path, mode, encoding="utf-8") as f:
         for r in results:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
