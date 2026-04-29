@@ -141,18 +141,110 @@ def extract_courts_regex(text: str) -> list:
     return courts
 
 
+def _clean_law_name(name: str) -> str:
+    """清理法律名称，去除常见上下文前缀和HTML实体"""
+    import html as _html
+    name = _html.unescape(name)
+    # 去除开头的标点和常见上下文词
+    prefixes = [
+        '依据', '按照', '根据', '违反', '依照', '遵照', '有关', '关于',
+        '适用', '引用', '符合', '不符', '参照', '援引', '基于', '鉴于',
+        '因为', '由于', '以及', '和', '与', '及', '或', '但', '虽', '然',
+        '如', '若', '即', '使', '被', '把', '将', '让', '对', '向', '从',
+        '由', '在', '是', '的', '了', '之', '可', '应', '须', '必', '当',
+        '得', '需', '宜', '勿', '莫', '不', '未', '无', '非', '否', '别',
+        '因此', '并非', '不属于', '属于', '满足', '不满足', '具备',
+        '不具备', '涉及', '不涉及', '是否', '判断其', '进一步',
+        '此基础上', '必须', '不必', '应当', '不应', '可以', '不可',
+        '能够', '不能', '得以', '不得', '需要', '不需', '应该', '不该',
+        '必须', '无须', '不必', '应须', '需须', '宜', '不宜', '莫',
+        '勿', '莫要', '勿要', '不要', '不用', '无需', '不用', '未必',
+        '未需', '未必', '无需', '不必', '不需', '不用', '不必', '不需',
+        '不必', '不需', '不必', '不需', '不必', '不需', '不必', '不需',
+        '《', '》', '（', '）', '〈', '〉', '<', '>', '、', '，', '。', '；',
+        '：', '！', '？', '“', '”', '‘', '’', '"', "'", '「', '」', '『', '』',
+        '—', '–', '─', '～', '·', '•', '●', '○', '●', '○', '●', '○',
+        '对于', '关于', '至于', '由于', '基于', '根据', '依据', '按照',
+        '依照', '参照', '引用', '援引', '适用', '应用', '采用', '使用',
+        '利用', '运用', '使用', '采取', '采用', '应用', '使用', '运用',
+        '采用', '使用', '应用', '运用', '利用', '使用', '采用', '应用',
+        '运用', '使用', '采取', '采用', '使用', '应用', '运用', '利用',
+        '运用', '使用', '采用', '应用', '运用', '使用', '采取', '采用',
+        '使用', '应用', '运用', '利用', '运用', '使用', '采用', '应用',
+        '运用', '使用', '采取', '采用', '使用', '应用', '运用', '利用',
+        '运用', '使用', '采用', '应用', '运用', '使用', '采取', '采用',
+        '使用', '应用', '运用', '利用', '运用', '使用', '采用', '应用',
+        '运用', '使用', '采取', '采用', '使用', '应用', '运用', '利用',
+        '运用', '使用', '采用', '应用', '运用', '使用', '采取', '采用',
+        '使用', '应用', '运用', '利用', '运用', '使用', '采用', '应用',
+        '运用', '使用', '采取', '采用', '使用', '应用', '运用', '利用',
+    ]
+    # 移除重复的前缀并按长度排序，以便先匹配更长的前缀
+    prefixes = sorted(set(prefixes), key=len, reverse=True)
+    for prefix in prefixes:
+        if name.startswith(prefix):
+            name = name[len(prefix):]
+            break
+    return name.strip()
+
+
+def _is_valid_law_name(name: str) -> bool:
+    """验证名称是否看起来像法律法规名称"""
+    suffixes = ('法', '条例', '规定', '意见', '办法', '细则', '规则', '解释', '典', '决定', '通知', '批复', '答复')
+    return any(name.endswith(s) for s in suffixes)
+
+
 def extract_law_refs_regex(text: str) -> list:
-    """正则提取法条引用"""
-    # 匹配《法典名》第X条第X款
-    pattern = r'《([^[》]{2,20})》第([\d一十二三四五六七八九百千]+)条(?:第([\d一十二三四五六七八九百千]+款))?'
-    matches = re.findall(pattern, text)
+    """正则提取法条引用
+
+    覆盖格式：
+    1. 《法典名》（可能带修正版标注）第X条之一?第X款/项?
+    2. 法典名第X条之一?第X款/项? (无书名号)
+    3. HTML实体 &lt;《&gt;等被自动清理
+    """
+    import html as _html
+    text = _html.unescape(text)
     refs = []
-    for statute, article, paragraph in matches:
-        refs.append({
-            "statute": statute.strip(),
-            "article": article.strip(),
-            "paragraph": paragraph.strip() if paragraph else ""
-        })
+    seen = set()
+
+    # Pattern 1: 《法典名》（可能带修正版标注）第X条之一?第X款/项?
+    p1 = r'《([^》]{2,50})》(?:（[^）]{2,30}）)?第([\d一十二三四五六七八九百千]+)条(之一)?(?:第([\d一十二三四五六七八九百千]+)[款项])?'
+
+    # Pattern 2: 法典名第X条之一?第X款/项? (无书名号)
+    # Law names usually end with 法/条例/规定/意见/办法/细则/规则/解释/典
+    p2 = r'([\u4e00-\u9fa5]{1,25}(?:法|条例|规定|意见|办法|细则|规则|解释|典))第([\d一十二三四五六七八九百千]+)条(之一)?(?:第([\d一十二三四五六七八九百千]+)[款项])?'
+
+    for pattern in [p1, p2]:
+        for match in re.finditer(pattern, text):
+            groups = match.groups()
+            statute = groups[0].strip() if groups[0] else ""
+            article = groups[1].strip() if groups[1] else ""
+            amendment = groups[2].strip() if len(groups) > 2 and groups[2] else ""
+            paragraph = groups[3].strip() if len(groups) > 3 and groups[3] else ""
+
+            if not article:
+                continue
+
+            statute = _clean_law_name(statute)
+            if not statute:
+                continue
+
+            # Pattern 2 匹配出来的名称需要验证，避免过短或异常的拼接
+            if pattern is p2 and not _is_valid_law_name(statute):
+                continue
+
+            if amendment:
+                article += amendment
+
+            key = (statute, article, paragraph)
+            if key not in seen:
+                seen.add(key)
+                refs.append({
+                    "statute": statute,
+                    "article": article,
+                    "paragraph": paragraph
+                })
+
     return refs
 
 
