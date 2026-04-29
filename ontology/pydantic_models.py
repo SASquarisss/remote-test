@@ -51,22 +51,22 @@ class Law(LegalNorm):
 
 
 class LegalProvision(LegalNorm):
-    law_id: str
+    law_id: Optional[str] = None
     article: str
-    paragraph: str
-    item: Optional[str] = ""
-    content: str
-    status: Literal["effective", "amended", "repealed"]
+    paragraph: Optional[str] = None
+    item: Optional[str] = None
+    content: Optional[str] = None
+    status: Optional[Literal["effective", "amended", "repealed"]] = None
     legislative_purpose: Optional[str] = None
     related_provisions: Optional[List[str]] = None
     repealed_date: Optional[date] = None
 
 
 class LegalProvisionVersion(LegalNorm):
-    provision_id: str
-    version_date: date
-    content: str
-    status: Literal["effective", "amended", "repealed"]
+    provision_id: Optional[str] = None
+    version_date: Optional[date] = None
+    content: Optional[str] = None
+    status: Optional[Literal["effective", "amended", "repealed"]] = None
     superseded_by_version_id: Optional[str] = None
     amendment_reason: Optional[str] = None
 
@@ -90,12 +90,12 @@ class GuidingCase(LegalNorm):
 
 
 class SentencingStandard(LegalNorm):
-    case_type_id: str
-    applicable_provision_id: str
-    standard_type: Literal["criminal_sentence", "civil_compensation", "administrative_penalty"]
-    sentence_range_min: float
-    sentence_range_max: float
-    sentence_unit: Literal["month", "year", "yuan", "percent"]
+    case_type_id: Optional[str] = None
+    applicable_provision_id: Optional[str] = None
+    standard_type: Optional[Literal["criminal_sentence", "civil_compensation", "administrative_penalty"]] = None
+    sentence_range_min: Optional[float] = None
+    sentence_range_max: Optional[float] = None
+    sentence_unit: Optional[Literal["month", "year", "yuan", "percent"]] = None
     circumstance_levels: Optional[List[str]] = None
     measurement_formula: Optional[str] = None
     region_id: Optional[str] = None
@@ -149,7 +149,7 @@ class Organization(LegalSubject):
     org_type: Literal["company", "government_agency", "ngo", "law_firm",
                       "expert_institution", "court", "procuratorate", "individual_business",
                       "partnership", "sole_proprietorship"]
-    credit_code: str = Field(..., pattern=r"^[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}$")
+    credit_code: Optional[str] = Field(None, pattern=r"^[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}$")
     legal_representative: Optional[str] = None
     registered_capital: Optional[float] = None
     business_scope: Optional[str] = None
@@ -197,7 +197,7 @@ class LegalRole(JudicialEntity):
 
 # ==================== 案件层 ====================
 class CourtCase(JudicialEntity):
-    case_number: str = Field(..., pattern=r"^\(\d{4}\)[一-龥]{1,5}\d+[民刑行扯]\d+第\d+号$")
+    case_number: Optional[str] = Field(None, pattern=r"^\(\d{4}\)[一-龥]+\d+[民刑行扯知刑]\d+号$")
     case_type_id: str
     filing_date: date
     court_id: str
@@ -214,9 +214,9 @@ class CourtCase(JudicialEntity):
 
 class CaseSummary(JudicialEntity):
     case_id: str
-    key_facts: str
-    disputed_issues: str
-    conclusion: str
+    key_facts: Optional[str] = None
+    disputed_issues: Optional[str] = None
+    conclusion: Optional[str] = None
     fact_vector: Optional[List[float]] = None
     issue_tags: Optional[List[str]] = None
     amount_involved: Optional[float] = None
@@ -233,9 +233,9 @@ class TrialOrganization(JudicialEntity):
 
 class JudgmentResult(JudicialEntity):
     case_id: str
-    result_type: Literal["guilty", "not_guilty", "liable", "not_liable", "dismissed", "withdrawn"]
-    judgment_date: date
-    effective_date: date
+    result_type: Optional[Literal["guilty", "not_guilty", "liable", "not_liable", "dismissed", "withdrawn"]] = None
+    judgment_date: Optional[date] = None
+    effective_date: Optional[date] = None
     sentence_term: Optional[float] = None
     compensation_amount: Optional[float] = None
     reasoning: Optional[str] = None
@@ -243,20 +243,20 @@ class JudgmentResult(JudicialEntity):
 
 
 class ExecutionInfo(JudicialEntity):
-    case_id: str
-    execution_status: Literal["pending", "in_progress", "completed", "terminated"]
-    execution_court_id: str
+    case_id: Optional[str] = None
+    execution_status: Optional[Literal["pending", "in_progress", "completed", "terminated"]] = None
+    execution_court_id: Optional[str] = None
     execution_amount: Optional[float] = None
     execution_measures: Optional[List[str]] = None
     completion_date: Optional[date] = None
 
 
 class LegalDocument(JudicialEntity):
-    document_type: Literal["judgment", "ruling", "mediation", "order", "notice", "indictment", "petition"]
-    case_id: str
-    creation_date: date
-    signed_by_judge_id: str
-    issuing_court_id: str
+    document_type: Optional[Literal["judgment", "ruling", "mediation", "order", "notice", "indictment", "petition"]] = None
+    case_id: Optional[str] = None
+    creation_date: Optional[date] = None
+    signed_by_judge_id: Optional[str] = None
+    issuing_court_id: Optional[str] = None
     document_number: Optional[str] = None
     content_hash: Optional[str] = None
     file_path: Optional[str] = None
@@ -264,12 +264,12 @@ class LegalDocument(JudicialEntity):
 
 
 class Evidence(JudicialEntity):
-    evidence_type: Literal["document", "physical", "digital", "testimony", "expert_opinion"]
-    case_id: str
-    submitter_id: str
-    submission_date: date
-    examination_status: Literal["not_examined", "examined"]
-    admission_status: Literal["admitted", "not_admitted"]
+    evidence_type: Optional[Literal["document", "physical", "digital", "testimony", "expert_opinion"]] = None
+    case_id: Optional[str] = None
+    submitter_id: Optional[str] = None
+    submission_date: Optional[date] = None
+    examination_status: Optional[Literal["not_examined", "examined"]] = None
+    admission_status: Optional[Literal["admitted", "not_admitted"]] = None
     description: Optional[str] = None
     file_path: Optional[str] = None
     chain_of_custody: Optional[str] = None
@@ -283,22 +283,22 @@ class Evidence(JudicialEntity):
 
 
 class DisputeFocus(JudicialEntity):
-    case_id: str
-    content: str
+    case_id: Optional[str] = None
+    content: Optional[str] = None
     focus_category_id: Optional[str] = None
     canonical_template_id: Optional[str] = None
 
 
 class Fact(JudicialEntity):
-    case_id: str
-    content: str
+    case_id: Optional[str] = None
+    content: Optional[str] = None
     fact_type: Optional[Literal["undisputed", "disputed", "to_be_proven"]] = None
     proven_by_evidence_ids: Optional[List[str]] = None
 
 
 class CaseParticipant(JudicialEntity):
     case_id: str
-    subject_id: str
+    subject_id: Optional[str] = None
     role_code: Literal["plaintiff", "defendant", "third_party", "witness", "agent", "expert_witness", "interpreter", "prosecutor", "applicant", "respondent", "relator", "appellant", "appellee", "retrial_applicant", "retrial_respondent"]
     trial_level: Optional[Literal["first_instance", "second_instance", "retrial", "execution"]] = None
     is_primary: Optional[bool] = None

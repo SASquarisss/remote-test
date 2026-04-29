@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""每2小时代码评审对话脚本
-每2小时执行：拉取评审意见 → 判断对话状态 → LLM分析 → 追加comment → push
+"""
+每2小时代码评审对话脚本
+直接在原始意见 .md 文件内追加回复，不再单独创建 comment 文件
 """
 
 import os
 import sys
 import subprocess
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 REPO_PATH = Path("/root/.hermes/hermes-agent/remote-test")
 OPINION_DIR = REPO_PATH / "opinion" / "opinion_from_大剑"
 ENV_FILE = Path("/root/.hermes/.env")
 MY_NAME = "sxc的魔法老头"
-END_MARKERS = ["无异议", "按上述共识执行", "共识已达成", "同意按此执行", "讨论结束", "无需进一步讨论"]
+END_MARKERS = ["无异议", "按上述共识执行", "共识已达成",
+               "同意按此执行", "讨论结束", "无需进一步讨论"]
 
 
 def get_now_str():
@@ -32,11 +34,13 @@ def load_env():
 
 
 def run_git(args, check=True):
-    return subprocess.run(["git"] + args, cwd=REPO_PATH, capture_output=True, text=True, check=check)
+    return subprocess.run(
+        ["git"] + args, cwd=REPO_PATH, capture_output=True, text=True, check=check
+    )
 
 
 def find_recent_opinion_files(hours=48):
-    """查找最近 hours 小时内修改的 .md 意见文件，按修改时间排序"""
+    """查找最近 hours 小时内修改的 .md 文件，按修改时间排序"""
     cutoff = datetime.now().timestamp() - hours * 3600
     files = []
     if not OPINION_DIR.exists():
@@ -49,21 +53,30 @@ def find_recent_opinion_files(hours=48):
     return [p for p, _ in files]
 
 
-def get_comment_path(opinion_path):
-    """根据意见文件路径获取对应的 comment 文件路径"""
-    return OPINION_DIR / f"comment_{opinion_path.stem}"
-
-
-def parse_discussion(comment_path):
-    """解析 comment 文件，返回段落列表 [(author, timestamp, content), ...]"""
-    if not comment_path.exists():
+def parse_discussion(file_path):
+    """
+    解析意见文件，返回段落列表 [(author, timestamp, content), ...]
+    不含标准标题的内容被标记为 author='opinion'（原始评审意见）
+    """
+    if not file_path.exists():
         return []
-    text = comment_path.read_text(encoding="utf-8")
-    # 按 "# 名字 | YYYY-MM-DD HH:MM" 分割
+    text = file_path.read_text(encoding="utf-8")
+    # 匹配 "# 名字 | YYYY-MM-DD HH:MM" 标题行
     pattern = r'^# (.+?) \| (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\n'
     parts = re.split(pattern, text, flags=re.MULTILINE)
     blocks = []
-    if len(parts) > 1:
+
+    if len(parts) == 1:
+        # 没有标题分隔线，整体视为原始评审意见
+        stripped = parts[0].strip()
+        if stripped:
+            blocks.append(("opinion", "", stripped))
+    else:
+        # 第一个标题之前的内容视为原始评审意见前缀
+        prefix = parts[0].strip()
+        if prefix:
+            prefix = re.sub(r'\n*---\s*$', '', prefix)
+            blocks.append(("opinion", "", prefix))
         for i in range(1, len(parts), 3):
             if i + 2 <= len(parts):
                 author = parts[i].strip()
@@ -76,39 +89,31 @@ def parse_discussion(comment_path):
 
 
 def is_my_block(author):
-    return MY_NAME in author
+    return author != "opinion" and MY_NAME in author
 
 
 def has_declared_end(content):
-    """检查内容中是否已声明结束/收敛"""
     return any(marker in content for marker in END_MARKERS)
 
 
-def needs_reply(opinion_path, comment_path):
+def needs_reply(file_path):
     """判断是否需要回复。返回 (need: bool, reason: str)"""
-    if not comment_path.exists():
-        return True, "首次回复"
+    if not file_path.exists():
+        return False, "文件不存在"
 
-    opinion_mtime = opinion_path.stat().st_mtime
-    comment_mtime = comment_path.stat().st_mtime
-    blocks = parse_discussion(comment_path)
-
+    blocks = parse_discussion(file_path)
     if not blocks:
-        return True, "comment 文件无有效段落"
+        return False, "空文件"
 
-    last_author, last_ts, last_content = blocks[-1]
+    last_author, _last_ts, last_content = blocks[-1]
 
-    if not is_my_block(last_author):
-        return True, "对方有新回复"
+    if is_my_block(last_author):
+        if has_declared_end(last_content):
+            return False, "已声明结束，等待对方确认"
+        return False, "等待对方回复"
 
-    # 最后一段是我写的
-    if has_declared_end(last_content):
-        return False, "已声明结束，等待对方确认"
-
-    if opinion_mtime > comment_mtime + 60:  # 意见文件比我的回复更新（容差60秒）
-        return True, "意见文件有新补充"
-
-    return False, "等待对方回复"
+    # 最后一段不是我写的
+    return True, "首次回复" if last_author == "opinion" else "对方有新回复"
 
 
 def normalize_reply(content):
@@ -117,11 +122,21 @@ def normalize_reply(content):
     for i, line in enumerate(lines):
         if line.startswith("# "):
             if MY_NAME not in line:
-                # 替换为正确标题
                 lines[i] = f"# {MY_NAME} | {get_now_str()}"
             return "\n".join(lines[i:])
-    # 未找到标题，在前面添加
     return f"# {MY_NAME} | {get_now_str()}\n\n{content}"
+
+
+def extract_opinion_and_history(blocks):
+    """从解析结果中分离原始评审意见和对话历史"""
+    opinion_content = ""
+    discussion_blocks = []
+    for author, ts, content in blocks:
+        if author == "opinion":
+            opinion_content = content
+        else:
+            discussion_blocks.append((author, ts, content))
+    return opinion_content, discussion_blocks
 
 
 def build_first_prompt(opinion_content):
@@ -153,7 +168,7 @@ def build_first_prompt(opinion_content):
 def build_dialogue_prompt(opinion_content, discussion_blocks):
     now = get_now_str()
 
-    # 构建对话历史摘要
+    # 对话历史摘要
     history_lines = []
     for author, ts, content in discussion_blocks:
         label = "【我】" if is_my_block(author) else f"【{author}】"
@@ -162,7 +177,7 @@ def build_dialogue_prompt(opinion_content, discussion_blocks):
         history_lines.append(summary)
         history_lines.append("")
 
-    # 提取对方的最后一条回复
+    # 提取对方最后一条回复
     opponent_reply = ""
     for author, ts, content in reversed(discussion_blocks):
         if not is_my_block(author):
@@ -195,12 +210,15 @@ def build_dialogue_prompt(opinion_content, discussion_blocks):
 用中文。不要在末尾添加 "---" 分隔线。"""
 
 
-def analyze_with_llm(opinion_content, discussion_blocks=None):
+def analyze_with_llm(blocks):
     from openai import OpenAI
+
     client = OpenAI(
         api_key=os.environ.get("DEEPSEEK_API_KEY"),
         base_url="https://api.deepseek.com/v1"
     )
+
+    opinion_content, discussion_blocks = extract_opinion_and_history(blocks)
 
     if not discussion_blocks:
         prompt = build_first_prompt(opinion_content)
@@ -217,28 +235,25 @@ def analyze_with_llm(opinion_content, discussion_blocks=None):
     return normalize_reply(resp.choices[0].message.content.strip())
 
 
-def write_first_comment(comment_path, content):
-    with open(comment_path, "w", encoding="utf-8") as f:
-        f.write(content + "\n\n---\n")
-    return comment_path
-
-
-def append_comment(comment_path, content):
-    with open(comment_path, "a", encoding="utf-8") as f:
-        f.write("\n" + content + "\n\n---\n")
-    return comment_path
+def append_reply(file_path, content):
+    """在文件末尾追加回复内容，使用 --- 分隔"""
+    with open(file_path, "a", encoding="utf-8") as f:
+        f.write("\n\n---\n\n" + content + "\n\n---\n")
+    return file_path
 
 
 def git_push_changes(paths):
     for p in paths:
         run_git(["add", str(p)], check=False)
-    commit_result = run_git(["commit", "-m", f"review dialogue update at {get_now_str()}"], check=False)
+    commit_result = run_git(
+        ["commit", "-m", f"review dialogue update at {get_now_str()}"],
+        check=False,
+    )
     if commit_result.returncode != 0:
         out = commit_result.stdout + commit_result.stderr
         if "nothing to commit" in out or "no changes added" in out:
             return False
         raise RuntimeError(f"git commit 失败: {out}")
-    # push 前再次 rebase，防止处理期间有更新
     run_git(["pull", "--rebase", "origin", "main"], check=False)
     push_result = run_git(["push", "origin", "main"], check=False)
     if push_result.returncode != 0:
@@ -247,23 +262,17 @@ def git_push_changes(paths):
 
 
 def process_opinion(opinion_path):
-    comment_path = get_comment_path(opinion_path)
-    need, reason = needs_reply(opinion_path, comment_path)
+    need, reason = needs_reply(opinion_path)
     if not need:
         print(f"  ⏭️ 跳过 {opinion_path.name}: {reason}")
         return None, reason
 
     print(f"  📄 处理 {opinion_path.name} ({reason})")
-    opinion_content = opinion_path.read_text(encoding="utf-8")
-    discussion_blocks = parse_discussion(comment_path)
-    analysis = analyze_with_llm(opinion_content, discussion_blocks if discussion_blocks else None)
+    blocks = parse_discussion(opinion_path)
+    analysis = analyze_with_llm(blocks)
+    append_reply(opinion_path, analysis)
 
-    if not discussion_blocks:
-        write_first_comment(comment_path, analysis)
-    else:
-        append_comment(comment_path, analysis)
-
-    return comment_path, reason
+    return opinion_path, reason
 
 
 def main():
@@ -284,10 +293,9 @@ def main():
         processed = []
         skip_reasons = []
         for opinion_path in opinion_files:
-            comment_path, reason = process_opinion(opinion_path)
-            if comment_path:
-                processed.append(comment_path)
-                processed.append(opinion_path)
+            result_path, reason = process_opinion(opinion_path)
+            if result_path:
+                processed.append(result_path)
             else:
                 skip_reasons.append(f"{opinion_path.name}: {reason}")
 
@@ -302,11 +310,10 @@ def main():
         pushed = git_push_changes(processed)
 
         # 4. 输出汇报
-        reply_count = len([p for p in processed if "comment_" in p.name])
         summary = f"""📋 代码评审对话报告 ({get_now_str()})
 
 处理意见文件: {len(opinion_files)} 个
-生成回复: {reply_count} 个
+生成回复: {len(processed)} 个
 跳过: {len(skip_reasons)} 个
 
 {'✅ 已推送更新' if pushed else '⚠️ 无新内容需推送'}

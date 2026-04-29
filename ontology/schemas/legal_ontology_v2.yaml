@@ -27,15 +27,14 @@ types:
 
   LegalProvision:
     is_a: LegalNorm
-    required: [law_id, article, paragraph, item, content, status]
-    optional: [legislative_purpose, related_provisions, repealed_date]
+    required: [article]
+    optional: [law_id, paragraph, item, content, status, legislative_purpose, related_provisions, repealed_date]
     status_enum: [effective, amended, repealed]
     description: "法律条文（当前生效版本）"
 
   LegalProvisionVersion:
     is_a: LegalNorm
-    required: [provision_id, version_date, content, status]
-    optional: [superseded_by_version_id, amendment_reason]
+    optional: [provision_id, version_date, content, status, superseded_by_version_id, amendment_reason]
     status_enum: [effective, amended, repealed]
     description: "法律条文历史版本"
 
@@ -55,8 +54,7 @@ types:
 
   SentencingStandard:
     is_a: LegalNorm
-    required: [case_type_id, applicable_provision_id, standard_type, sentence_range_min, sentence_range_max, sentence_unit]
-    optional: [circumstance_levels, measurement_formula, region_id, valid_from, valid_to]
+    optional: [case_type_id, applicable_provision_id, standard_type, sentence_range_min, sentence_range_max, sentence_unit, circumstance_levels, measurement_formula, region_id, valid_from, valid_to]
     standard_type_enum: [criminal_sentence, civil_compensation, administrative_penalty]
     sentence_unit_enum: [month, year, yuan, percent]
     description: "量刑或赔偿计算标准"
@@ -94,8 +92,8 @@ types:
 
   Organization:
     is_a: LegalSubject
-    required: [org_type, credit_code]
-    optional: [legal_representative, registered_capital, business_scope, legal_name_alias]
+    required: [org_type]
+    optional: [credit_code, legal_representative, registered_capital, business_scope, legal_name_alias]
     org_type_enum: [company, government_agency, ngo, law_firm, expert_institution, court, procuratorate, individual_business, partnership, sole_proprietorship]
     description: "组织机构（企业用credit_code跨案件全局关联，包含法人实体、个体工商户、合伙企业、个人独资企业）"
 
@@ -150,8 +148,8 @@ types:
 
   CaseSummary:
     is_a: JudicialEntity
-    required: [case_id, key_facts, disputed_issues, conclusion]
-    optional: [fact_vector, issue_tags, amount_involved, sentencing_referral_id]
+    required: [case_id]
+    optional: [key_facts, disputed_issues, conclusion, fact_vector, issue_tags, amount_involved, sentencing_referral_id]
     description: "案件结构化摘要（用于热层类案相似度计算）"
 
   TrialOrganization:
@@ -163,29 +161,26 @@ types:
 
   JudgmentResult:
     is_a: JudicialEntity
-    required: [case_id, result_type, judgment_date, effective_date]
-    optional: [sentence_term, compensation_amount, reasoning, sentencing_standard_id]
+    required: [case_id, result_type]
+    optional: [judgment_date, effective_date, sentence_term, compensation_amount, reasoning, sentencing_standard_id]
     result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn]
     description: "裁判结果"
 
   ExecutionInfo:
     is_a: JudicialEntity
-    required: [case_id, execution_status, execution_court_id]
-    optional: [execution_amount, execution_measures, completion_date]
+    optional: [case_id, execution_status, execution_court_id, execution_amount, execution_measures, completion_date]
     execution_status_enum: [pending, in_progress, completed, terminated]
     description: "执行信息"
 
   LegalDocument:
     is_a: JudicialEntity
-    required: [document_type, case_id, creation_date, signed_by_judge_id, issuing_court_id]
-    optional: [document_number, content_hash, file_path, content]
+    optional: [document_type, case_id, creation_date, signed_by_judge_id, issuing_court_id, document_number, content_hash, file_path, content]
     document_type_enum: [judgment, ruling, mediation, order, notice, indictment, petition]
     description: "法律文书"
 
   Evidence:
     is_a: JudicialEntity
-    required: [evidence_type, case_id, submitter_id, submission_date, examination_status, admission_status]
-    optional: [description, file_path, chain_of_custody]
+    optional: [evidence_type, case_id, submitter_id, submission_date, examination_status, admission_status, description, file_path, chain_of_custody]
     evidence_type_enum: [document, physical, digital, testimony, expert_opinion]
     examination_status_enum: [not_examined, examined]
     admission_status_enum: [admitted, not_admitted]
@@ -194,21 +189,19 @@ types:
 
   DisputeFocus:
     is_a: JudicialEntity
-    required: [case_id, content]
-    optional: [focus_category_id, canonical_template_id]
+    optional: [case_id, content, focus_category_id, canonical_template_id]
     description: "案件争议焦点"
 
   Fact:
     is_a: JudicialEntity
-    required: [case_id, content]
-    optional: [fact_type, proven_by_evidence_ids]
+    optional: [case_id, content, fact_type, proven_by_evidence_ids]
     fact_type_enum: [undisputed, disputed, to_be_proven]
     description: "案件事实"
 
   CaseParticipant:
     is_a: JudicialEntity
-    required: [case_id, subject_id, role_code]
-    optional: [trial_level, is_primary, role_name]
+    required: [case_id, role_code]
+    optional: [subject_id, trial_level, is_primary, role_name]
     role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent]
     description: "案件参与人（含审级角色变更）"
 
