@@ -1,0 +1,1263 @@
+{
+  "summary": {
+    "total_samples": 10,
+    "avg_completeness": 65.7,
+    "avg_consistency": 98.5,
+    "avg_accuracy": 90.7,
+    "overall_score": 84.97
+  },
+  "samples": [
+    {
+      "id": "2292",
+      "case_type": "行政-不履行XX职责",
+      "parsed": {
+        "_error": "无法解析JSON: {\n  \"guiding_case\": {\n    \"guiding_case_number\": \"\",\n    \"publication_date\": \"2022-07-01\",\n    \"binding_force\": \"persuasive\",\n    \"guiding_points\": \"1.规范性文件不得违反上位法的规定。人民法院在审理单独行政行为诉讼案件时，应当对行政行为依据的规范性文"
+      },
+      "eval_completeness": {
+        "score": 20,
+        "issues": [
+          "缺少顶级字段: guiding_case",
+          "缺少顶级字段: case_type",
+          "缺少顶级字段: court_cases",
+          "缺少顶级字段: legal_subjects",
+          "缺少顶级字段: legal_provisions",
+          "缺少顶级字段: case_summary",
+          "未提取到任何法条引用",
+          "未提取到任何当事人",
+          "未提取到案号信息"
+        ],
+        "total_issues": 9
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 87,
+        "issues": [
+          "case_type.level1 不匹配: 解析='' vs 原始='行政'",
+          "case_type.level2 不匹配: 解析='' vs 原始='不履行XX职责'",
+          "未提取到发布法院 '江苏省高级人民法院'",
+          "未提取关键词",
+          "未提取审判程序"
+        ],
+        "total_issues": 5
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有related_info但未解析出案号",
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "6379",
+      "case_type": "民事-相邻关系纠纷",
+      "parsed": {
+        "guiding_case": {
+          "guiding_case_number": "",
+          "publication_date": "2025-10-16",
+          "binding_force": "reference",
+          "guiding_points": "在处理违法建筑引发相邻关系纠纷时，可依托“住建+法院+社区”联动化解机制，通过背对背沟通、实地勘查、释法明理、源头治理等全链条解纷路径，引导当事人对整改责任和费用分担达成共识，实现纠纷实质性化解，并促推行政主管部门在类似投诉处理中优先运用调解等多元解纷方式。",
+          "key_words": [
+            "民事",
+            "相邻关系纠纷",
+            "违规搭建阳台",
+            "“住建+法院+社区”联动化解"
+          ],
+          "case_level": "reference_case",
+          "trial_procedure": "",
+          "storage_no": "D2025-161-1-053-677",
+          "source_url": "",
+          "judgment_mean": ""
+        },
+        "case_type": {
+          "category": "civil",
+          "level1": "相邻关系纠纷",
+          "level2": ""
+        },
+        "court_cases": [
+          {
+            "case_number": "",
+            "trial_level": "first_instance",
+            "trial_procedure": "",
+            "court": {
+              "name": "鹤岗市工农区人民法院",
+              "court_level": "basic"
+            },
+            "status": "mediated"
+          }
+        ],
+        "legal_subjects": [
+          {
+            "name": "刘某",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "applicant",
+                "role_name": "投诉人",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "郑某",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "respondent",
+                "role_name": "被投诉人",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "鹤岗市住房和城乡建设局",
+            "subject_type": "organization",
+            "org_type": "government_agency",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "",
+                "role_name": "参与调解行政机关",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "刘某与郑某所在社区",
+            "subject_type": "organization",
+            "org_type": "ngo",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "",
+                "role_name": "参与调解社区组织",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "鹤岗市工农区人民法院",
+            "subject_type": "organization",
+            "org_type": "court",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "",
+                "role_name": "调解主持方",
+                "case_number": ""
+              }
+            ]
+          }
+        ],
+        "legal_provisions": [
+          {
+            "case_number": "",
+            "statute": "民法典",
+            "article": "288",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_law",
+            "citation_purpose": "说理依据"
+          },
+          {
+            "case_number": "",
+            "statute": "民法典",
+            "article": "293",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_law",
+            "citation_purpose": "说理依据"
+          },
+          {
+            "case_number": "",
+            "statute": "城乡规划法",
+            "article": "64",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_law",
+            "citation_purpose": "说理依据"
+          }
+        ],
+        "case_summary": {
+          "key_facts": "刘某与郑某为同栋楼相邻单元住户，郑某违规搭建保温阳台超出正常尺寸20cm，阻断楼外排水管道，导致雨水流入刘某家中，并影响其采光与隐私。刘某多次沟通无果后向住建部门举报。住建部门调查后拟对郑某进行行政处罚，但为避免矛盾激化、促进社区和谐，请求法院联合化解纠纷。",
+          "disputed_issues": "郑某是否应承担违规保温阳台回缩的相关费用。",
+          "conclusion": "经法院、住建部门、社区联合调解，双方达成一致：郑某承诺在一周内拆除违建保温阳台，刘某自愿承担40%的费用，纠纷得以化解。",
+          "amount_involved": "",
+          "guiding_points": ""
+        },
+        "dispute_focuses": [
+          {
+            "content": "郑某是否应承担违规保温阳台回缩的费用",
+            "focus_category": "法律适用"
+          }
+        ],
+        "facts": [
+          {
+            "content": "郑某违规搭建保温阳台超出正常尺寸20cm，阻断楼外排水管道，导致雨水流入刘某家中，并影响其采光与隐私。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "刘某多次与郑某沟通无果，遂向住建部门举报。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "案涉楼房建成已近30年，属于物业弃管楼，近一半住户存在改建、扩建保温阳台的情况。",
+            "fact_type": "undisputed"
+          }
+        ]
+      },
+      "eval_completeness": {
+        "score": 95,
+        "issues": [
+          "case_type.level2: 缺少或为空",
+          "court_cases[0].case_number: 缺少或为空"
+        ],
+        "total_issues": 2
+      },
+      "eval_consistency": {
+        "score": 88,
+        "issues": [
+          "court_cases[0].status: 非法枚举值 'mediated'，应在 {'executing', 'judged', 'filing', 'effective', 'appealed', 'trial', 'retried', 'terminated'} 中",
+          "legal_provisions[0].citation_position: 非法枚举值 'related_law'，应在 {'judgment_essence', 'related_info', 'basic_facts', 'judgment_reason'} 中",
+          "legal_provisions[1].citation_position: 非法枚举值 'related_law'，应在 {'judgment_essence', 'related_info', 'basic_facts', 'judgment_reason'} 中",
+          "legal_provisions[2].citation_position: 非法枚举值 'related_law'，应在 {'judgment_essence', 'related_info', 'basic_facts', 'judgment_reason'} 中"
+        ],
+        "total_issues": 4
+      },
+      "eval_accuracy": {
+        "score": 94,
+        "issues": [
+          "case_type.level1 不匹配: 解析='相邻关系纠纷' vs 原始='民事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='相邻关系纠纷'"
+        ],
+        "total_issues": 2
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "12931",
+      "case_type": "刑事-故意伤害罪",
+      "parsed": {
+        "guiding_case": {
+          "guiding_case_number": "",
+          "publication_date": "2022-11-09",
+          "binding_force": "mandatory",
+          "guiding_points": "对于因学生霸凌引发的防卫行为与相互斗殴的界分，应当坚持主客观相统一原则，通过综合考量案发起因、是否为主要过错方、是否纠集他人参与打斗等情节，结合同年龄段未成年人在类似情境下的可能反应，准确判断行为人的主观意图和行为性质。不能仅因行为人面对霸凌时不甘示弱、使用工具反击等情节，就影响对其防卫意图的认定。对于防卫是否“明显超过必要限度”，应当立足防卫时的具体情境，从同年龄段未成年人一般认知的角度，综合学生霸凌中不法侵害的性质、手段、强度、危害后果和防卫的时机、手段、强度、损害后果等情节，考虑双方力量对比，作出合理判断。",
+          "key_words": [
+            "刑事",
+            "正当防卫",
+            "未成年人",
+            "学生霸凌",
+            "防卫意图",
+            "防卫限度"
+          ],
+          "case_level": "guiding_case",
+          "trial_procedure": "二审",
+          "storage_no": "2024-18-1-179-006",
+          "source_url": "",
+          "judgment_mean": ""
+        },
+        "case_type": {
+          "category": "criminal",
+          "level1": "刑事",
+          "level2": "故意伤害罪"
+        },
+        "court_cases": [
+          {
+            "case_number": "",
+            "trial_level": "first_instance",
+            "trial_procedure": "一审",
+            "court": {
+              "name": "湖南省吉首市人民法院",
+              "court_level": "basic"
+            },
+            "status": "judged"
+          },
+          {
+            "case_number": "",
+            "trial_level": "second_instance",
+            "trial_procedure": "二审",
+            "court": {
+              "name": "湖南省湘西土家族苗族自治州中级人民法院",
+              "court_level": "intermediate"
+            },
+            "status": "effective"
+          }
+        ],
+        "legal_subjects": [
+          {
+            "name": "江某某",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告人",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "陈某甲",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "witness",
+                "role_name": "被害人",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "陈某乙",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "witness",
+                "role_name": "被害人",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "吴某",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "witness",
+                "role_name": "被害人",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "湖南省吉首市人民检察院",
+            "subject_type": "organization",
+            "org_type": "procuratorate",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "prosecutor",
+                "role_name": "公诉机关",
+                "case_number": ""
+              }
+            ]
+          }
+        ],
+        "legal_provisions": [
+          {
+            "case_number": "",
+            "statute": "刑法",
+            "article": "20",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          }
+        ],
+        "case_summary": {
+          "key_facts": "被告人江某某（14周岁）因同学矛盾遭胡某等人威胁，后孙某某等15人在学校厕所围殴江某某。江某某在被勒颈、摔倒并遭群殴时，持折叠刀反击，捅伤陈某甲腰部、划伤吴某大腿。群殴暂停后，陈某乙从背后掌掴江某某，江某某转身捅刺陈某乙腹部，造成二人重伤，一人轻微伤。江某某后投案。检察机关指控其犯故意伤害罪，一审判决有罪，江某某上诉。",
+          "disputed_issues": "江某某在遭受学生霸凌时持刀反击的行为是否构成正当防卫，是否超过必要限度。",
+          "conclusion": "二审认定江某某的行为构成正当防卫，不负刑事责任，撤销一审有罪判决，宣告无罪。",
+          "amount_involved": "",
+          "guiding_points": ""
+        },
+        "dispute_focuses": [
+          {
+            "content": "江某某的行为是否构成正当防卫，防卫是否明显超过必要限度。",
+            "focus_category": "法律适用"
+          }
+        ],
+        "facts": [
+          {
+            "content": "因同学纠葛，孙某某等15人围堵江某某，在厕所内对其实施勒颈、摔倒、踢打等群殴行为，江某某持折叠刀反击致陈某甲重伤、吴某轻微伤；群殴暂停后陈某乙掌掴江某某，江某某转身捅刺陈某乙腹部致重伤。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "江某某案发前曾有不甘示弱的言语回应及携带折叠刀的行为，是否表明其具有斗殴故意，而非防卫意图。",
+            "fact_type": "disputed"
+          },
+          {
+            "content": "江某某持刀反击的手段是否超过必要限度。",
+            "fact_type": "disputed"
+          }
+        ]
+      },
+      "eval_completeness": {
+        "score": 96,
+        "issues": [
+          "court_cases[0].case_number: 缺少或为空",
+          "court_cases[1].case_number: 缺少或为空"
+        ],
+        "total_issues": 2
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "2626",
+      "case_type": "民事-专利权权属、侵权纠纷",
+      "parsed": {
+        "guiding_case": {
+          "guiding_case_number": "",
+          "publication_date": "2023-04-11",
+          "binding_force": "persuasive",
+          "guiding_points": "同一主体制造的不同产品可以组合使用，且组合使用才落入专利权保护范围的，应当依据使用时实际形成的技术方案，重点考虑该技术方案的形成系由消费者还是制造者决定，来确定侵权责任人。如果有关产品原本可以分别使用，但消费者根据自身需求，将其组合到一起使用，则一般可以认定该组合后产品的技术方案系由消费者决定，不应将制造者作为侵权责任人。如果有关产品无法分别使用而必须相互配合，消费者根据产品的特定结构、功能、使用说明等将其组合到一起使用，则一般可以认定该组合后产品的技术方案系由制造者决定，应将该制造者作为侵权责任人。",
+          "key_words": [
+            "民事",
+            "侵害发明专利权",
+            "可组合使用产品",
+            "被诉侵权产品",
+            "侵权技术比对"
+          ],
+          "case_level": "typical_case",
+          "trial_procedure": "二审",
+          "storage_no": "2024-13-2-160-011",
+          "source_url": "",
+          "judgment_mean": ""
+        },
+        "case_type": {
+          "category": "civil",
+          "level1": "专利权权属、侵权纠纷",
+          "level2": ""
+        },
+        "court_cases": [
+          {
+            "case_number": "(2020)浙01知民初277号",
+            "trial_level": "first_instance",
+            "trial_procedure": "一审",
+            "court": {
+              "name": "浙江省杭州市中级人民法院",
+              "court_level": "intermediate"
+            },
+            "status": "judged"
+          },
+          {
+            "case_number": "(2021)最高法知民终2270号",
+            "trial_level": "second_instance",
+            "trial_procedure": "二审",
+            "court": {
+              "name": "最高人民法院",
+              "court_level": "supreme"
+            },
+            "status": "effective"
+          }
+        ],
+        "legal_subjects": [
+          {
+            "name": "北京仁某医药科技有限公司",
+            "subject_type": "organization",
+            "org_type": "company",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "plaintiff",
+                "role_name": "原告",
+                "case_number": "(2020)浙01知民初277号"
+              },
+              {
+                "role_code": "applicant",
+                "role_name": "上诉人",
+                "case_number": "(2021)最高法知民终2270号"
+              }
+            ]
+          },
+          {
+            "name": "湖南慈某医疗科技有限公司",
+            "subject_type": "organization",
+            "org_type": "company",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告",
+                "case_number": "(2020)浙01知民初277号"
+              },
+              {
+                "role_code": "respondent",
+                "role_name": "被上诉人",
+                "case_number": "(2021)最高法知民终2270号"
+              }
+            ]
+          },
+          {
+            "name": "杭州欣某贸易有限公司",
+            "subject_type": "organization",
+            "org_type": "company",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告",
+                "case_number": "(2020)浙01知民初277号"
+              },
+              {
+                "role_code": "respondent",
+                "role_name": "被上诉人",
+                "case_number": "(2021)最高法知民终2270号"
+              }
+            ]
+          },
+          {
+            "name": "宁波四某大药房有限责任公司",
+            "subject_type": "organization",
+            "org_type": "company",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告",
+                "case_number": "(2020)浙01知民初277号"
+              },
+              {
+                "role_code": "respondent",
+                "role_name": "被上诉人",
+                "case_number": "(2021)最高法知民终2270号"
+              }
+            ]
+          },
+          {
+            "name": "宁波市某医院",
+            "subject_type": "organization",
+            "org_type": "government_agency",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告",
+                "case_number": "(2020)浙01知民初277号"
+              },
+              {
+                "role_code": "respondent",
+                "role_name": "被上诉人",
+                "case_number": "(2021)最高法知民终2270号"
+              }
+            ]
+          }
+        ],
+        "legal_provisions": [
+          {
+            "case_number": "(2021)最高法知民终2270号",
+            "statute": "专利法",
+            "article": "11",
+            "paragraph": "1",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          },
+          {
+            "case_number": "(2021)最高法知民终2270号",
+            "statute": "专利法",
+            "article": "59",
+            "paragraph": "1",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          },
+          {
+            "case_number": "(2021)最高法知民终2270号",
+            "statute": "最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释",
+            "article": "7",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          }
+        ],
+        "case_summary": {
+          "key_facts": "北京仁某公司是“畸形耳朵的矫正”发明专利的专利权人，其主张湖南慈某公司制造的外耳矫形器与骨科定位片（含I型、Ⅱ型）的组合产品落入该专利权保护范围，遂起诉湖南慈某公司、杭州欣某公司、宁波四某大药房公司和宁波市某医院，请求停止侵权并赔偿损失。被告辩称骨科定位片与外耳矫形器为两个独立产品，不应组合比对。法院查明：外耳矫形器和骨科定位片均分别注册、独立包装和销售。I型骨科定位片可单独使用，Ⅱ型骨科定位片两端设有安装脚，单独使用会压迫婴幼儿耳朵，通常只能与外耳矫形器组合使用。",
+          "disputed_issues": "被诉侵权的骨科定位片（特别是Ⅱ型）与外耳矫形器是否应当组合进行侵权技术比对，即技术方案的认定系由消费者决定还是由制造者决定，以及湖南慈某公司作为制造者是否应承担侵权责任。",
+          "conclusion": "最高人民法院二审判决撤销一审判决，判令湖南慈某公司立即停止制造、销售Ⅱ型骨科定位片并销毁专用生产模具，赔偿北京仁某公司经济损失25万元及合理开支5万元，合计30万元；驳回北京仁某公司的其他诉讼请求。",
+          "amount_involved": "30万元",
+          "guiding_points": "同一主体制造的不同产品可以组合使用，且组合使用才落入专利权保护范围的，应当依据使用时实际形成的技术方案，重点考虑该技术方案的形成系由消费者还是制造者决定，来确定侵权责任人。如果有关产品原本可以分别使用，但消费者根据自身需求组合使用，则技术方案由消费者决定；如果有关产品无法分别使用而必须相互配合组合使用，则技术方案由制造者决定。"
+        },
+        "dispute_focuses": [
+          {
+            "content": "被诉侵权产品（外耳矫形器与骨科定位片）是否应组合进行技术比对，以及侵权责任主体的认定。",
+            "focus_category": "法律适用"
+          }
+        ],
+        "facts": [
+          {
+            "content": "北京仁某公司是专利号为200880108740.X、名称为“畸形耳朵的矫正”的发明专利的专利权人。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "湖南慈某公司制造并销售外耳矫形器和骨科定位片（含I型、Ⅱ型），外耳矫形器标注医疗器械注册证编号，骨科定位片产品备案，两种产品独立包装、独立销售，销售数量不完全对应。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "Ⅱ型骨科定位片两端设有安装脚，用于与外耳矫形器卡接固定，单独使用安装脚会压迫婴幼儿耳朵，消费者通常不会单独购买使用。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "I型骨科定位片可单独使用，也可根据消费者需求与外耳矫形器组合使用。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "关于是否应将Ⅱ型骨科定位片与外耳矫形器组合认定为被诉侵权产品，双方存在争议。",
+            "fact_type": "disputed"
+          }
+        ]
+      },
+      "eval_completeness": {
+        "score": 97,
+        "issues": [
+          "case_type.level2: 缺少或为空"
+        ],
+        "total_issues": 1
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 90,
+        "issues": [
+          "case_type.level1 不匹配: 解析='专利权权属、侵权纠纷' vs 原始='民事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='专利权权属、侵权纠纷'",
+          "court_cases[0].case_number '(2020)浙01知民初277号' 在原始文本中未找到",
+          "court_cases[1].case_number '(2021)最高法知民终2270号' 在原始文本中未找到"
+        ],
+        "total_issues": 4
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "714",
+      "case_type": "民事-损害股东利益责任纠纷",
+      "parsed": {
+        "_error": "无法解析JSON: {\n  \"guiding_case\": {\n    \"guiding_case_number\": \"\",\n    \"publication_date\": \"2022-07-25\",\n    \"binding_force\": \"persuasive\",\n    \"guiding_points\": \"\",\n    \"key_words\": [\"民事\", \"损害股东利益\", \"承诺履行\", \"解除限售\""
+      },
+      "eval_completeness": {
+        "score": 20,
+        "issues": [
+          "缺少顶级字段: guiding_case",
+          "缺少顶级字段: case_type",
+          "缺少顶级字段: court_cases",
+          "缺少顶级字段: legal_subjects",
+          "缺少顶级字段: legal_provisions",
+          "缺少顶级字段: case_summary",
+          "未提取到任何法条引用",
+          "未提取到任何当事人",
+          "未提取到案号信息"
+        ],
+        "total_issues": 9
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 87,
+        "issues": [
+          "case_type.level1 不匹配: 解析='' vs 原始='民事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='损害股东利益责任纠纷'",
+          "未提取到发布法院 '上海市高级人民法院'",
+          "未提取关键词",
+          "未提取审判程序"
+        ],
+        "total_issues": 5
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有related_info但未解析出案号",
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "3017",
+      "case_type": "刑事-负有照护职责人员性侵罪",
+      "parsed": {
+        "guiding_case": {
+          "guiding_case_number": "",
+          "publication_date": "2022-12-01",
+          "binding_force": "persuasive",
+          "guiding_points": "对已满十四周岁不满十六周岁的未成年女性负有监护、收养、看护、教育、医疗等特殊职责的人员，与该未成年女性发生性关系的，以负有照护职责人员性侵罪论处，并依法适用从业禁止。需要注意的是，如上述负有特殊职责的人员强迫已满十四周岁未成年女性发生性关系的，应认定强奸罪，并从重处罚。",
+          "key_words": [
+            "刑事",
+            "负有照护职责人员性侵罪",
+            "未成年人",
+            "特殊职责",
+            "校外培训",
+            "教师",
+            "从业禁止"
+          ],
+          "case_level": "typical_case",
+          "trial_procedure": "一审",
+          "storage_no": "2024-02-1-183-001",
+          "source_url": "",
+          "judgment_mean": ""
+        },
+        "case_type": {
+          "category": "criminal",
+          "level1": "负有照护职责人员性侵罪",
+          "level2": ""
+        },
+        "court_cases": [
+          {
+            "case_number": "（2022）浙0502刑初424号",
+            "trial_level": "first_instance",
+            "trial_procedure": "一审",
+            "court": {
+              "name": "湖州市吴兴区人民法院",
+              "court_level": "basic"
+            },
+            "status": "effective"
+          }
+        ],
+        "legal_subjects": [
+          {
+            "name": "朱某凡",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告人",
+                "case_number": "（2022）浙0502刑初424号"
+              }
+            ]
+          },
+          {
+            "name": "王某某",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "witness",
+                "role_name": "被害人",
+                "case_number": "（2022）浙0502刑初424号"
+              }
+            ]
+          }
+        ],
+        "legal_provisions": [
+          {
+            "case_number": "（2022）浙0502刑初424号",
+            "statute": "中华人民共和国刑法",
+            "article": "236",
+            "paragraph": "",
+            "item": "之一",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          }
+        ],
+        "case_summary": {
+          "key_facts": "被告人朱某凡系校外培训机构老师。2021年9月至2022年5月期间，对被害人王某某（女，时年15岁）进行校外补习。2021年11月多次对王某某实施摸头、捏脸、亲脸、亲嘴巴、拥抱等行为。2022年2月至5月，朱某凡在明知王某某已满十四周岁不满十六周岁的情况下，在酒店房间及培训地点多次与王某某发生性关系。",
+          "disputed_issues": "被告人朱某凡作为培训机构老师，与已满十四周岁不满十六周岁的未成年女性王某某发生性关系，是否构成负有照护职责人员性侵罪，以及是否应适用从业禁止。",
+          "conclusion": "法院认定朱某凡犯负有照护职责人员性侵罪，判处有期徒刑三年，并禁止其从事密切接触未成年人的工作。",
+          "amount_involved": "",
+          "guiding_points": "对已满十四周岁不满十六周岁的未成年女性负有特殊职责的人员，与该未成年女性发生性关系的，以负有照护职责人员性侵罪论处，并适用从业禁止。"
+        },
+        "dispute_focuses": [
+          {
+            "content": "负有照护职责人员与已满十四周岁不满十六周岁的未成年女性发生性关系，是否构成负有照护职责人员性侵罪。",
+            "focus_category": "法律适用"
+          }
+        ],
+        "facts": [
+          {
+            "content": "朱某凡系某校外培训机构老师，对王某某进行校外补习，形成稳定的师生关系。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "2021年11月，朱某凡多次对王某某实施摸头、捏脸、亲脸、亲嘴巴、拥抱等行为。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "2022年2月至5月，朱某凡明知王某某已满十四周岁不满十六周岁，在酒店房间及培训地点多次与其发生性关系。",
+            "fact_type": "undisputed"
+          }
+        ]
+      },
+      "eval_completeness": {
+        "score": 97,
+        "issues": [
+          "case_type.level2: 缺少或为空"
+        ],
+        "total_issues": 1
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 94,
+        "issues": [
+          "case_type.level1 不匹配: 解析='负有照护职责人员性侵罪' vs 原始='刑事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='负有照护职责人员性侵罪'"
+        ],
+        "total_issues": 2
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "34846",
+      "case_type": "民事-劳务合同纠纷",
+      "parsed": {
+        "guiding_case": {
+          "guiding_case_number": "",
+          "publication_date": "2026-04-22",
+          "binding_force": "reference",
+          "guiding_points": "",
+          "key_words": [
+            "民事",
+            "劳务合同纠纷",
+            "集体欠薪",
+            "镇庭联动",
+            "乡贤参与",
+            "“嚓呱小马扎”流动调解平台"
+          ],
+          "case_level": "reference_case",
+          "trial_procedure": "",
+          "storage_no": "D2026-161-1-139-241",
+          "source_url": "",
+          "judgment_mean": ""
+        },
+        "case_type": {
+          "category": "civil",
+          "level1": "劳务合同纠纷",
+          "level2": ""
+        },
+        "court_cases": [
+          {
+            "case_number": "",
+            "trial_level": "first_instance",
+            "trial_procedure": "",
+            "court": {
+              "name": "沭阳县人民法院",
+              "court_level": "basic"
+            },
+            "status": "mediated"
+          }
+        ],
+        "legal_subjects": [
+          {
+            "name": "姜某等18人",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "plaintiff",
+                "role_name": "原告",
+                "case_number": ""
+              }
+            ]
+          },
+          {
+            "name": "某工程公司",
+            "subject_type": "organization",
+            "org_type": "company",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告",
+                "case_number": ""
+              }
+            ]
+          }
+        ],
+        "legal_provisions": [
+          {
+            "case_number": "",
+            "statute": "中华人民共和国民法典",
+            "article": "509",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          },
+          {
+            "case_number": "",
+            "statute": "中华人民共和国民法典",
+            "article": "577",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          },
+          {
+            "case_number": "",
+            "statute": "中华人民共和国民法典",
+            "article": "579",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          }
+        ],
+        "case_summary": {
+          "key_facts": "2024年8月至9月，某工程公司雇佣姜某等18人提供沥青铺设劳务，工程竣工后未及时足额支付劳务报酬，出具书面欠款凭证承诺于2024年12月31日前清偿。还款期限届满后，姜某等18人多次催要未果，诉至法院请求支付拖欠劳务费用。",
+          "disputed_issues": "某工程公司是否应当支付拖欠的劳务报酬，其以发包公司未结算支付工程款导致资金周转困难为由的抗辩是否成立。",
+          "conclusion": "经调解团队多方联动，发包公司先行支付部分工程款，某工程公司结合自有资金足额向姜某等18人支付劳务报酬，达成调解协议并履行，纠纷一揽子化解。",
+          "amount_involved": "",
+          "guiding_points": ""
+        },
+        "dispute_focuses": [
+          {
+            "content": "某工程公司是否应当支付拖欠的劳务报酬，其以发包公司未结算支付工程款导致资金周转困难为由的抗辩是否成立。",
+            "focus_category": "法律适用"
+          }
+        ],
+        "facts": [
+          {
+            "content": "2024年8月至9月，某工程公司雇佣姜某等18人提供沥青铺设劳务，工程竣工后未支付劳务报酬，出具书面欠款凭证承诺于2024年12月31日前清偿。还款期限届满后，某工程公司未履行付款义务。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "某工程公司主张因发包公司未结算支付工程款导致资金周转困难，无法支付劳务报酬。",
+            "fact_type": "disputed"
+          }
+        ]
+      },
+      "eval_completeness": {
+        "score": 95,
+        "issues": [
+          "case_type.level2: 缺少或为空",
+          "court_cases[0].case_number: 缺少或为空"
+        ],
+        "total_issues": 2
+      },
+      "eval_consistency": {
+        "score": 97,
+        "issues": [
+          "court_cases[0].status: 非法枚举值 'mediated'，应在 {'executing', 'judged', 'filing', 'effective', 'appealed', 'trial', 'retried', 'terminated'} 中"
+        ],
+        "total_issues": 1
+      },
+      "eval_accuracy": {
+        "score": 94,
+        "issues": [
+          "case_type.level1 不匹配: 解析='劳务合同纠纷' vs 原始='民事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='劳务合同纠纷'"
+        ],
+        "total_issues": 2
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "3358",
+      "case_type": "行政-商标相关行政案件",
+      "parsed": {
+        "_error": "无法解析JSON: "
+      },
+      "eval_completeness": {
+        "score": 20,
+        "issues": [
+          "缺少顶级字段: guiding_case",
+          "缺少顶级字段: case_type",
+          "缺少顶级字段: court_cases",
+          "缺少顶级字段: legal_subjects",
+          "缺少顶级字段: legal_provisions",
+          "缺少顶级字段: case_summary",
+          "未提取到任何法条引用",
+          "未提取到任何当事人",
+          "未提取到案号信息"
+        ],
+        "total_issues": 9
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 87,
+        "issues": [
+          "case_type.level1 不匹配: 解析='' vs 原始='行政'",
+          "case_type.level2 不匹配: 解析='' vs 原始='商标相关行政案件'",
+          "未提取到发布法院 '最高人民法院'",
+          "未提取关键词",
+          "未提取审判程序"
+        ],
+        "total_issues": 5
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有related_info但未解析出案号",
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "1769",
+      "case_type": "刑事-走私、贩卖、运输、制造毒品罪",
+      "parsed": {
+        "guiding_case": {
+          "guiding_case_number": "",
+          "publication_date": "2020-09-18",
+          "binding_force": "persuasive",
+          "guiding_points": "虽然γ－丁内酯尚未被列入《易制毒化学品名录》，但γ－羟丁酸则是已列入《精神药品品种目录（2013年版）》的精神管制药物，属于刑法规定的毒品范畴。行为人明知使用γ－丁内酯作为生产原料会产生γ－羟丁酸，仍购买并使用γ－丁内酯加工制成含有γ－羟丁酸的液体饮料并对外销售的，属贩卖、制造毒品行为，应以贩卖、制造毒品罪定罪处罚。",
+          "key_words": [
+            "刑事",
+            "贩卖、制造毒品罪",
+            "易制毒化学品名录",
+            "化学原料",
+            "饮料"
+          ],
+          "case_level": "typical_case",
+          "trial_procedure": "二审",
+          "storage_no": "2023-06-1-356-024",
+          "source_url": "",
+          "judgment_mean": ""
+        },
+        "case_type": {
+          "category": "criminal",
+          "level1": "走私、贩卖、运输、制造毒品罪",
+          "level2": ""
+        },
+        "court_cases": [
+          {
+            "case_number": "(2018)川0105刑初765号",
+            "trial_level": "first_instance",
+            "trial_procedure": "一审",
+            "court": {
+              "name": "成都市青羊区人民法院",
+              "court_level": "basic"
+            },
+            "status": "judged"
+          },
+          {
+            "case_number": "(2020)川01刑终624号",
+            "trial_level": "second_instance",
+            "trial_procedure": "二审",
+            "court": {
+              "name": "成都市中级人民法院",
+              "court_level": "intermediate"
+            },
+            "status": "effective"
+          }
+        ],
+        "legal_subjects": [
+          {
+            "name": "王某",
+            "subject_type": "natural_person",
+            "org_type": null,
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "defendant",
+                "role_name": "被告人",
+                "case_number": "(2018)川0105刑初765号"
+              },
+              {
+                "role_code": "defendant",
+                "role_name": "上诉人（原审被告人）",
+                "case_number": "(2020)川01刑终624号"
+              }
+            ]
+          },
+          {
+            "name": "成都市青羊区人民检察院",
+            "subject_type": "organization",
+            "org_type": "procuratorate",
+            "credit_code": null,
+            "roles": [
+              {
+                "role_code": "prosecutor",
+                "role_name": "公诉机关",
+                "case_number": "(2018)川0105刑初765号"
+              }
+            ]
+          }
+        ],
+        "legal_provisions": [
+          {
+            "case_number": "(2018)川0105刑初765号",
+            "statute": "中华人民共和国刑法",
+            "article": "347",
+            "paragraph": "",
+            "item": "",
+            "citation_position": "related_info",
+            "citation_purpose": "适用依据"
+          }
+        ],
+        "case_summary": {
+          "key_facts": "2016至2017年，王某作为成都陆柒捌公司法定代表人，购买γ-丁内酯3575千克，与香精混合制成“香精CD123”，委托广东某加德公司贴标后，交中山某豪公司按配方制成“咔哇氿”液体饮料，通过四川某道公司销往各地娱乐场所，销售金额1158.704万元。查获的饮料和“香精CD123”中均检出精神管制药物γ-羟丁酸成分。",
+          "disputed_issues": "王某的行为是否构成贩卖、制造毒品罪，还是应以生产、销售不符合安全标准食品罪定罪处罚。",
+          "conclusion": "驳回上诉，维持原判，王某犯贩卖、制造毒品罪，判处有期徒刑十五年，并处没收个人财产人民币四百二十七万元。",
+          "amount_involved": "11587040元",
+          "guiding_points": ""
+        },
+        "dispute_focuses": [
+          {
+            "content": "王某制造、销售“咔哇氿”饮料的行为是否构成贩卖、制造毒品罪，还是应认定为生产、销售不符合安全标准食品罪。",
+            "focus_category": "法律适用"
+          }
+        ],
+        "facts": [
+          {
+            "content": "2017年2月至8月间，王某累计购买γ-丁内酯3575千克。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "王某将γ-丁内酯与香精混合制成“香精CD123”，并委托广东某加德公司贴标、中山某豪公司加工成“咔哇氿”液体饮料。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "王某通过四川某道公司销售“咔哇氿”液体饮料52355件，销售金额1158.704万元。",
+            "fact_type": "undisputed"
+          },
+          {
+            "content": "查获的“香精CD123”和“咔哇氿”液体饮料中检出γ-羟丁酸成分，含量从80.3μg/ml至7358μg/ml不等。",
+            "fact_type": "undisputed"
+          }
+        ]
+      },
+      "eval_completeness": {
+        "score": 97,
+        "issues": [
+          "case_type.level2: 缺少或为空"
+        ],
+        "total_issues": 1
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 87,
+        "issues": [
+          "case_type.level1 不匹配: 解析='走私、贩卖、运输、制造毒品罪' vs 原始='刑事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='走私、贩卖、运输、制造毒品罪'",
+          "court_cases[0].case_number '(2018)川0105刑初765号' 在原始文本中未找到",
+          "court_cases[1].case_number '(2020)川01刑终624号' 在原始文本中未找到",
+          "未提取到发布法院 '四川省成都市中级人民法院'"
+        ],
+        "total_issues": 5
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "3916",
+      "case_type": "民事-环境污染责任纠纷",
+      "parsed": {
+        "_error": "无法解析JSON: {\n  \"guiding_case\": {\n    \"guiding_case_number\": \"\",\n    \"publication_date\": \"2012-06-28\",\n    \"binding_force\": \"persuasive\",\n    \"guiding_points\": \"1.政府作为水污染责任纠纷案件原告的主体适格问题。以水污染责任纠纷为代表的环境污染责任纠纷中，污染行为"
+      },
+      "eval_completeness": {
+        "score": 20,
+        "issues": [
+          "缺少顶级字段: guiding_case",
+          "缺少顶级字段: case_type",
+          "缺少顶级字段: court_cases",
+          "缺少顶级字段: legal_subjects",
+          "缺少顶级字段: legal_provisions",
+          "缺少顶级字段: case_summary",
+          "未提取到任何法条引用",
+          "未提取到任何当事人",
+          "未提取到案号信息"
+        ],
+        "total_issues": 9
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 87,
+        "issues": [
+          "case_type.level1 不匹配: 解析='' vs 原始='民事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='环境污染责任纠纷'",
+          "未提取到发布法院 '上海市松江区人民法院'",
+          "未提取关键词",
+          "未提取审判程序"
+        ],
+        "total_issues": 5
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有related_info但未解析出案号",
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    }
+  ],
+  "recommendations": [
+    "常见问题：",
+    "  - case_type.level2: 缺少或为空 (出现5次)",
+    "  - 缺少顶级字段: guiding_case (出现4次)",
+    "  - 缺少顶级字段: case_type (出现4次)",
+    "  - 缺少顶级字段: court_cases (出现4次)",
+    "  - 缺少顶级字段: legal_subjects (出现4次)",
+    "  - 缺少顶级字段: legal_provisions (出现4次)",
+    "  - 缺少顶级字段: case_summary (出现4次)",
+    "  - 未提取到任何法条引用 (出现4次)",
+    "  - 未提取到任何当事人 (出现4次)",
+    "  - 未提取到案号信息 (出现4次)",
+    "建议：解析完整性不足，需要强化prompt中对必填字段的强调。"
+  ],
+  "metadata": {
+    "prompt_file": "/root/remote-test/scripts/prompts/guiding_case_ontology_aligned.txt",
+    "model": "deepseek-v4-pro",
+    "timestamp": "2026-04-28T00:14:39.277614",
+    "total_samples": 10
+  }
+}

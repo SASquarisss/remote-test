@@ -107,7 +107,7 @@ def call_llm(prompt: str, api_key: str, base_url: str, model: str,
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.1,
-                max_tokens=1000,
+                max_tokens=3000,
             )
             content = response.choices[0].message.content
             return parse_llm_response(content)
@@ -120,9 +120,45 @@ def call_llm(prompt: str, api_key: str, base_url: str, model: str,
                 raise
 
 
+def extract_case_numbers_regex(text: str) -> list:
+    """正则提取案号"""
+    pattern = r'\(\d{4}\)[一-龥]{1,6}\d{0,6}[民刑行扯知刑]字?初?终?再?审?实?异?复?广?议?执?行?字?第\d+号'
+    matches = re.findall(pattern, text)
+    return list(dict.fromkeys(matches))  # 保持顺序去重
+
+
+def extract_courts_regex(text: str) -> list:
+    """正则提取法院名称"""
+    pattern = r'([一-龥]{2,10}(?:省|市|自治州|盟|地区|县|区))?(?:最高人民法院|[一-龥]{2,10}人民法院)'
+    matches = re.findall(pattern, text)
+    courts = []
+    for m in matches:
+        if isinstance(m, tuple):
+            m = ''.join(m)
+        m = m.strip()
+        if m and m not in courts and '法院' in m:
+            courts.append(m)
+    return courts
+
+
+def extract_law_refs_regex(text: str) -> list:
+    """正则提取法条引用"""
+    # 匹配《法典名》第X条第X款
+    pattern = r'《([^[》]{2,20})》第([\d一十二三四五六七八九百千]+)条(?:第([\d一十二三四五六七八九百千]+款))?'
+    matches = re.findall(pattern, text)
+    refs = []
+    for statute, article, paragraph in matches:
+        refs.append({
+            "statute": statute.strip(),
+            "article": article.strip(),
+            "paragraph": paragraph.strip() if paragraph else ""
+        })
+    return refs
+
+
 def process_record(record: dict, prompt_template: str, api_key: str,
                    base_url: str, model: str) -> dict:
-    """处理单条记录，支持字段级容错"""
+    """处理单条记录，支持字段级容错与正则底色"""
     prompt = build_prompt(
         case_type=record.get('case_type', ''),
         basic_facts=record.get('basic_facts', ''),
@@ -136,30 +172,59 @@ def process_record(record: dict, prompt_template: str, api_key: str,
     try:
         result = call_llm(prompt, api_key, base_url, model)
     except Exception as e:
-        # LLM调用完全失败，记录错误标记
         result = {"_llm_error": str(e)}
 
-    # 确保必要字段存在（即使为空）
-    safe_result = {
-        "parties": [],
-        "case_numbers": [],
-        "courts": [],
-        "law_refs": [],
-        "case_summary": "",
-    }
-    for key, default in safe_result.items():
-        val = result.get(key)
-        if isinstance(val, list):
-            safe_result[key] = val
-        elif isinstance(val, str):
-            safe_result[key] = val
-        # 其他类型或缺失时保留默认值
+    # 兼容旧字段名与新字段名
+    participants = result.get("participants") or result.get("parties") or []
+    legal_provisions = result.get("legal_provisions") or result.get("law_refs") or []
+    case_summary = result.get("case_summary") or ""
+    if isinstance(case_summary, dict):
+        key_facts = case_summary.get("key_facts", "")
+        disputed_issues = case_summary.get("disputed_issues", "")
+        conclusion = case_summary.get("conclusion", "")
+    else:
+        key_facts = str(case_summary)
+        disputed_issues = ""
+        conclusion = ""
+
+    case_numbers = result.get("case_numbers") or []
+    courts = result.get("courts") or []
+    judgment_result = result.get("judgment_result") or {}
+    guiding_points = result.get("guiding_points") or ""
+
+    # 正则底色：如果LLM未提取，从原始文本补充
+    raw_text = "\n".join([
+        record.get('basic_facts', ''),
+        record.get('judgment_reason', ''),
+        record.get('judgment_essence', ''),
+        record.get('related_law', ''),
+    ])
+
+    if not case_numbers:
+        case_numbers = extract_case_numbers_regex(raw_text)
+    if not courts:
+        courts = extract_courts_regex(raw_text)
+    if not legal_provisions:
+        legal_provisions = extract_law_refs_regex(raw_text)
+
+    # 确保法条 article 非空
+    legal_provisions = [r for r in legal_provisions if r.get("article")]
 
     # 合并输出
     output = {
         "id": record.get('id', ''),
         "case_type": record.get('case_type', ''),
-        **safe_result,
+        "participants": participants if isinstance(participants, list) else [],
+        "case_numbers": case_numbers if isinstance(case_numbers, list) else [],
+        "courts": courts if isinstance(courts, list) else [],
+        "legal_provisions": legal_provisions if isinstance(legal_provisions, list) else [],
+        "case_summary": {
+            "key_facts": key_facts,
+            "disputed_issues": disputed_issues,
+            "conclusion": conclusion,
+        },
+        "judgment_result": judgment_result if isinstance(judgment_result, dict) else {},
+        "guiding_points": guiding_points,
         "_raw": {
             "basic_facts": record.get('basic_facts', '')[:200],
             "judgment_reason": record.get('judgment_reason', '')[:200],
@@ -170,7 +235,6 @@ def process_record(record: dict, prompt_template: str, api_key: str,
     for k, v in result.items():
         if k not in output and not k.startswith("_"):
             output[k] = v
-    # 保留错误标记
     if "_llm_error" in result:
         output["_llm_error"] = result["_llm_error"]
 

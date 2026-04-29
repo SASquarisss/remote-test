@@ -1,0 +1,1197 @@
+[
+  {
+    "id": "2292",
+    "case_type": "行政-不履行XX职责",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2022-07-01",
+        "binding_force": "persuasive",
+        "guiding_points": "<p>1.规范性文件不得违反上位法的规定。人民法院在审理单独行政行为诉讼案件时，应当对行政行为依据的规范性文件进行合法性审查。经审查认为不合法的，不得作为认定行政行为合法的依据。<br/>　　2.在不履行给付基本医疗保险金职责之诉中，地方性规范性文件对产生交通事故的责任类型未予区分，突破上位法将不予补偿范围仅限定于应当由第三人负担范围内的规定的，人民法院不应予以参照适用。</p>",
+        "key_words": [
+          "行政",
+          "不履行给付基本医疗保险金职责",
+          "上位法规定",
+          "地方规范性文件",
+          "主动审查"
+        ],
+        "case_level": "typical_case",
+        "trial_procedure": "再审",
+        "storage_no": "2024-12-3-021-005",
+        "source_url": "https://rmfyalk.court.gov.cn",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "administrative",
+        "level1": "行政",
+        "level2": "不履行XX职责"
+      },
+      "court_cases": [
+        {
+          "case_number": "(2018)苏0925行初186号",
+          "trial_level": "first_instance",
+          "trial_procedure": "再审",
+          "court": {
+            "name": "江苏省建湖县人民法院",
+            "court_level": "basic"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "(2019)苏09行终184号",
+          "trial_level": "second_instance",
+          "trial_procedure": "再审",
+          "court": {
+            "name": "江苏省盐城市中级人民法院",
+            "court_level": "intermediate"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "(2021)苏行再30号",
+          "trial_level": "retrial",
+          "trial_procedure": "再审",
+          "court": {
+            "name": "江苏省高级人民法院",
+            "court_level": "high"
+          },
+          "status": "effective"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "孟某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "plaintiff",
+              "role_name": "原告",
+              "case_number": "(2018)苏0925行初186号"
+            }
+          ]
+        },
+        {
+          "name": "滨海县医疗保险基金管理中心",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告",
+              "case_number": "(2018)苏0925行初186号"
+            }
+          ],
+          "org_type": "government_agency",
+          "credit_code": null
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "社会保险法",
+          "article": "30",
+          "paragraph": "1",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "江苏省新型农村合作医疗条例",
+          "article": "",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "立法法",
+          "article": "96",
+          "paragraph": "2",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "孟某因单方交通事故医疗费申请新农合补偿被拒，再审认定规范性文件不得违反上位法，判令医保中心履行补偿职责。",
+        "disputed_issues": "",
+        "conclusion": "孟某因单方交通事故医疗费申请新农合补偿被拒，再审认定规范性文件不得违反上位法，判令医保中心履行补偿职责。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "6379",
+    "case_type": "民事-相邻关系纠纷",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2025-10-16",
+        "binding_force": "reference",
+        "guiding_points": "本案系因违法建筑引发的相邻关系纠纷。在城市化快速推进的背景下，未经城市规划部门批准而擅自新建、扩建和改建建筑物的情形十分常见，因违法建筑侵害相邻权引发的纠纷亦时有发生。本案中，住建部门收到投诉后，依托“住建+法院+社区”联动化解机制，通过“背对背沟通+实地勘查+释法明理+源头治理”全链条解纷路径，促推实现“化解一案、治理一片”。调解过程中，调解小组各成员单位充分发挥自身职能优势，住建部门凭借行政主",
+        "key_words": [
+          "民事",
+          "相邻关系纠纷",
+          "违规搭建阳台",
+          "“住建+法院+社区”联动化解"
+        ],
+        "case_level": "reference_case",
+        "trial_procedure": "",
+        "storage_no": "D2025-161-1-053-677",
+        "source_url": "https://dyjfalk.court.gov.cn/site/case/2a0b8503-f748-4ebc-8a96-bb5138cb3a28",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "civil",
+        "level1": "民事",
+        "level2": "相邻关系纠纷"
+      },
+      "court_cases": [],
+      "legal_subjects": [
+        {
+          "name": "刘某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "plaintiff",
+              "role_name": "原告",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "郑某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告",
+              "case_number": ""
+            }
+          ]
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "中华人民共和国民法典",
+          "article": "288",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国民法典",
+          "article": "293",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国城乡规划法",
+          "article": "64",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "郑某违建保温阳台致刘某房屋雨水倒灌、采光受损，经住建部门牵头，法院与社区联合调解，双方达成拆除及费用分担协议。",
+        "disputed_issues": "",
+        "conclusion": "郑某违建保温阳台致刘某房屋雨水倒灌、采光受损，经住建部门牵头，法院与社区联合调解，双方达成拆除及费用分担协议。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "12931",
+    "case_type": "刑事-故意伤害罪",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2022-11-09",
+        "binding_force": "mandatory",
+        "guiding_points": "<p>1.对于因学生霸凌引发的防卫行为与相互斗殴的界分，应当坚持主客观相统一原则，通过综合考量案发起因、是否为主要过错方、是否纠集他人参与打斗等情节，结合同年龄段未成年人在类似情境下的可能反应，准确判断行为人的主观意图和行为性质。不能仅因行为人面对霸凌时不甘示弱、使用工具反击等情节，就影响对其防卫意图的认定。<br/>u3000u30002.对于防卫是否“明显超过必要限度”，应当立足防卫时的具体情",
+        "key_words": [
+          "刑事",
+          "正当防卫",
+          "未成年人",
+          "学生霸凌",
+          "防卫意图",
+          "防卫限度"
+        ],
+        "case_level": "guiding_case",
+        "trial_procedure": "二审",
+        "storage_no": "2024-18-1-179-006",
+        "source_url": "https://rmfyalk.court.gov.cn/view/content-juvenile.html?id=HnHWhqM1I86Tm%2BUitilLAepl%2F2dea%2BcwJUWnSCutMCU%3D&lib=ck&source=zgy",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "criminal",
+        "level1": "刑事",
+        "level2": "故意伤害罪"
+      },
+      "court_cases": [
+        {
+          "case_number": "",
+          "trial_level": "first_instance",
+          "trial_procedure": "二审",
+          "court": {
+            "name": "湖南省吉首市人民法院",
+            "court_level": "basic"
+          },
+          "status": "judged"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "江某某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "陈某甲",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "witness",
+              "role_name": "被害人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "陈某乙",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "witness",
+              "role_name": "被害人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "吴某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "witness",
+              "role_name": "被害人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "湖南省吉首市人民检察院",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "prosecutor",
+              "role_name": "公诉机关",
+              "case_number": ""
+            }
+          ],
+          "org_type": "government_agency",
+          "credit_code": null
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "20",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "14岁学生因霸凌遭15人围殴，持刀防卫致两重伤一轻微伤，法院认定正当防卫不负刑事责任。",
+        "disputed_issues": "",
+        "conclusion": "14岁学生因霸凌遭15人围殴，持刀防卫致两重伤一轻微伤，法院认定正当防卫不负刑事责任。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "3017",
+    "case_type": "刑事-负有照护职责人员性侵罪",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2022-12-01",
+        "binding_force": "persuasive",
+        "guiding_points": "<p>对已满十四周岁不满十六周岁的未成年女性负有监护、收养、看护、教育、医疗等特殊职责的人员，与该未成年女性发生性关系的，以负有照护职责人员性侵罪论处，并依法适用从业禁止。需要注意的是，如上述负有特殊职责的人员强迫已满十四周岁未成年女性发生性关系的，应认定强奸罪，并从重处罚。</p>",
+        "key_words": [
+          "刑事",
+          "负有照护职责人员性侵罪",
+          "未成年人",
+          "特殊职责",
+          "校外培训",
+          "教师",
+          "从业禁止"
+        ],
+        "case_level": "typical_case",
+        "trial_procedure": "一审",
+        "storage_no": "2024-02-1-183-001",
+        "source_url": "https://rmfyalk.court.gov.cn",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "criminal",
+        "level1": "刑事",
+        "level2": "负有照护职责人员性侵罪"
+      },
+      "court_cases": [
+        {
+          "case_number": "(2022)浙0502刑初424号",
+          "trial_level": "first_instance",
+          "trial_procedure": "一审",
+          "court": {
+            "name": "浙江省湖州市吴兴区人民法院",
+            "court_level": "basic"
+          },
+          "status": "effective"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "朱某凡",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": "(2022)浙0502刑初424号"
+            }
+          ]
+        },
+        {
+          "name": "王某某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "witness",
+              "role_name": "被害人",
+              "case_number": "(2022)浙0502刑初424号"
+            }
+          ]
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "236条之一",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "培训机构教师明知学生15岁仍多次发生性关系，构成负有照护职责人员性侵罪，判处有期徒刑三年并从业禁止。",
+        "disputed_issues": "",
+        "conclusion": "培训机构教师明知学生15岁仍多次发生性关系，构成负有照护职责人员性侵罪，判处有期徒刑三年并从业禁止。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "3358",
+    "case_type": "行政-商标相关行政案件",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2011-11-17",
+        "binding_force": "persuasive",
+        "guiding_points": "<p>商标法规定注册商标连续3年停止使用撤销制度的立法目的在于激活商标资源，清理闲置商标，撤销只是手段，而不是目的。只要在商业活动中公开、真实地使用了注册商标，且注册商标的使用行为本身没有违反商标法律规定，则注册商标权利人已经尽到法律规定的使用义务。使用争议商标有关的其他经营活动中是否违反其他方面的法律规定，并非商标法第四十四条第四项所要规范和调整的问题。</p>",
+        "key_words": [
+          "行政",
+          "商标撤销复审行政纠纷",
+          "连续3年停止使用",
+          "真实",
+          "善意",
+          "撤销"
+        ],
+        "case_level": "typical_case",
+        "trial_procedure": "再审",
+        "storage_no": "2023-09-3-029-028",
+        "source_url": "https://rmfyalk.court.gov.cn",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "administrative",
+        "level1": "行政",
+        "level2": "商标相关行政案件"
+      },
+      "court_cases": [
+        {
+          "case_number": "(2008)一中行初字第40号",
+          "trial_level": "first_instance",
+          "trial_procedure": "再审",
+          "court": {
+            "name": "北京市第一中级人民法院",
+            "court_level": "intermediate"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "(2008)高行终字第509号",
+          "trial_level": "second_instance",
+          "trial_procedure": "再审",
+          "court": {
+            "name": "北京市高级人民法院",
+            "court_level": "high"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "(2010)知行字第55号",
+          "trial_level": "first_instance",
+          "trial_procedure": "再审",
+          "court": {
+            "name": "最高人民法院",
+            "court_level": "supreme"
+          },
+          "status": "effective"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "李某某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "third_party",
+              "role_name": "第三人",
+              "case_number": "(2008)一中行初字第40号"
+            }
+          ]
+        },
+        {
+          "name": "法国某某某兄弟股份有限公司",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "plaintiff",
+              "role_name": "原告",
+              "case_number": "(2008)一中行初字第40号"
+            }
+          ],
+          "org_type": "company",
+          "credit_code": null
+        },
+        {
+          "name": "国家工商行政管理总局商标评审委员会",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告",
+              "case_number": "(2008)一中行初字第40号"
+            }
+          ],
+          "org_type": "government_agency",
+          "credit_code": null
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "中华人民共和国商标法",
+          "article": "44",
+          "paragraph": "第4项",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国商标法实施条例",
+          "article": "3",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国商标法实施条例",
+          "article": "39",
+          "paragraph": "3",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "争议商标因连续三年停止使用被申请撤销，法院认为只要存在公开真实的商业使用即不构成撤销情形，其他经营违法不属该条款调整范围。",
+        "disputed_issues": "",
+        "conclusion": "争议商标因连续三年停止使用被申请撤销，法院认为只要存在公开真实的商业使用即不构成撤销情形，其他经营违法不属该条款调整范围。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "4999",
+    "case_type": "刑事-保险诈骗罪",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2017-02-20",
+        "binding_force": "persuasive",
+        "guiding_points": "<p>已归案的犯罪分子协助司法机关抓捕其他犯罪嫌疑人（包括同案犯）的，能否认定有立功表现，关键在于如何理解行为人是否有协助抓捕行为以及协助行为对抓捕其他犯罪嫌疑人（包括同案犯）是否起决定性作用。相关司法解释中均只强调构成立功需有其他犯罪嫌疑人（包括同案犯）被抓获的实际结果，并没有规定带领侦查人员抓获其他犯罪嫌疑人（包括同案犯）的需要当场抓获才构成立功。因此，是否当场抓获并不当然阻却立功的认定。</",
+        "key_words": [
+          "刑事",
+          "保险诈骗罪",
+          "诈骗罪",
+          "协助抓捕同案犯",
+          "立功"
+        ],
+        "case_level": "typical_case",
+        "trial_procedure": "二审",
+        "storage_no": "2023-05-1-141-001",
+        "source_url": "https://rmfyalk.court.gov.cn",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "criminal",
+        "level1": "刑事",
+        "level2": "保险诈骗罪"
+      },
+      "court_cases": [
+        {
+          "case_number": "（2016）浙0802刑初358号",
+          "trial_level": "first_instance",
+          "trial_procedure": "二审",
+          "court": {
+            "name": "浙江省柯城区人民法院",
+            "court_level": "basic"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "（2016）浙08刑终326号",
+          "trial_level": "second_instance",
+          "trial_procedure": "二审",
+          "court": {
+            "name": "浙江省衢州市中级人民法院",
+            "court_level": "intermediate"
+          },
+          "status": "effective"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "江某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": "（2016）浙0802刑初358号"
+            }
+          ]
+        },
+        {
+          "name": "余某灵",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": "（2016）浙0802刑初358号"
+            }
+          ]
+        },
+        {
+          "name": "陈某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": "（2016）浙0802刑初358号"
+            }
+          ]
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "67",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "69",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "198",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "266",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国刑事诉讼法",
+          "article": "236",
+          "paragraph": "第1款第1项",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "江某等多次故意制造保险事故骗取保险金，构成保险诈骗罪与诈骗罪，江某有立功情节，数罪并罚。",
+        "disputed_issues": "",
+        "conclusion": "江某等多次故意制造保险事故骗取保险金，构成保险诈骗罪与诈骗罪，江某有立功情节，数罪并罚。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "1581",
+    "case_type": "执行实施-恢复执行案件",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2022-11-07",
+        "binding_force": "persuasive",
+        "guiding_points": "<p>金钱债权执行中，执行标的房产系被执行人及所扶养家属维持生活必需的居住房屋，可以参照当地房屋租赁市场平均租金标准从该房屋的变价款中扣除五至八年租金，用于保障被执行人及所扶养家属的基本居住权。被执行人或所扶养家属与买受人达成租赁协议承租涉案房产的，则无需进行搬迁，自租赁协议生效时完成房产交接。</p>",
+        "key_words": [
+          "执行",
+          "恢复执行",
+          "司法拍卖",
+          "善意文明",
+          "以租代迁",
+          "生活保障"
+        ],
+        "case_level": "typical_case",
+        "trial_procedure": "执行",
+        "storage_no": "2024-17-5-102-002",
+        "source_url": "https://rmfyalk.court.gov.cn",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "execution",
+        "level1": "执行实施",
+        "level2": "恢复执行案件"
+      },
+      "court_cases": [
+        {
+          "case_number": "(2022)皖1181执恢305号",
+          "trial_level": "execution",
+          "trial_procedure": "执行",
+          "court": {
+            "name": "安徽省天长市人民法院",
+            "court_level": "basic"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "(2022)皖1181执恢305号之一",
+          "trial_level": "execution",
+          "trial_procedure": "执行",
+          "court": {
+            "name": "",
+            "court_level": "basic"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "(2022)皖1181执恢305号之二",
+          "trial_level": "execution",
+          "trial_procedure": "执行",
+          "court": {
+            "name": "",
+            "court_level": "basic"
+          },
+          "status": "effective"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "徐某辉",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "applicant",
+              "role_name": "申请执行人",
+              "case_number": "(2022)皖1181执恢305号"
+            }
+          ]
+        },
+        {
+          "name": "陈某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "respondent",
+              "role_name": "被执行人",
+              "case_number": "(2022)皖1181执恢305号"
+            }
+          ]
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "最高人民法院关于人民法院办理执行异议和复议案件若干问题的规定",
+          "article": "第20条",
+          "paragraph": "第3项",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "最高人民法院关于在执行工作中进一步强化善意文明执行理念的意见",
+          "article": "第3条",
+          "paragraph": "第2款",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "拍卖被执行人唯一住房，扣除租金及生活费保障居住权，促成买受人与家属达租赁协议，完成无强制搬迁交接。",
+        "disputed_issues": "",
+        "conclusion": "拍卖被执行人唯一住房，扣除租金及生活费保障居住权，促成买受人与家属达租赁协议，完成无强制搬迁交接。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "14654",
+    "case_type": "民事-建设工程合同纠纷",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2026-03-04",
+        "binding_force": "reference",
+        "guiding_points": "本案是建设工程质量缺陷引发的建设工程合同纠纷，具有技术性强、风险紧迫性高的特点。双方聚焦于专门性问题易陷入责任扯皮，而安全风险升级又要求高效、低成本的解决方案。本案中，依托最高人民法院与住建部建立的“总对总”在线诉调对接机制，法院邀请住建领域行业调解组织参与调解，并引入专家评估机制代替启动鉴定程序，以技术理性替代法律对抗，将争议焦点从“谁的责任”转向“如何解决”，有效化解了标准争议与成本矛盾，解决",
+        "key_words": [
+          "民事",
+          "建设工程合同纠纷",
+          "工程质量",
+          "专家评估",
+          "“总对总”在线诉调对接机制",
+          "住建领域行业调解"
+        ],
+        "case_level": "reference_case",
+        "trial_procedure": "",
+        "storage_no": "D2026-161-1-115-113",
+        "source_url": "https://dyjfalk.court.gov.cn/site/case/fb44d7b8-3d54-4456-b319-8567452bed37",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "civil",
+        "level1": "民事",
+        "level2": "建设工程合同纠纷"
+      },
+      "court_cases": [],
+      "legal_subjects": [
+        {
+          "name": "某机关服务中心",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "plaintiff",
+              "role_name": "原告",
+              "case_number": ""
+            }
+          ],
+          "org_type": "government_agency",
+          "credit_code": null
+        },
+        {
+          "name": "某建设集团",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告",
+              "case_number": ""
+            }
+          ],
+          "org_type": "company",
+          "credit_code": null
+        },
+        {
+          "name": "某监理公司",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告",
+              "case_number": ""
+            }
+          ],
+          "org_type": "company",
+          "credit_code": null
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "中华人民共和国民法典",
+          "article": "第801条",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "最高人民法院办公厅 住房城乡建设部办公厅关于建立住房城乡建设领域民事纠纷“总对总”在线诉调对接机制的通知",
+          "article": "",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "空调罩脱落引发纠纷，法院通过行业调解与专家评估，促成符合国标的局部维修方案，消除安全隐患。",
+        "disputed_issues": "",
+        "conclusion": "空调罩脱落引发纠纷，法院通过行业调解与专家评估，促成符合国标的局部维修方案，消除安全隐患。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "5002",
+    "case_type": "刑事-组织卖淫罪",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2010-06-09",
+        "binding_force": "persuasive",
+        "guiding_points": "<p>1．组织卖淫罪与协助组织卖淫罪最主要的区别是根据组织卖淫与协助组织卖淫行为的分工来认定两罪。按照组织卖淫共同犯罪活动的分工来说，组织卖淫者是组织犯或实行犯，协助组织卖淫者是帮助犯，两者区分的关键在于正确地认定组织卖淫罪的实行行为。组织卖淫的实行行为是指对卖淫活动起着组织、策划、指挥作用或直接进行安排、调度的行为。而协助组织卖淫是指在外围协助组织者实施其他行为，如充当保镖、打手、管账人及为组织",
+        "key_words": [
+          "刑事",
+          "组织卖淫罪",
+          "协助组织卖淫罪",
+          "强迫卖淫罪",
+          "从犯",
+          "实行行为",
+          "未成年人"
+        ],
+        "case_level": "typical_case",
+        "trial_procedure": "二审",
+        "storage_no": "2023-02-1-368-001",
+        "source_url": "https://rmfyalk.court.gov.cn",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "criminal",
+        "level1": "刑事",
+        "level2": "组织卖淫罪"
+      },
+      "court_cases": [
+        {
+          "case_number": "",
+          "trial_level": "first_instance",
+          "trial_procedure": "二审",
+          "court": {
+            "name": "湖南省永州市中级人民法院",
+            "court_level": "intermediate"
+          },
+          "status": "judged"
+        },
+        {
+          "case_number": "",
+          "trial_level": "first_instance",
+          "trial_procedure": "二审",
+          "court": {
+            "name": "湖南省高级人民法院",
+            "court_level": "high"
+          },
+          "status": "judged"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "邱某甲",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "邱某乙",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "杨某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "张某",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "周某甲",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "欧甲",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "梁某甲",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "梁某乙",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        },
+        {
+          "name": "邱某丙",
+          "subject_type": "natural_person",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告人",
+              "case_number": ""
+            }
+          ]
+        }
+      ],
+      "legal_provisions": [],
+      "case_summary": {
+        "key_facts": "邱某甲等组成犯罪团伙，诱骗、强迫多名女子卖淫，分别构成组织卖淫罪、协助组织卖淫罪等，多人被判处刑罚。",
+        "disputed_issues": "",
+        "conclusion": "邱某甲等组成犯罪团伙，诱骗、强迫多名女子卖淫，分别构成组织卖淫罪、协助组织卖淫罪等，多人被判处刑罚。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  },
+  {
+    "id": "3369",
+    "case_type": "行政-行政许可",
+    "parsed": {
+      "guiding_case": {
+        "guiding_case_number": "",
+        "publication_date": "2022-03-11",
+        "binding_force": "persuasive",
+        "guiding_points": "<p>行政机关在行政许可审查程序中，利害关系人提出异议的，应当通过听证等程序听取行政许可申请人及利害关系人意见，未经听证程序直接作出不予许可决定，程序违法。<br/>　　对于涉及企业经营资格的重大行政许可，行政机关应当审慎审查。一般情况下，行政机关审查申请人提交的材料是否符合法律法规规定即可作出决定，但在申请人提交材料和利害关系人异议存在冲突，对是否作出许可的关键条件存在争议，特别是涉及社会公共安",
+        "key_words": [
+          "行政",
+          "行政许可",
+          "利害关系人",
+          "听证",
+          "审慎审查"
+        ],
+        "case_level": "typical_case",
+        "trial_procedure": "二审",
+        "storage_no": "2023-12-3-004-006",
+        "source_url": "https://rmfyalk.court.gov.cn",
+        "judgment_mean": ""
+      },
+      "case_type": {
+        "category": "administrative",
+        "level1": "行政",
+        "level2": "行政许可"
+      },
+      "court_cases": [
+        {
+          "case_number": "(2021)浙0481行初15号",
+          "trial_level": "first_instance",
+          "trial_procedure": "二审",
+          "court": {
+            "name": "浙江省海宁市人民法院",
+            "court_level": "basic"
+          },
+          "status": "effective"
+        },
+        {
+          "case_number": "(2021)浙04行终226号",
+          "trial_level": "second_instance",
+          "trial_procedure": "二审",
+          "court": {
+            "name": "浙江省嘉兴市中级人民法院",
+            "court_level": "intermediate"
+          },
+          "status": "effective"
+        }
+      ],
+      "legal_subjects": [
+        {
+          "name": "嘉兴市某某公司",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "plaintiff",
+              "role_name": "原告",
+              "case_number": "(2021)浙0481行初15号"
+            }
+          ],
+          "org_type": "company",
+          "credit_code": null
+        },
+        {
+          "name": "南湖区行政审批局",
+          "subject_type": "organization",
+          "roles": [
+            {
+              "role_code": "defendant",
+              "role_name": "被告",
+              "case_number": "(2021)浙0481行初15号"
+            }
+          ],
+          "org_type": "government_agency",
+          "credit_code": null
+        }
+      ],
+      "legal_provisions": [
+        {
+          "statute": "中华人民共和国行政许可法",
+          "article": "34",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国行政许可法",
+          "article": "36",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "中华人民共和国行政许可法",
+          "article": "47",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "建筑设计防火规范",
+          "article": "4.4.1",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        },
+        {
+          "statute": "液化石油气供应工程设计规范",
+          "article": "5.2.8",
+          "paragraph": "",
+          "item": "",
+          "citation_position": "judgment_reason",
+          "citation_purpose": "适用依据"
+        }
+      ],
+      "case_summary": {
+        "key_facts": "燃气许可延续申请因防火间距不足被驳回，二审调解后撤回上诉并重获许可。",
+        "disputed_issues": "",
+        "conclusion": "燃气许可延续申请因防火间距不足被驳回，二审调解后撤回上诉并重获许可。",
+        "amount_involved": "",
+        "guiding_points": ""
+      },
+      "dispute_focuses": [],
+      "facts": []
+    }
+  }
+]

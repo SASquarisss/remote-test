@@ -1,0 +1,133 @@
+{
+  "partial": true,
+  "results": [
+    {
+      "id": "2292",
+      "case_type": "行政-不履行XX职责",
+      "parsed": {},
+      "eval_completeness": {
+        "score": 20,
+        "issues": [
+          "缺少顶级字段: guiding_case",
+          "缺少顶级字段: case_type",
+          "缺少顶级字段: court_cases",
+          "缺少顶级字段: legal_subjects",
+          "缺少顶级字段: legal_provisions",
+          "缺少顶级字段: case_summary",
+          "未提取到任何法条引用",
+          "未提取到任何当事人",
+          "未提取到案号信息"
+        ],
+        "total_issues": 9
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 87,
+        "issues": [
+          "case_type.level1 不匹配: 解析='' vs 原始='行政'",
+          "case_type.level2 不匹配: 解析='' vs 原始='不履行XX职责'",
+          "未提取到发布法院 '江苏省高级人民法院'",
+          "未提取关键词",
+          "未提取审判程序"
+        ],
+        "total_issues": 5
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有related_info但未解析出案号",
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "6379",
+      "case_type": "民事-相邻关系纠纷",
+      "parsed": {},
+      "eval_completeness": {
+        "score": 20,
+        "issues": [
+          "缺少顶级字段: guiding_case",
+          "缺少顶级字段: case_type",
+          "缺少顶级字段: court_cases",
+          "缺少顶级字段: legal_subjects",
+          "缺少顶级字段: legal_provisions",
+          "缺少顶级字段: case_summary",
+          "未提取到任何法条引用",
+          "未提取到任何当事人",
+          "未提取到案号信息"
+        ],
+        "total_issues": 9
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 89,
+        "issues": [
+          "case_type.level1 不匹配: 解析='' vs 原始='民事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='相邻关系纠纷'",
+          "未提取到发布法院 '鹤岗市工农区人民法院'",
+          "未提取关键词"
+        ],
+        "total_issues": 4
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有related_info但未解析出案号",
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    },
+    {
+      "id": "12931",
+      "case_type": "刑事-故意伤害罪",
+      "parsed": {},
+      "eval_completeness": {
+        "score": 20,
+        "issues": [
+          "缺少顶级字段: guiding_case",
+          "缺少顶级字段: case_type",
+          "缺少顶级字段: court_cases",
+          "缺少顶级字段: legal_subjects",
+          "缺少顶级字段: legal_provisions",
+          "缺少顶级字段: case_summary",
+          "未提取到任何法条引用",
+          "未提取到任何当事人",
+          "未提取到案号信息"
+        ],
+        "total_issues": 9
+      },
+      "eval_consistency": {
+        "score": 100,
+        "issues": [],
+        "total_issues": 0
+      },
+      "eval_accuracy": {
+        "score": 87,
+        "issues": [
+          "case_type.level1 不匹配: 解析='' vs 原始='刑事'",
+          "case_type.level2 不匹配: 解析='' vs 原始='故意伤害罪'",
+          "未提取到发布法院 '湖南省湘西土家族苗族自治州中级人民法院'",
+          "未提取关键词",
+          "未提取审判程序"
+        ],
+        "total_issues": 5
+      },
+      "eval_coverage": {
+        "uncovered_fields": [
+          "原始数据有related_info但未解析出案号",
+          "原始数据有judgment_mean但未解析出来"
+        ],
+        "ontology_gaps": []
+      }
+    }
+  ]
+}
