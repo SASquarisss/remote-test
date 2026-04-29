@@ -77,6 +77,7 @@ class CaseType(LegalNorm):
     level1: str
     level2: str
     description: Optional[str] = None
+    typical_provision_ids: Optional[List[str]] = None
 
 
 class GuidingCase(LegalNorm):
@@ -304,3 +305,14 @@ class CaseParticipant(JudicialEntity):
     trial_level: Optional[Literal["first_instance", "second_instance", "retrial", "execution"]] = None
     is_primary: Optional[bool] = None
     role_name: Optional[str] = None
+
+
+# ==================== 案由法条映射关系 ====================
+class TypicallyApplies(BaseModel):
+    case_type_id: str
+    provision_id: str
+    applicability_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+    is_primary: Optional[bool] = None
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
+    source: Optional[str] = None

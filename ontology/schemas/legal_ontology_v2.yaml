@@ -40,31 +40,39 @@ types:
 
   CaseType:
     is_a: LegalNorm
-    required: [code, name, category, level1, level2]
-    optional: [description]
+    required: [code, category, level1, level2]
+    optional: [description, typical_provision_ids]
     category_enum: [civil, criminal, administrative, ip, execution, state_compensation]
-    description: "案件类型（对齐最高法案由规定）"
+    description: "案由类型"
 
   GuidingCase:
     is_a: LegalNorm
     required: [guiding_case_number, issuing_court_id, publication_date, guiding_points, binding_force]
     optional: [guiding_points_vector, related_case_type_ids]
     binding_force_enum: [mandatory, persuasive, reference]
-    description: "最高法指导性案例"
+    description: "指导性案例"
 
   SentencingStandard:
     is_a: LegalNorm
-    optional: [case_type_id, applicable_provision_id, standard_type, sentence_range_min, sentence_range_max, sentence_unit, circumstance_levels, measurement_formula, region_id, valid_from, valid_to]
+    required: [case_type_id, applicable_provision_id, standard_type, sentence_range_min, sentence_range_max, sentence_unit]
+    optional: [circumstance_levels, measurement_formula, region_id, valid_from, valid_to]
     standard_type_enum: [criminal_sentence, civil_compensation, administrative_penalty]
     sentence_unit_enum: [month, year, yuan, percent]
-    description: "量刑或赔偿计算标准"
+    description: "量刑/赔偿标准"
+    
+    constraints:
+      - "sentence_range_min <= sentence_range_max"
+
+  # ==================== 案由法条映射层关系 ====================
+  typically_applies:
+    from: CaseType
+    to: LegalProvision
+    cardinality: many_to_many
+    attributes: [applicability_score, is_primary, effective_from, effective_to, source]
+    description: "案由典型适用的法律条文（用于法条补提和类案推荐）"
 
   # ==================== 主体层 ====================
   Person:
-    is_a: LegalSubject
-    required: [name, type]
-    optional: [gender, birth_date, nationality, desensitized_id_number, address, phone]
-    type_enum: [natural_person]
     description: "自然人（跨案件不消歧，每个案件独立节点）"
 
   Judge:

@@ -1,0 +1,68 @@
+{
+  "刑事-故意杀人罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "232", "paragraph": "", "applicability_score": 0.99, "is_primary": true}
+  ],
+  "刑事-爆炸罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "115", "paragraph": "", "applicability_score": 0.95, "is_primary": true},
+    {"statute": "《中华人民共和国刑法》", "article": "114", "paragraph": "", "applicability_score": 0.90, "is_primary": false}
+  ],
+  "刑事-伤害罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "234", "paragraph": "", "applicability_score": 0.99, "is_primary": true}
+  ],
+  "刑事-抢劫罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "263", "paragraph": "", "applicability_score": 0.99, "is_primary": true},
+    {"statute": "《中华人民共和国刑法》", "article": "38", "paragraph": "", "applicability_score": 0.85, "is_primary": false},
+    {"statute": "《中华人民共和国刑法》", "article": "72", "paragraph": "", "applicability_score": 0.80, "is_primary": false}
+  ],
+  "刑事-危险驾驶罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "133", "paragraph": "之一", "applicability_score": 0.99, "is_primary": true}
+  ],
+  "刑事-非法占用农用地罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "342", "paragraph": "", "applicability_score": 0.99, "is_primary": true}
+  ],
+  "刑事-非法出售、提供试题、答案罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "284", "paragraph": "之一", "applicability_score": 0.99, "is_primary": true}
+  ],
+  "刑事-国有公司、企业、事业单位人员失职罪": [
+    {"statute": "《中华人民共和国刑法》", "article": "168", "paragraph": "", "applicability_score": 0.99, "is_primary": true}
+  ],
+  "民事-房屋买卖合同纠纷": [
+    {"statute": "《中华人民共和国民法典》", "article": "595", "paragraph": "", "applicability_score": 0.95, "is_primary": true},
+    {"statute": "《中华人民共和国民法典》", "article": "509", "paragraph": "", "applicability_score": 0.85, "is_primary": false}
+  ],
+  "民事-租赁合同纠纷": [
+    {"statute": "《中华人民共和国民法典》", "article": "703", "paragraph": "", "applicability_score": 0.95, "is_primary": true},
+    {"statute": "《中华人民共和国民法典》", "article": "730", "paragraph": "", "applicability_score": 0.85, "is_primary": false}
+  ],
+  "民事-服务合同纠纷": [
+    {"statute": "《中华人民共和国民法典》", "article": "509", "paragraph": "", "applicability_score": 0.90, "is_primary": false},
+    {"statute": "《中华人民共和国民法典》", "article": "563", "paragraph": "", "applicability_score": 0.85, "is_primary": false}
+  ],
+  "民事-物业服务合同纠纷": [
+    {"statute": "《中华人民共和国民法典》", "article": "937", "paragraph": "", "applicability_score": 0.95, "is_primary": true},
+    {"statute": "《中华人民共和国民法典》", "article": "944", "paragraph": "", "applicability_score": 0.85, "is_primary": false}
+  ],
+  "民事-侵害商业秘密纠纷": [
+    {"statute": "《中华人民共和国反不正当竞争法》", "article": "9", "paragraph": "", "applicability_score": 0.95, "is_primary": true},
+    {"statute": "《中华人民共和国反不正当竞争法》", "article": "32", "paragraph": "", "applicability_score": 0.90, "is_primary": false}
+  ],
+  "民事-知识产权权属、侵权纠纷": [
+    {"statute": "《中华人民共和国商标法》", "article": "48", "paragraph": "", "applicability_score": 0.90, "is_primary": false},
+    {"statute": "《中华人民共和国商标法》", "article": "57", "paragraph": "", "applicability_score": 0.90, "is_primary": false}
+  ],
+  "民事-海上、通海水域保险合同纠纷": [
+    {"statute": "《中华人民共和国保险法》", "article": "65", "paragraph": "", "applicability_score": 0.95, "is_primary": true}
+  ],
+  "民事-环境污染责任纠纷": [
+    {"statute": "《中华人民共和国民法典》", "article": "1229", "paragraph": "", "applicability_score": 0.95, "is_primary": true},
+    {"statute": "《中华人民共和国民法典》", "article": "1230", "paragraph": "", "applicability_score": 0.90, "is_primary": false},
+    {"statute": "《中华人民共和国侵权责任法》", "article": "65", "paragraph": "", "applicability_score": 0.85, "is_primary": false}
+  ],
+  "民事-侵权责任纠纷": [
+    {"statute": "《中华人民共和国民法典》", "article": "1165", "paragraph": "", "applicability_score": 0.90, "is_primary": false},
+    {"statute": "《中华人民共和国侵权责任法》", "article": "6", "paragraph": "", "applicability_score": 0.85, "is_primary": false}
+  ],
+  "国家赔偿-再审无罪赔偿": [
+    {"statute": "《中华人民共和国国家赔偿法》", "article": "17", "paragraph": "", "applicability_score": 0.99, "is_primary": true}
+  ]
+}
