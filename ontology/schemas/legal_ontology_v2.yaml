@@ -134,16 +134,17 @@ types:
     is_a: JudicialEntity
     required: [name, code]
     optional: [description, permissions]
-    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent]
+    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary]
     description: "法律角色"
 
   # ==================== 案件层 ====================
   CourtCase:
     is_a: JudicialEntity
-    required: [case_number, case_type_id, filing_date, court_id, status, trial_level]
-    optional: [claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path]
+    required: [case_type_id, filing_date, court_id, status, trial_level]
+    optional: [case_number, claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, dispute_resolution_type]
     trial_level_enum: [first_instance, second_instance, retrial]
     status_enum: [filing, trial, judged, effective, appealed, retried, executing, terminated]
+    dispute_resolution_type_enum: [litigation, mediation, arbitration, judicial_aid, administrative_review]
     description: "法院案件（精简节点，全文存ES）"
 
   CaseSummary:
@@ -163,7 +164,7 @@ types:
     is_a: JudicialEntity
     required: [case_id, result_type]
     optional: [judgment_date, effective_date, sentence_term, compensation_amount, reasoning, sentencing_standard_id]
-    result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn]
+    result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, mediation_agreement, arbitration_award, administrative_decision]
     description: "裁判结果"
 
   ExecutionInfo:
@@ -202,7 +203,7 @@ types:
     is_a: JudicialEntity
     required: [case_id, role_code]
     optional: [subject_id, trial_level, is_primary, role_name]
-    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent]
+    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary]
     description: "案件参与人（含审级角色变更）"
 
 relations:

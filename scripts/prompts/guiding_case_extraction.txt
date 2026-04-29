@@ -10,6 +10,8 @@
    - 再审案件："retrial_applicant"（再审申请人）、"retrial_respondent"（再审被申请人）
    - 二审案件："appellant"（上诉人）、"appellee"（被上诉人）
    - 仲裁案件："applicant"（申请人）、"respondent"（被申请人）
+   - 调解案件："mediator"（调解员）
+   - 司法救助案件："beneficiary"（被救助人/受益人）
    - 其他："third_party"（第三人）、"agent"（代理人）、"expert_witness"（鉴定人）、"interpreter"（翻译）
    - 无明确标签时标注"relator"（其他关联人）
    - 当事人类型：自然人（2-4字姓名）、企业（含公司/集团/律所/厂）、机关（含局/院/委员会/政府）、个体工商户、其他
@@ -18,11 +20,13 @@
    - 格式：(YYYY)地区法院简称+案由+第N号
    - 必须从文本中精确提取，包括一审、二审、再审全部案号
    - 找不到时输出空列表 []
+   - 注意：调解案件、仲裁案件、司法救助案件可能没有法院案号
 
 3. **法院(courts)**：
    - 提取完整法院名称（如"浙江省杭州市中级人民法院"）
    - 与案号对应的法院一并提取
    - 找不到时输出空列表 []
+   - 注意：调解案件可能由调解委员会处理，仲裁案件由仲裁庭处理，不一定有法院名称
 
 4. **法条引用(legal_provisions)**：
    - 仔细查找 basic_facts、judgment_reason、judgment_essence、related_law 中的法条
@@ -36,7 +40,10 @@
    - conclusion：裁判要旨/结论（100字内）
 
 6. **裁判结果(judgment_result)**：
-   - result_type：从 [guilty, not_guilty, liable, not_liable, dismissed, withdrawn] 中选择
+   - result_type：从 [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, mediation_agreement, arbitration_award, administrative_decision] 中选择
+   - mediation_agreement（调解协议）：调解案件达成调解协议
+   - arbitration_award（仲裁裁决）：仲裁案件作出裁决
+   - administrative_decision（行政决定）：司法救助、国家赔偿等行政决定
    - reasoning_summary：裁判理由摘要（100字内）
 
 7. **指导要点(guiding_points)**：

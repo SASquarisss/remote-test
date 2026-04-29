@@ -197,12 +197,13 @@ class LegalRole(JudicialEntity):
 
 # ==================== 案件层 ====================
 class CourtCase(JudicialEntity):
-    case_number: Optional[str] = Field(None, pattern=r"^\(\d{4}\)[一-龥]+\d+[民刑行扯知刑]\d+号$")
+    case_number: Optional[str] = None
     case_type_id: str
     filing_date: date
     court_id: str
     status: Literal["filing", "trial", "judged", "effective", "appealed", "retried", "executing", "terminated"]
     trial_level: Literal["first_instance", "second_instance", "retrial"]
+    dispute_resolution_type: Optional[Literal["litigation", "mediation", "arbitration", "judicial_aid", "administrative_review"]] = None
     claim_amount: Optional[float] = None
     cause_of_action: Optional[str] = None
     summary: Optional[str] = None
@@ -233,7 +234,7 @@ class TrialOrganization(JudicialEntity):
 
 class JudgmentResult(JudicialEntity):
     case_id: str
-    result_type: Optional[Literal["guilty", "not_guilty", "liable", "not_liable", "dismissed", "withdrawn"]] = None
+    result_type: Optional[Literal["guilty", "not_guilty", "liable", "not_liable", "dismissed", "withdrawn", "mediation_agreement", "arbitration_award", "administrative_decision"]] = None
     judgment_date: Optional[date] = None
     effective_date: Optional[date] = None
     sentence_term: Optional[float] = None
@@ -299,7 +300,7 @@ class Fact(JudicialEntity):
 class CaseParticipant(JudicialEntity):
     case_id: str
     subject_id: Optional[str] = None
-    role_code: Literal["plaintiff", "defendant", "third_party", "witness", "agent", "expert_witness", "interpreter", "prosecutor", "applicant", "respondent", "relator", "appellant", "appellee", "retrial_applicant", "retrial_respondent"]
+    role_code: Literal["plaintiff", "defendant", "third_party", "witness", "agent", "expert_witness", "interpreter", "prosecutor", "applicant", "respondent", "relator", "appellant", "appellee", "retrial_applicant", "retrial_respondent", "mediator", "arbitrator", "beneficiary"]
     trial_level: Optional[Literal["first_instance", "second_instance", "retrial", "execution"]] = None
     is_primary: Optional[bool] = None
     role_name: Optional[str] = None
