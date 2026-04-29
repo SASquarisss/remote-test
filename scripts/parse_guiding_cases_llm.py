@@ -122,7 +122,7 @@ def call_llm(prompt: str, api_key: str, base_url: str, model: str,
 
 def process_record(record: dict, prompt_template: str, api_key: str,
                    base_url: str, model: str) -> dict:
-    """处理单条记录"""
+    """处理单条记录，支持字段级容错"""
     prompt = build_prompt(
         case_type=record.get('case_type', ''),
         basic_facts=record.get('basic_facts', ''),
@@ -131,19 +131,49 @@ def process_record(record: dict, prompt_template: str, api_key: str,
         prompt_template=prompt_template,
     )
 
-    result = call_llm(prompt, api_key, base_url, model)
+    # 字段级容错：即使LLM调用或解析失败，也尽量保留可用字段
+    result: dict = {}
+    try:
+        result = call_llm(prompt, api_key, base_url, model)
+    except Exception as e:
+        # LLM调用完全失败，记录错误标记
+        result = {"_llm_error": str(e)}
 
-    # 合并原始字段
+    # 确保必要字段存在（即使为空）
+    safe_result = {
+        "parties": [],
+        "case_numbers": [],
+        "courts": [],
+        "law_refs": [],
+        "case_summary": "",
+    }
+    for key, default in safe_result.items():
+        val = result.get(key)
+        if isinstance(val, list):
+            safe_result[key] = val
+        elif isinstance(val, str):
+            safe_result[key] = val
+        # 其他类型或缺失时保留默认值
+
+    # 合并输出
     output = {
         "id": record.get('id', ''),
         "case_type": record.get('case_type', ''),
-        **result,
+        **safe_result,
         "_raw": {
             "basic_facts": record.get('basic_facts', '')[:200],
             "judgment_reason": record.get('judgment_reason', '')[:200],
             "judgment_essence": record.get('judgment_essence', '')[:200],
         }
     }
+    # 保留LLM返回的原始其他字段
+    for k, v in result.items():
+        if k not in output and not k.startswith("_"):
+            output[k] = v
+    # 保留错误标记
+    if "_llm_error" in result:
+        output["_llm_error"] = result["_llm_error"]
+
     return output
 
 

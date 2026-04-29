@@ -40,7 +40,8 @@ class LegalSubject(BaseModel):
 # ==================== 规范层 ====================
 class Law(LegalNorm):
     law_level: Literal["constitution", "basic_law", "ordinary_law", "administrative_regulation",
-                       "local_regulation", "self_governing_regulation", "military_regulation"]
+                       "local_regulation", "self_governing_regulation", "military_regulation",
+                       "judicial_interpretation", "department_rule", "normative_document"]
     document_number: str
     status: Literal["effective", "amended", "repealed"]
     enactment_date: date
@@ -111,7 +112,7 @@ class SentencingStandard(LegalNorm):
 
 # ==================== 主体层 ====================
 class Person(LegalSubject):
-    type: Literal["natural_person", "legal_person"]
+    type: Literal["natural_person"]
     gender: Optional[Literal["male", "female"]] = None
     birth_date: Optional[date] = None
     nationality: Optional[str] = None
@@ -146,7 +147,8 @@ class Prosecutor(Person):
 
 class Organization(LegalSubject):
     org_type: Literal["company", "government_agency", "ngo", "law_firm",
-                      "expert_institution", "court", "procuratorate"]
+                      "expert_institution", "court", "procuratorate", "individual_business",
+                      "partnership", "sole_proprietorship"]
     credit_code: str = Field(..., pattern=r"^[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}$")
     legal_representative: Optional[str] = None
     registered_capital: Optional[float] = None
@@ -292,3 +294,12 @@ class Fact(JudicialEntity):
     content: str
     fact_type: Optional[Literal["undisputed", "disputed", "to_be_proven"]] = None
     proven_by_evidence_ids: Optional[List[str]] = None
+
+
+class CaseParticipant(JudicialEntity):
+    case_id: str
+    subject_id: str
+    role_code: Literal["plaintiff", "defendant", "third_party", "witness", "agent", "expert_witness", "interpreter", "prosecutor", "applicant", "respondent", "relator", "appellant", "appellee", "retrial_applicant", "retrial_respondent"]
+    trial_level: Optional[Literal["first_instance", "second_instance", "retrial", "execution"]] = None
+    is_primary: Optional[bool] = None
+    role_name: Optional[str] = None

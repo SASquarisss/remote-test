@@ -21,7 +21,7 @@ types:
     is_a: LegalNorm
     required: [name, law_level, document_number, status, enactment_date, effective_date]
     optional: [legislative_purpose, repealed_date]
-    law_level_enum: [constitution, basic_law, ordinary_law, administrative_regulation, local_regulation, self_governing_regulation, military_regulation]
+    law_level_enum: [constitution, basic_law, ordinary_law, administrative_regulation, local_regulation, self_governing_regulation, military_regulation, judicial_interpretation, department_rule, normative_document]
     status_enum: [effective, amended, repealed]
     description: "法律"
 
@@ -66,8 +66,8 @@ types:
     is_a: LegalSubject
     required: [name, type]
     optional: [gender, birth_date, nationality, desensitized_id_number, address, phone]
-    type_enum: [natural_person, legal_person]
-    description: "自然人/法人（注：跨案件不消歧，每个案件独立节点）"
+    type_enum: [natural_person]
+    description: "自然人（跨案件不消歧，每个案件独立节点）"
 
   Judge:
     is_a: Person
@@ -96,8 +96,8 @@ types:
     is_a: LegalSubject
     required: [org_type, credit_code]
     optional: [legal_representative, registered_capital, business_scope, legal_name_alias]
-    org_type_enum: [company, government_agency, ngo, law_firm, expert_institution, court, procuratorate]
-    description: "组织机构（企业用credit_code跨案件全局关联）"
+    org_type_enum: [company, government_agency, ngo, law_firm, expert_institution, court, procuratorate, individual_business, partnership, sole_proprietorship]
+    description: "组织机构（企业用credit_code跨案件全局关联，包含法人实体、个体工商户、合伙企业、个人独资企业）"
 
   Court:
     is_a: Organization
@@ -136,7 +136,7 @@ types:
     is_a: JudicialEntity
     required: [name, code]
     optional: [description, permissions]
-    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator]
+    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent]
     description: "法律角色"
 
   # ==================== 案件层 ====================
@@ -204,6 +204,13 @@ types:
     optional: [fact_type, proven_by_evidence_ids]
     fact_type_enum: [undisputed, disputed, to_be_proven]
     description: "案件事实"
+
+  CaseParticipant:
+    is_a: JudicialEntity
+    required: [case_id, subject_id, role_code]
+    optional: [trial_level, is_primary, role_name]
+    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent]
+    description: "案件参与人（含审级角色变更）"
 
 relations:
   # 规范层关系
