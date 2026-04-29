@@ -1,0 +1,494 @@
+[
+  {
+    "id": "2292",
+    "case_type": "行政-不履行XX职责",
+    "success": true,
+    "parties_count": 2,
+    "law_refs_count": 3,
+    "result": {
+      "parties": [
+        {
+          "name": "孟某",
+          "role": "原告",
+          "type": "自然人"
+        },
+        {
+          "name": "滨海县医疗保险基金管理中心",
+          "role": "被告",
+          "type": "机关"
+        }
+      ],
+      "case_numbers": [
+        "(2018)苏0925行初186号",
+        "(2019)苏09行终184号",
+        "(2021)苏行再30号"
+      ],
+      "courts": [
+        "江苏省建湖县人民法院",
+        "江苏省盐城市中级人民法院",
+        "江苏省高级人民法院"
+      ],
+      "law_refs": [
+        {
+          "statute": "社会保险法",
+          "article": "30",
+          "paragraph": "1"
+        },
+        {
+          "statute": "江苏省新型农村合作医疗条例",
+          "article": "",
+          "paragraph": ""
+        },
+        {
+          "statute": "立法法",
+          "article": "96",
+          "paragraph": "2"
+        }
+      ],
+      "case_summary": "孟某因单方交通事故医疗费申请新农合补偿被拒，再审认定规范性文件不得违反上位法，判令医保中心履行补偿职责。"
+    }
+  },
+  {
+    "id": "6379",
+    "case_type": "民事-相邻关系纠纷",
+    "success": true,
+    "parties_count": 2,
+    "law_refs_count": 3,
+    "result": {
+      "parties": [
+        {
+          "name": "刘某",
+          "role": "原告",
+          "type": "自然人"
+        },
+        {
+          "name": "郑某",
+          "role": "被告",
+          "type": "自然人"
+        }
+      ],
+      "case_numbers": [],
+      "courts": [],
+      "law_refs": [
+        {
+          "statute": "中华人民共和国民法典",
+          "article": "288",
+          "paragraph": ""
+        },
+        {
+          "statute": "中华人民共和国民法典",
+          "article": "293",
+          "paragraph": ""
+        },
+        {
+          "statute": "中华人民共和国城乡规划法",
+          "article": "64",
+          "paragraph": ""
+        }
+      ],
+      "case_summary": "郑某违建保温阳台致刘某房屋雨水倒灌、采光受损，经住建部门牵头，法院与社区联合调解，双方达成拆除及费用分担协议。"
+    }
+  },
+  {
+    "id": "12931",
+    "case_type": "刑事-故意伤害罪",
+    "success": true,
+    "parties_count": 5,
+    "law_refs_count": 1,
+    "result": {
+      "parties": [
+        {
+          "name": "江某某",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "陈某甲",
+          "role": "被害人",
+          "type": "自然人"
+        },
+        {
+          "name": "陈某乙",
+          "role": "被害人",
+          "type": "自然人"
+        },
+        {
+          "name": "吴某",
+          "role": "被害人",
+          "type": "自然人"
+        },
+        {
+          "name": "湖南省吉首市人民检察院",
+          "role": "公诉机关",
+          "type": "机关"
+        }
+      ],
+      "case_numbers": [],
+      "courts": [
+        "湖南省吉首市人民法院"
+      ],
+      "law_refs": [
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "20",
+          "paragraph": ""
+        }
+      ],
+      "case_summary": "14岁学生因霸凌遭15人围殴，持刀防卫致两重伤一轻微伤，法院认定正当防卫不负刑事责任。"
+    }
+  },
+  {
+    "id": "3017",
+    "case_type": "刑事-负有照护职责人员性侵罪",
+    "success": true,
+    "parties_count": 2,
+    "law_refs_count": 1,
+    "result": {
+      "parties": [
+        {
+          "name": "朱某凡",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "王某某",
+          "role": "被害人",
+          "type": "自然人"
+        }
+      ],
+      "case_numbers": [
+        "(2022)浙0502刑初424号"
+      ],
+      "courts": [
+        "浙江省湖州市吴兴区人民法院"
+      ],
+      "law_refs": [
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "236条之一",
+          "paragraph": ""
+        }
+      ],
+      "case_summary": "培训机构教师明知学生15岁仍多次发生性关系，构成负有照护职责人员性侵罪，判处有期徒刑三年并从业禁止。"
+    }
+  },
+  {
+    "id": "3358",
+    "case_type": "行政-商标相关行政案件",
+    "success": true,
+    "parties_count": 3,
+    "law_refs_count": 3,
+    "result": {
+      "parties": [
+        {
+          "name": "李某某",
+          "role": "第三人",
+          "type": "自然人"
+        },
+        {
+          "name": "法国某某某兄弟股份有限公司",
+          "role": "原告",
+          "type": "企业"
+        },
+        {
+          "name": "国家工商行政管理总局商标评审委员会",
+          "role": "被告",
+          "type": "机关"
+        }
+      ],
+      "case_numbers": [
+        "(2008)一中行初字第40号",
+        "(2008)高行终字第509号",
+        "(2010)知行字第55号"
+      ],
+      "courts": [
+        "北京市第一中级人民法院",
+        "北京市高级人民法院",
+        "最高人民法院"
+      ],
+      "law_refs": [
+        {
+          "statute": "中华人民共和国商标法",
+          "article": "44",
+          "paragraph": "第4项"
+        },
+        {
+          "statute": "中华人民共和国商标法实施条例",
+          "article": "3",
+          "paragraph": ""
+        },
+        {
+          "statute": "中华人民共和国商标法实施条例",
+          "article": "39",
+          "paragraph": "3"
+        }
+      ],
+      "case_summary": "争议商标因连续三年停止使用被申请撤销，法院认为只要存在公开真实的商业使用即不构成撤销情形，其他经营违法不属该条款调整范围。"
+    }
+  },
+  {
+    "id": "4999",
+    "case_type": "刑事-保险诈骗罪",
+    "success": true,
+    "parties_count": 3,
+    "law_refs_count": 5,
+    "result": {
+      "parties": [
+        {
+          "name": "江某",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "余某灵",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "陈某",
+          "role": "被告人",
+          "type": "自然人"
+        }
+      ],
+      "case_numbers": [
+        "（2016）浙0802刑初358号",
+        "（2016）浙08刑终326号"
+      ],
+      "courts": [
+        "浙江省柯城区人民法院",
+        "浙江省衢州市中级人民法院"
+      ],
+      "law_refs": [
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "67",
+          "paragraph": ""
+        },
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "69",
+          "paragraph": ""
+        },
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "198",
+          "paragraph": ""
+        },
+        {
+          "statute": "中华人民共和国刑法",
+          "article": "266",
+          "paragraph": ""
+        },
+        {
+          "statute": "中华人民共和国刑事诉讼法",
+          "article": "236",
+          "paragraph": "第1款第1项"
+        }
+      ],
+      "case_summary": "江某等多次故意制造保险事故骗取保险金，构成保险诈骗罪与诈骗罪，江某有立功情节，数罪并罚。"
+    }
+  },
+  {
+    "id": "1581",
+    "case_type": "执行实施-恢复执行案件",
+    "success": true,
+    "parties_count": 2,
+    "law_refs_count": 2,
+    "result": {
+      "parties": [
+        {
+          "name": "徐某辉",
+          "role": "申请执行人",
+          "type": "自然人"
+        },
+        {
+          "name": "陈某",
+          "role": "被执行人",
+          "type": "自然人"
+        }
+      ],
+      "case_numbers": [
+        "(2022)皖1181执恢305号",
+        "(2022)皖1181执恢305号之一",
+        "(2022)皖1181执恢305号之二"
+      ],
+      "courts": [
+        "安徽省天长市人民法院"
+      ],
+      "law_refs": [
+        {
+          "statute": "最高人民法院关于人民法院办理执行异议和复议案件若干问题的规定",
+          "article": "第20条",
+          "paragraph": "第3项"
+        },
+        {
+          "statute": "最高人民法院关于在执行工作中进一步强化善意文明执行理念的意见",
+          "article": "第3条",
+          "paragraph": "第2款"
+        }
+      ],
+      "case_summary": "拍卖被执行人唯一住房，扣除租金及生活费保障居住权，促成买受人与家属达租赁协议，完成无强制搬迁交接。"
+    }
+  },
+  {
+    "id": "14654",
+    "case_type": "民事-建设工程合同纠纷",
+    "success": true,
+    "parties_count": 3,
+    "law_refs_count": 2,
+    "result": {
+      "parties": [
+        {
+          "name": "某机关服务中心",
+          "role": "原告",
+          "type": "机关"
+        },
+        {
+          "name": "某建设集团",
+          "role": "被告",
+          "type": "企业"
+        },
+        {
+          "name": "某监理公司",
+          "role": "被告",
+          "type": "企业"
+        }
+      ],
+      "case_numbers": [],
+      "courts": [],
+      "law_refs": [
+        {
+          "statute": "中华人民共和国民法典",
+          "article": "第801条",
+          "paragraph": ""
+        },
+        {
+          "statute": "最高人民法院办公厅 住房城乡建设部办公厅关于建立住房城乡建设领域民事纠纷“总对总”在线诉调对接机制的通知",
+          "article": "",
+          "paragraph": ""
+        }
+      ],
+      "case_summary": "空调罩脱落引发纠纷，法院通过行业调解与专家评估，促成符合国标的局部维修方案，消除安全隐患。"
+    }
+  },
+  {
+    "id": "5002",
+    "case_type": "刑事-组织卖淫罪",
+    "success": true,
+    "parties_count": 9,
+    "law_refs_count": 0,
+    "result": {
+      "parties": [
+        {
+          "name": "邱某甲",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "邱某乙",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "杨某",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "张某",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "周某甲",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "欧甲",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "梁某甲",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "梁某乙",
+          "role": "被告人",
+          "type": "自然人"
+        },
+        {
+          "name": "邱某丙",
+          "role": "被告人",
+          "type": "自然人"
+        }
+      ],
+      "case_numbers": [],
+      "courts": [
+        "湖南省永州市中级人民法院",
+        "湖南省高级人民法院"
+      ],
+      "law_refs": [],
+      "case_summary": "邱某甲等组成犯罪团伙，诱骗、强迫多名女子卖淫，分别构成组织卖淫罪、协助组织卖淫罪等，多人被判处刑罚。"
+    }
+  },
+  {
+    "id": "3369",
+    "case_type": "行政-行政许可",
+    "success": true,
+    "parties_count": 2,
+    "law_refs_count": 5,
+    "result": {
+      "parties": [
+        {
+          "name": "嘉兴市某某公司",
+          "role": "原告",
+          "type": "企业"
+        },
+        {
+          "name": "南湖区行政审批局",
+          "role": "被告",
+          "type": "机关"
+        }
+      ],
+      "case_numbers": [
+        "(2021)浙0481行初15号",
+        "(2021)浙04行终226号"
+      ],
+      "courts": [
+        "浙江省海宁市人民法院",
+        "浙江省嘉兴市中级人民法院"
+      ],
+      "law_refs": [
+        {
+          "statute": "《中华人民共和国行政许可法》",
+          "article": "34",
+          "paragraph": ""
+        },
+        {
+          "statute": "《中华人民共和国行政许可法》",
+          "article": "36",
+          "paragraph": ""
+        },
+        {
+          "statute": "《中华人民共和国行政许可法》",
+          "article": "47",
+          "paragraph": ""
+        },
+        {
+          "statute": "《建筑设计防火规范》",
+          "article": "4.4.1",
+          "paragraph": ""
+        },
+        {
+          "statute": "《液化石油气供应工程设计规范》",
+          "article": "5.2.8",
+          "paragraph": ""
+        }
+      ],
+      "case_summary": "燃气许可延续申请因防火间距不足被驳回，二审调解后撤回上诉并重获许可。"
+    }
+  }
+]
