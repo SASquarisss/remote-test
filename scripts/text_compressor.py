@@ -56,27 +56,40 @@ def extract_section(text: str, patterns: List[str], max_chars: int = 500) -> str
 
 
 def extract_disputed_issues(text: str) -> List[str]:
-    """提取争议焦点（支持中文数字标记）"""
+    """提取争议焦点（支持编号和无编号格式）"""
     issues = []
     
     # 模式1: "本案争议焦点为：一、XXX；二、XXX"
     dispute_header = re.search(r'本案争议焦点为：?(.{10,300}?)(?:二、|三、|四、|五、|本院)', text)
     if dispute_header:
         issues_text = dispute_header.group(1)
-        # Split by Chinese enumeration
-        parts = re.split(r'[；;。]', issues_text)
+        parts = re.split(r'[；;]', issues_text)
         for p in parts:
-            p = p.strip()
+            p = p.strip().lstrip('一二三四五六七八九十、')
             if len(p) > 5 and len(p) < 100:
                 issues.append(p)
     
-    # 模式2: "一、关于XXX的认定" 作为段落标题
+    # 模式2: "一、关于XXX的认定"作为段落标题
     section_titles = re.findall(r'[一二三四五六七八九十、]{1,5}([^\n]{5,60}?)(?:。|；)', text)
     for t in section_titles:
         t = t.strip()
-        if any(kw in t for kw in ['认定', '确定', '责任', '因果', '过错', '违约']):
+        if any(kw in t for kw in ['认定', '确定', '责任', '因果', '过错', '违约', '是否', '构成']):
             if t not in issues:
                 issues.append(t)
+    
+    # 模式3: 无编号格式 - "关于XXX的认定"、"是否XXX"
+    # 使用更宽松的模式捕捉无编号争议焦点
+    unnumbered_patterns = [
+        r'关于([一-龥]{5,40}?)的认定',
+        r'是否([一-龥]{5,40}?)[，；]',
+        r'([一-龥]{5,40}?)是否成立',
+        r'([一-龥]{5,40}?)应否支持',
+    ]
+    for pat in unnumbered_patterns:
+        for match in re.finditer(pat, text):
+            issue = match.group(1).strip()
+            if issue and issue not in issues and 5 < len(issue) < 60:
+                issues.append(issue)
     
     return issues[:5]
 

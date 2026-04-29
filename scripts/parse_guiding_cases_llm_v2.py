@@ -85,6 +85,17 @@ def parse_record(row: list, api_key: str, base_url: str, model: str, prompt_temp
             result['_compression_strategy'] = strategy
             result['_compressed_chars'] = len(compressed_text)
             result['_original_chars'] = len(basic_facts) + len(judgment_reason) + len(judgment_essence) + len(related_law)
+            
+            # Fallback: if LLM didn't extract legal provisions, use rule-based extractor
+            if not result.get('legal_provisions'):
+                try:
+                    from scripts.legal_provision_extractor import extract_provisions_from_record
+                    provisions = extract_provisions_from_record(row)
+                    if provisions:
+                        result['legal_provisions'] = provisions
+                except Exception:
+                    pass
+            
             return result
 
         except json.JSONDecodeError as e:
