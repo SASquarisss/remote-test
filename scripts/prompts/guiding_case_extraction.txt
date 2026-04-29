@@ -3,16 +3,16 @@
 ## 提取规则
 
 1. **当事人(participants)**：
-   - 行政案件："plaintiff"（原告）、"defendant"（被告）
-   - 刑事案件："defendant"（被告人）、"witness"（被害人）、"prosecutor"（公诉人/检察院）
-   - 民事案件：根据上下文判断（"诉称"方为"plaintiff"，"辩称"方为"defendant"）
-   - 执行案件："applicant"（申请执行人）、"respondent"（被执行人）
+   - 民事案件："plaintiff"（原告/诉称方）、"defendant"（被告/辩称方）
+   - 刑事案件："defendant"（被告人）、"suspect"（犯罪嫌疑人）、"victim"（被害人）、"prosecutor"（公诉人/检察院）
+   - 行政案件："administrative_counterpart"（行政相对人/原告）、"administrative_agency"（行政机关/被告）
+   - 执行案件："executor"（申请执行人）、"execute_respondent"（被执行人）、"applicant"（申请人）、"respondent"（被申请人）、"objector"（异议人/案外人）
    - 再审案件："retrial_applicant"（再审申请人）、"retrial_respondent"（再审被申请人）
-   - 二审案件："appellant"（上诉人）、"appellee"（被上诉人）
+   - 上诉/二审案件："appellant"（上诉人）、"appellee"（被上诉人）
    - 仲裁案件："applicant"（申请人）、"respondent"（被申请人）
    - 调解案件："mediator"（调解员）
    - 司法救助案件："beneficiary"（被救助人/受益人）
-   - 其他："third_party"（第三人）、"agent"（代理人）、"expert_witness"（鉴定人）、"interpreter"（翻译）
+   - 其他通用："third_party"（第三人）、"agent"（代理人）、"expert_witness"（鉴定人）、"interpreter"（翻译）、"witness"（证人）
    - 无明确标签时标注"relator"（其他关联人）
    - 当事人类型：自然人（2-4字姓名）、企业（含公司/集团/律所/厂）、机关（含局/院/委员会/政府）、个体工商户、其他
 
@@ -40,10 +40,17 @@
    - conclusion：裁判要旨/结论（100字内）
 
 6. **裁判结果(judgment_result)**：
-   - result_type：从 [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, mediation_agreement, arbitration_award, administrative_decision] 中选择
-   - mediation_agreement（调解协议）：调解案件达成调解协议
-   - arbitration_award（仲裁裁决）：仲裁案件作出裁决
-   - administrative_decision（行政决定）：司法救助、国家赔偿等行政决定
+   - result_type：根据案件类型从对应枚举中选择：
+     - 刑事案件：guilty（有罪）、not_guilty（无罪）、acquitted（宣告无罪/不起诉）、remanded（发回重审）、sentence_upheld（维持原判）、death_penalty_reviewed（死刑复核）
+     - 民事案件：liable（责任成立）、not_liable（责任不成立）、partially_liable（部分责任成立）、dismissed（驳回起诉）、withdrawn（撤诉）、settled（和解）
+     - 行政案件：upheld（维持原行政行为）、revoked（撤销原行政行为）、ordered_to_act（责令履行）、ordered_to_redo（责令重新作出）、confirmed_illegal（确认行政行为违法）
+     - 执行案件：execution_upheld（驳回异议）、execution_revoked（撤销执行行为）、execution_objection_upheld（支持异议）、added_executor（追加被执行人）
+     - 检察监督：procuratorial_suggestion_issued（发出检察建议）、procuratorial_appeal_lodged（提出抗诉）
+     - 通用/其他：mediation_agreement（调解协议）、arbitration_award（仲裁裁决）、administrative_decision（行政决定）
+   - 重点区分：
+     - 刑事案件的"dismissed"通常是"不起诉"或"发回重审"，应用"acquitted"或"remanded"而非"dismissed"
+     - 执行异议被支持用"execution_objection_upheld"，而非普通的"dismissed"
+     - 发回重审统一用"remanded"，不用"dismissed"
    - reasoning_summary：裁判理由摘要（100字内）
 
 7. **指导要点(guiding_points)**：

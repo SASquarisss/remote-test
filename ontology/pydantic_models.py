@@ -235,7 +235,20 @@ class TrialOrganization(JudicialEntity):
 
 class JudgmentResult(JudicialEntity):
     case_id: str
-    result_type: Optional[Literal["guilty", "not_guilty", "liable", "not_liable", "dismissed", "withdrawn", "mediation_agreement", "arbitration_award", "administrative_decision"]] = None
+    result_type: Optional[Literal[
+        # 刑事
+        "guilty", "not_guilty", "acquitted", "remanded", "sentence_upheld", "death_penalty_reviewed",
+        # 民事
+        "liable", "not_liable", "partially_liable", "dismissed", "withdrawn", "settled",
+        # 行政
+        "upheld", "revoked", "ordered_to_act", "ordered_to_redo", "confirmed_illegal",
+        # 执行
+        "execution_upheld", "execution_revoked", "execution_objection_upheld", "added_executor",
+        # 检察监督
+        "procuratorial_suggestion_issued", "procuratorial_appeal_lodged",
+        # 通用/其他
+        "mediation_agreement", "arbitration_award", "administrative_decision"
+    ]] = None
     judgment_date: Optional[date] = None
     effective_date: Optional[date] = None
     sentence_term: Optional[float] = None
@@ -254,7 +267,12 @@ class ExecutionInfo(JudicialEntity):
 
 
 class LegalDocument(JudicialEntity):
-    document_type: Optional[Literal["judgment", "ruling", "mediation", "order", "notice", "indictment", "petition"]] = None
+    document_source: Optional[Literal["court", "procuratorate", "arbitration", "mediation_org", "administrative_agency"]] = None
+    document_type: Optional[Literal[
+        "judgment", "ruling", "mediation", "order", "notice",
+        "indictment", "petition", "procuratorial_suggestion",
+        "execution_ruling", "execution_order"
+    ]] = None
     case_id: Optional[str] = None
     creation_date: Optional[date] = None
     signed_by_judge_id: Optional[str] = None
@@ -301,7 +319,20 @@ class Fact(JudicialEntity):
 class CaseParticipant(JudicialEntity):
     case_id: str
     subject_id: Optional[str] = None
-    role_code: Literal["plaintiff", "defendant", "third_party", "witness", "agent", "expert_witness", "interpreter", "prosecutor", "applicant", "respondent", "relator", "appellant", "appellee", "retrial_applicant", "retrial_respondent", "mediator", "arbitrator", "beneficiary"]
+    role_code: Literal[
+        # 诉讼程序
+        "plaintiff", "defendant", "third_party", "witness", "agent",
+        # 刑事程序
+        "prosecutor", "suspect", "defendant_criminal", "victim",
+        # 执行程序
+        "executor", "execute_respondent", "applicant", "respondent", "objector",
+        # 行政程序
+        "administrative_counterpart", "administrative_agency",
+        # 上诉/再审
+        "appellant", "appellee", "retrial_applicant", "retrial_respondent",
+        # 其他
+        "expert_witness", "interpreter", "relator", "mediator", "arbitrator", "beneficiary"
+    ]
     trial_level: Optional[Literal["first_instance", "second_instance", "retrial", "execution"]] = None
     is_primary: Optional[bool] = None
     role_name: Optional[str] = None
