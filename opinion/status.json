@@ -12,8 +12,13 @@
       "pr_url": null
     },
     "2026-04-29.md": {
-      "last_updated": "2026-04-30T18:31:37.613619",
-      "items": {},
+      "last_updated": "2026-04-30T18:34:28.361833",
+      "items": {
+        "1": {
+          "state": "rejected",
+          "classification": "不同意"
+        }
+      },
       "branch": null,
       "pr_url": null
     }
