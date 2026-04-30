@@ -320,7 +320,7 @@ def analyze_with_llm(blocks) -> str:
         model="deepseek-v4-pro",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
-        max_tokens=4096,
+        max_tokens=8192,
         timeout=300,
     )
     return normalize_reply(resp.choices[0].message.content.strip())
