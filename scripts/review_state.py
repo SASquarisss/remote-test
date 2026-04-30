@@ -10,7 +10,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-REPO_PATH = Path("/root/.hermes/hermes-agent/remote-test")
+import os
+
+def _get_repo_path() -> Path:
+    env_path = os.environ.get("REPO_PATH")
+    if env_path:
+        p = Path(env_path)
+        if p.exists():
+            return p
+    fallback = Path(__file__).resolve().parent.parent
+    if fallback.exists():
+        return fallback
+    raise RuntimeError("无法确定仓库路径，请设置环境变量 REPO_PATH")
+REPO_PATH = _get_repo_path()
 STATE_FILE = REPO_PATH / "opinion" / "status.json"
 
 
