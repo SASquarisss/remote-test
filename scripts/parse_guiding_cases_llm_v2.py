@@ -81,6 +81,7 @@ def parse_record(row: list, api_key: str, base_url: str, model: str, prompt_temp
 
             result = json.loads(content)
             result['id'] = rid
+            # 强制写入 case_type，不依赖 LLM 推断
             result['case_type'] = case_type
             result['_compression_strategy'] = strategy
             result['_compressed_chars'] = len(compressed_text)
@@ -92,7 +93,15 @@ def parse_record(row: list, api_key: str, base_url: str, model: str, prompt_temp
                     from scripts.legal_provision_extractor import extract_provisions_from_record
                     provisions = extract_provisions_from_record(row)
                     if provisions:
-                        result['legal_provisions'] = provisions
+                        # 格式标准化：从 legal_provision_extractor 格式转为本体论标准格式
+                        result['legal_provisions'] = [
+                            {
+                                'statute': p.get('law_name', ''),
+                                'article': p.get('article_number', ''),
+                                'paragraph': p.get('clause', '') or p.get('sub_clause', '')
+                            }
+                            for p in provisions
+                        ]
                 except Exception:
                     pass
             
