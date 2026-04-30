@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 
-REPO_PATH = Path("/root/.hermes/hermes-agent/remote-test")
+REPO_PATH = Path(os.environ.get("REPO_PATH", Path(__file__).resolve().parent.parent))
 BACKUP_DIR = REPO_PATH / ".auto_fix_backups"
 
 

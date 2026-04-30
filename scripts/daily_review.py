@@ -181,8 +181,10 @@ def parse_classified_items(text: str) -> List[ReviewItem]:
 
         idx = int(idx_str) if idx_str.isdigit() else (i + 1) // 2
 
-        title = body.strip().split('\n')[0].strip()
-        title = re.sub(r'\*+', '', title).strip()
+        first_line = body.strip().split('\n')[0].strip()
+        # 移除常见markdown标记：粗体、斜体、行内代码、链接语法
+        title = re.sub(r'([*_`\[\]]+)', '', first_line).strip()
+        title = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', title).strip()
 
         cls_match = re.search(
             r'[\*\-]\s*\*\*\u5206\u7c7b\*\*[:\uff1a]\s*(\u540c\u610f\u4f46\u4e0d\u4f18\u5148|\u6709\u4e89\u8bae|\u4e0d\u540c\u610f|\u540c\u610f)',
@@ -305,6 +307,25 @@ def normalize_reply(content: str) -> str:
     return f"# {MY_NAME} | {get_now_str()}\n\n{content}"
 
 
+import time
+from functools import wraps
+
+def retry_on_error(max_retries=3, delay=2):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return fn(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        raise
+                    time.sleep(delay * (2 ** attempt))
+            return None
+        return wrapper
+    return decorator
+
+@retry_on_error(max_retries=3)
 def analyze_with_llm(blocks) -> str:
     from openai import OpenAI
 
