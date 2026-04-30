@@ -90,7 +90,8 @@ def parse_discussion(file_path):
         prefix = parts[0].strip()
         if prefix:
             prefix = re.sub(r'\n*---\s*$', '', prefix)
-            blocks.append(("opinion", "", prefix))
+            if prefix:
+                blocks.append(("opinion", "", prefix))
         for i in range(1, len(parts), 3):
             if i + 2 <= len(parts):
                 author = parts[i].strip()
@@ -128,11 +129,15 @@ def extract_opinion_and_history(blocks):
     """从解析结果中分离原始评审意见和对话历史"""
     opinion_content = ""
     discussion_blocks = []
-    for author, ts, content in blocks:
+    for i, (author, ts, content) in enumerate(blocks):
         if author == "opinion":
             opinion_content = content
         else:
-            discussion_blocks.append((author, ts, content))
+            if i == 0 and not opinion_content:
+                # 第一个 block 不是明确的 opinion，但没有其他 opinion，就当作评审意见
+                opinion_content = content
+            else:
+                discussion_blocks.append((author, ts, content))
     return opinion_content, discussion_blocks
 
 
