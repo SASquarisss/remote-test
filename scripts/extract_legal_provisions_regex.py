@@ -25,7 +25,7 @@ import re
 from typing import List, Dict
 
 # 中文数字
-_CN_NUMS = '一二三四五六七八九十百千万'
+_CN_NUMS = '零一二三四五六七八九十百千万'
 _CN_NUM_PATTERN = f'[{_CN_NUMS}\\d]+'
 
 # 需要排除的法条代词（避免误匹配）
@@ -47,11 +47,12 @@ _PATTERNS = [
         'full_multi'
     ),
     # B. 简写格式：XX法/法典/条例 第...条...
-    #    排除法条代词和“中华人民共和国”前缀
+    #    排除法条代词和"中华人民共和国"前缀
+    #    修复： statute 前加非中文字符限制，避免"参照民法典"误匹配"照民法典"
     (
         re.compile(
-            r'(?<!中华人民共和国)([一-龥]{1,10}?(?:法典|条例|规定|公约|办法|法))(?!院)'
-            r'((?:第' + _CN_NUM_PATTERN + r'条(?:之一)?'
+            r'(?:^|[^\u4e00-\u9fa5])(?<!中华人民共和国)([^条款项' + _CN_NUMS + r'\d照参根依按]{1,10}?(?:法典|条例|规定|公约|办法|法))(?!院)'
+            r'((?:第?' + _CN_NUM_PATTERN + r'条(?:之一)?'
             r'(?:第[' + _CN_NUMS + r']+款)?'
             r'(?:第[' + _CN_NUMS + r']+项)?'
             r'[、，,；;]*第?)*)'
@@ -59,10 +60,11 @@ _PATTERNS = [
         'short_multi'
     ),
     # C. 司法解释/规定：最高人民法院/最高检 关于...的解释/规定/批复/纪要
+    #    修复：允许《》与条号之间有最多40个非《》字符（应对"该解释第十七条"）
     (
         re.compile(
             r'《(最高人民(?:法院|检察院)[^》《]{5,80}?)》'
-            r'(?:第(' + _CN_NUM_PATTERN + r')条)?'
+            r'[^《》]{0,40}?(?:第(' + _CN_NUM_PATTERN + r')条(?:规定)?)'
         ),
         'judicial_interp'
     ),
@@ -77,7 +79,7 @@ _PATTERNS = [
     ),
     # E. 依据式引用（无条号）：依据/根据/按照《XX法》
     (
-        re.compile(r'[依根按照]《([^》《]{3,45}?)》'),
+        re.compile(r'[依根按照适用]《([^》《]{3,45}?)》'),
         'citation_no_article'
     ),
 ]
@@ -97,7 +99,7 @@ def _parse_multi_articles(text: str, statute: str) -> List[Dict[str, str]]:
         m = re.search(r'第(' + _CN_NUM_PATTERN + r')条(之一)?', part)
         if not m:
             continue
-        article = m.group(1) + (m.group(2) or '')
+        article = m.group(1) + ('条之一' if m.group(2) else '')
         para_m = re.search(r'第([' + _CN_NUMS + r']+)款', part)
         paragraph = f'第{para_m.group(1)}款' if para_m else ''
         item_m = re.search(r'第([' + _CN_NUMS + r']+)项', part)
@@ -151,7 +153,13 @@ def extract_legal_provisions(text: str) -> List[Dict[str, str]]:
 
             elif ptype == 'short_multi':
                 statute = match.group(1).strip()
-                # 排除法条代词（支持带前缀如"有本法"、"对于本法"）
+                # 清洗：去掉开头标点、去掉"的"前缀
+                statute = re.sub(r'^[^\w\u4e00-\u9fa5]+', '', statute)
+                if statute.startswith('的'):
+                    statute = statute[1:]
+                if not statute or len(statute) < 2:
+                    continue
+                # 排除法条代词（支按带前缀如"有本法"、"对于本法"）
                 if any(statute.endswith(p) for p in _PRONOUN_LAWS):
                     continue
                 articles_text = match.group(2) or ''
