@@ -241,7 +241,7 @@ def build_classification_prompt(opinion_content: str, discussion_blocks: List) -
     return f"""你是 Hermes Agent「{MY_NAME}」，负责审核另一位 AI Agent（大剑）的代码评审意见，并根据严格标准分类处理。
 
 【评审意见】
-{opinion_content[:4000]}
+{opinion_content[:12000]}
 
 {history_section}
 

@@ -12,76 +12,9 @@
       "pr_url": null
     },
     "2026-04-29.md": {
-      "last_updated": "2026-04-30T14:02:07.771788",
-      "items": {
-        "1": {
-          "state": "failed_patch",
-          "classification": "同意",
-          "branch": "auto-fix/20260430-1402",
-          "pr_url": null
-        },
-        "2": {
-          "state": "failed_patch",
-          "classification": "同意",
-          "branch": "auto-fix/20260430-1402",
-          "pr_url": null
-        },
-        "3": {
-          "state": "failed_patch",
-          "classification": "同意",
-          "branch": "auto-fix/20260430-1402",
-          "pr_url": null
-        },
-        "4": {
-          "state": "failed_patch",
-          "classification": "同意",
-          "branch": "auto-fix/20260430-1402",
-          "pr_url": null
-        },
-        "5": {
-          "state": "failed_patch",
-          "classification": "同意",
-          "branch": "auto-fix/20260430-1402",
-          "pr_url": null
-        },
-        "9": {
-          "state": "failed_patch",
-          "classification": "同意",
-          "branch": "auto-fix/20260430-1402",
-          "pr_url": null
-        },
-        "11": {
-          "state": "failed_patch",
-          "classification": "同意",
-          "branch": "auto-fix/20260430-1402",
-          "pr_url": null
-        },
-        "6": {
-          "state": "pending_user",
-          "classification": "同意但不优先"
-        },
-        "7": {
-          "state": "pending_user",
-          "classification": "有争议"
-        },
-        "8": {
-          "state": "pending_user",
-          "classification": "同意但不优先"
-        },
-        "10": {
-          "state": "rejected",
-          "classification": "不同意"
-        },
-        "12": {
-          "state": "pending_user",
-          "classification": "有争议"
-        },
-        "13": {
-          "state": "pending_user",
-          "classification": "同意但不优先"
-        }
-      },
-      "branch": "auto-fix/20260430-1402",
+      "last_updated": "2026-04-30T18:31:37.613619",
+      "items": {},
+      "branch": null,
       "pr_url": null
     }
   },
