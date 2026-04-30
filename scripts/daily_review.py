@@ -392,7 +392,7 @@ def generate_user_report(items: List[ReviewItem], fix_results: List) -> str:
         lines.append("\n【已自动实施】")
         for it in agreed:
             # 查找对应的执行结果
-            fr = next((r for r in fix_results if r.item_id == it.idx), None)
+            fr = next((r for r in fix_results if r and r.item_id == it.idx), None)
             if fr and fr.success:
                 lines.append(f"✅ #{it.idx} {it.title} → 修改了 {fr.file_path}")
             elif fr:
