@@ -418,7 +418,20 @@ def generate_pr_body(opinion_file: str, items: List[ReviewItem],
 # ========================================================================
 
 def append_reply(file_path, content):
-    """在文件末尾追加回复内容"""
+    """在文件末尾追加回复内容（带冲突标记检测和备份）"""
+    text = file_path.read_text(encoding="utf-8") if file_path.exists() else ""
+    # 检测 git 冲突标记
+    if any(marker in text for marker in ["<<<<<<<", "=======", ">>>>>>>"]):
+        raise RuntimeError(
+            f"文件 {file_path.name} 包含未解决的 git 冲突标记，"
+            f"请先手动解决后再运行评审流程。"
+        )
+    # 备份（在 .md 同目录下生成 .bak.时间戳）
+    if text:
+        backup_path = file_path.with_suffix(
+            f"{file_path.suffix}.bak.{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        )
+        backup_path.write_text(text, encoding="utf-8")
     with open(file_path, "a", encoding="utf-8") as f:
         f.write("\n\n---\n\n" + content + "\n\n---\n")
     return file_path
