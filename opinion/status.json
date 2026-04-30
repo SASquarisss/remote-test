@@ -12,36 +12,36 @@
       "pr_url": null
     },
     "2026-04-29.md": {
-      "last_updated": "2026-04-30T20:33:36.183850",
+      "last_updated": "2026-04-30T22:33:01.297153",
       "items": {
         "1": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260430-2033",
+          "branch": "auto-fix/20260430-2232",
           "pr_url": null
         },
         "2": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260430-2033",
+          "branch": "auto-fix/20260430-2232",
           "pr_url": null
         },
         "3": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260430-2033",
+          "branch": "auto-fix/20260430-2232",
           "pr_url": null
         },
         "5": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260430-2033",
+          "branch": "auto-fix/20260430-2232",
           "pr_url": null
         },
         "9": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260430-2033",
+          "branch": "auto-fix/20260430-2232",
           "pr_url": null
         },
         "4": {
@@ -65,7 +65,7 @@
           "classification": "同意但不优先"
         }
       },
-      "branch": "auto-fix/20260430-2033",
+      "branch": "auto-fix/20260430-2232",
       "pr_url": null
     }
   },
