@@ -41,12 +41,15 @@ def parse_user_confirmation(text: str) -> List[Tuple[int, bool]]:
     - "同意 3 和 5" → [(3, True), (5, True)]
     """
     results = []
-    # 匹配 "同意X" 或 "同意 X"
-    for m in re.finditer(r'同意\s*(\d+)', text):
-        results.append((int(m.group(1)), True))
-    # 匹配 "不同意X" 或 "不同意 X"
+    # 先匹配 "不同意X"
     for m in re.finditer(r'不同意\s*(\d+)', text):
         results.append((int(m.group(1)), False))
+    # 再匹配 "同意X"，但排除已被"不同意"匹配的编号
+    denied_ids = {item_id for item_id, _ in results}
+    for m in re.finditer(r'(?<!不)同意\s*(\d+)', text):
+        item_id = int(m.group(1))
+        if item_id not in denied_ids:
+            results.append((item_id, True))
     return results
 
 

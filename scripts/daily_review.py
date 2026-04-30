@@ -172,22 +172,32 @@ def parse_classified_items(text: str) -> List[ReviewItem]:
 
     # 更精确：匹配到下一个 ### 数字. 或 ## 或文本结尾
     sections = re.split(r'\n### (\d+)\.\s*', text)
-    # sections[0] 是头部信息，之后每两个元素为一组：(标题, 内容)
+    # sections[0] 是头部信息，之后每两个元素为一组：(编号, 内容)
     for i in range(1, len(sections), 2):
         if i + 1 >= len(sections):
             break
-        title = sections[i].strip()
+        idx_str = sections[i].strip()
         body = sections[i + 1]
 
-        idx_match = re.match(r'(\d+)', sections[i])
-        idx = int(idx_match.group(1)) if idx_match else (i + 1) // 2
+        idx = int(idx_str) if idx_str.isdigit() else (i + 1) // 2
 
-        # 提取分类
-        cls_match = re.search(r'[\*\-]\s*\*\*分类\*\*[:\uff1a]\s*(同意|有争议|同意但不优先|不同意)', body)
-        classification = cls_match.group(1) if cls_match else "未知"
+        # 标题在 body 的第一行
+        title = body.strip().split('\n')[0].strip()
+        # 去掉可能的 markdown 格式（如 加粗等）
+        title = re.sub(r'\*+', '', title).strip()
+
+        # 提取分类：注意顺序，先匹配最长的
+        cls_match = re.search(
+            r'[\*\-]\s*\*\*\u5206\u7c7b\*\*[:\uff1a]\s*(\u540c\u610f\u4f46\u4e0d\u4f18\u5148|\u6709\u4e89\u8bae|\u4e0d\u540c\u610f|\u540c\u610f)',
+            body
+        )
+        classification = cls_match.group(1) if cls_match else "\u672a\u77e5"
 
         # 提取理由
-        reason_match = re.search(r'[\*\-]\s*\*\*理由\*\*[:\uff1a]\s*(.+?)(?=\n[\*\-]\s*\*\*|####|\n## |$)', body, re.DOTALL)
+        reason_match = re.search(
+            r'[\*\-]\s*\*\*\u7406\u7531\*\*[:\uff1a]\s*(.+?)(?=\n[\*\-]\s*\*\*|\n####|\n## |$)',
+            body, re.DOTALL
+        )
         reason = reason_match.group(1).strip() if reason_match else ""
 
         # 提取 patch
@@ -195,12 +205,15 @@ def parse_classified_items(text: str) -> List[ReviewItem]:
         search = None
         replace = None
 
-        if classification == "同意":
-            fp_match = re.search(r'\*\*文件\*\*[:\uff1a]\s*`([^`]+)`', body)
+        if classification == "\u540c\u610f":
+            fp_match = re.search(r'\*\*\u6587\u4ef6\*\*[:\uff1a]\s*`([^`]+)`', body)
             if fp_match:
                 file_path = fp_match.group(1).strip()
 
-            patch_match = re.search(r'```patch\s*\nSEARCH:\s*\n(.*?)\nREPLACE:\s*\n(.*?)\n```', body, re.DOTALL)
+            patch_match = re.search(
+                r'```patch\s*\nSEARCH:\s*\n(.*?)\nREPLACE:\s*\n(.*?)\n```',
+                body, re.DOTALL
+            )
             if patch_match:
                 search = patch_match.group(1)
                 replace = patch_match.group(2)
