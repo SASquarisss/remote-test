@@ -117,8 +117,8 @@ def compress_for_llm(
     
     total_len = len(bf) + len(jr) + len(je) + len(rl)
     
-    # 短文本：直接返回全文
-    if total_len <= 3000:
+    # 短文本：直接返回全文（阈值从3000降至2500，避免短文本压缩overhead）
+    if total_len <= 2500:
         parts = []
         if bf.strip():
             parts.append(f"## 基本事实\n{bf.strip()}")

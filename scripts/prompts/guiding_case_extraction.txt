@@ -17,10 +17,11 @@
    - 当事人类型：自然人（2-4字姓名）、企业（含公司/集团/律所/厂）、机关（含局/院/委员会/政府）、个体工商户、其他
 
 2. **案号(case_numbers)**：
-   - 格式：(YYYY)地区法院简称+案由+第N号
+   - 格式示例：(2017)京73民初1869号、(2021)最高法知民终1118号、(2019)沪0115刑初1234号
    - 必须从文本中精确提取，包括一审、二审、再审全部案号
    - 找不到时输出空列表 []
    - 注意：调解案件、仲裁案件、司法救助案件可能没有法院案号
+   - 常见变体：最高法（最高人民法院）、知民终（知识产权民事终审）、刑初（刑事一审）、民初（民事一审）、行终（行政终审）
 
 3. **法院(courts)**：
    - 提取完整法院名称（如"浙江省杭州市中级人民法院"）
@@ -47,10 +48,12 @@
      - 执行案件：execution_upheld（驳回异议）、execution_revoked（撤销执行行为）、execution_objection_upheld（支持异议）、added_executor（追加被执行人）
      - 检察监督：procuratorial_suggestion_issued（发出检察建议）、procuratorial_appeal_lodged（提出抗诉）
      - 通用/其他：mediation_agreement（调解协议）、arbitration_award（仲裁裁决）、administrative_decision（行政决定）
-   - 重点区分：
+   - 重点区分（**必须遵守**）：
      - 刑事案件的"dismissed"通常是"不起诉"或"发回重审"，应用"acquitted"或"remanded"而非"dismissed"
      - 执行异议被支持用"execution_objection_upheld"，而非普通的"dismissed"
      - 发回重审统一用"remanded"，不用"dismissed"
+     - **民事案件中，若裁判结果为"诉讼请求不能成立"、"被告不承担责任"、"合法来源抗辩成立"等，应标记为 not_liable，而非 dismissed**
+     - **dismissed 仅用于"驳回起诉"、"不予受理"等程序性驳回场景**
    - reasoning_summary：裁判理由摘要（100字内）
 
 7. **指导要点(guiding_points)**：
