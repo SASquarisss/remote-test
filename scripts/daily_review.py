@@ -3,21 +3,28 @@
 每2小时代码评审自动修复脚本
 支持 4 级分类：同意/有争议/同意但不优先/不同意
 同意级别自动实施，其他等待用户确认
+新增：分支隔离、测试验证、PR 创建、状态持久化
 """
 
+import json
 import os
 import re
-import sys
 import subprocess
+import sys
 import traceback
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 
-# 将 auto_fix 目录加入 path
 sys.path.insert(0, str(Path(__file__).parent))
-from auto_fix import execute_fixes, format_report, REPO_PATH
+from auto_fix import (
+    execute_fixes, run_tests, rollback_all_fixes,
+    REPO_PATH as _REPO_PATH
+)
+from review_state import ReviewState
 
+REPO_PATH = _REPO_PATH
 OPINION_DIR = REPO_PATH / "opinion" / "opinion_from_大剑"
 ENV_FILE = Path("/root/.hermes/.env")
 MY_NAME = "sxc的魔法老头"
@@ -43,6 +50,13 @@ def run_git(args, check=True):
     return subprocess.run(
         ["git"] + args, cwd=REPO_PATH, capture_output=True, text=True, check=check
     )
+
+
+def ensure_on_main():
+    """确保当前在 main 分支"""
+    result = run_git(["rev-parse", "--abbrev-ref", "HEAD"], check=False)
+    if result.stdout.strip() != "main":
+        run_git(["checkout", "main"], check=False)
 
 
 def find_recent_opinion_files(hours=48):
@@ -132,7 +146,7 @@ class ReviewItem:
                  search: Optional[str] = None, replace: Optional[str] = None):
         self.idx = idx
         self.title = title
-        self.classification = classification  # 同意/有争议/同意但不优先/不同意
+        self.classification = classification
         self.reason = reason
         self.file_path = file_path
         self.search = search
@@ -151,28 +165,9 @@ class ReviewItem:
 
 
 def parse_classified_items(text: str) -> List[ReviewItem]:
-    """
-    从 LLM 输出的 markdown 中解析每条建议的分类和 patch。
-    预期格式：
-    ### 1. 问题标题
-    - **分类**: 同意
-    - **理由**: ...
-    #### 修复方案
-    **文件**: `path/to/file`
-    ```patch
-    SEARCH:
-    ...
-    REPLACE:
-    ...
-    ```
-    """
+    """从 LLM 输出的 markdown 中解析每条建议的分类和 patch"""
     items = []
-    # 匹配条目标题
-    item_pattern = r"### (\d+)\.\s*(.+?)(?=\n### \d+\.|\n## |完\b)"
-
-    # 更精确：匹配到下一个 ### 数字. 或 ## 或文本结尾
     sections = re.split(r'\n### (\d+)\.\s*', text)
-    # sections[0] 是头部信息，之后每两个元素为一组：(编号, 内容)
     for i in range(1, len(sections), 2):
         if i + 1 >= len(sections):
             break
@@ -181,26 +176,21 @@ def parse_classified_items(text: str) -> List[ReviewItem]:
 
         idx = int(idx_str) if idx_str.isdigit() else (i + 1) // 2
 
-        # 标题在 body 的第一行
         title = body.strip().split('\n')[0].strip()
-        # 去掉可能的 markdown 格式（如 加粗等）
         title = re.sub(r'\*+', '', title).strip()
 
-        # 提取分类：注意顺序，先匹配最长的
         cls_match = re.search(
             r'[\*\-]\s*\*\*\u5206\u7c7b\*\*[:\uff1a]\s*(\u540c\u610f\u4f46\u4e0d\u4f18\u5148|\u6709\u4e89\u8bae|\u4e0d\u540c\u610f|\u540c\u610f)',
             body
         )
         classification = cls_match.group(1) if cls_match else "\u672a\u77e5"
 
-        # 提取理由
         reason_match = re.search(
             r'[\*\-]\s*\*\*\u7406\u7531\*\*[:\uff1a]\s*(.+?)(?=\n[\*\-]\s*\*\*|\n####|\n## |$)',
             body, re.DOTALL
         )
         reason = reason_match.group(1).strip() if reason_match else ""
 
-        # 提取 patch
         file_path = None
         search = None
         replace = None
@@ -258,46 +248,45 @@ def build_classification_prompt(opinion_content: str, discussion_blocks: List) -
 请对评审意见中的**每一条**建议进行分析，并分类为以下四级之一：
 
 1. **同意**：建议正确、无争议、改动范围明确且风险低。**你必须立即实施**，并给出具体的修复方案。
-2. **有争议**：方案不明确，或未必能实现目标，或相比当前代码改动太大、风险高。需要用户确认才能执行。
-3. **同意但不优先**：建议本身合理，但当前优先级不高，可以延后处理。需要用户确认才能执行。
-4. **不同意**：建议有基本错误，或无法在当前架构/约束下落地。不执行。
+2. **有争议**：方案不明确，或未必能实现目标，或相比当前代码改动太大。需要用户确认才能执行。
+3. **同意但不优先**：建议本身合理，但当前优先级不高。需要用户确认才能执行。
+4. **不同意**：建议有基本错误，或无法在当前架构/约束下落地。
 
 输出格式要求（**严格遵守**，不要漏条目）：
 
 # {MY_NAME} | {now}
 
 ## 总体评价
-（简要总结评审意见的整体质量，100字以内）
+（简要总结，100字以内）
 
 ## 逐条分析
 
 ### 1. 问题标题
 - **分类**: 同意 | 有争议 | 同意但不优先 | 不同意
-- **理由**: （为什么这样分类，150字以内）
+- **理由**: （4行以内）
 
 #### 修复方案（**仅"同意"级别需要**）
 **文件**: `相对路径/to/file.py`
 ```patch
 SEARCH:
-（精确的旧代码片段，必须能在文件中唯一匹配，包含足够的上下文）
+（精确的旧代码片段，必须能在文件中唯一匹配，包含足够上下文）
 REPLACE:
 （新的代码片段）
 ```
 
 ### 2. 问题标题
-...（按此格式继续）
+...
 
 ## 执行摘要
-- **已自动实施**: N 条（列出编号）
-- **等待用户确认**: N 条（列出编号和分类）
-- **已拒绝**: N 条（列出编号）
+- **已自动实施**: N 条
+- **等待用户确认**: N 条
+- **已拒绝**: N 条
 
 ## 用户确认说明
 以下建议需要你在1小时内回复确认：
 1. 编号X（有争议）: 问题标题 — 回复"同意X"或"不同意X"
-2. 编号X（同意但不优先）: 问题标题 — 回复"同意X"或"不同意X"
 
-用中文输出，严肃、专业、简洁。不要在末尾添加 "---" 分隔线。"""
+用中文。不要在末尾添加 "---" 分隔线。"""
 
 
 def normalize_reply(content: str) -> str:
@@ -333,6 +322,98 @@ def analyze_with_llm(blocks) -> str:
 
 
 # ========================================================================
+# 分支与 PR 管理
+# ========================================================================
+
+def create_fix_branch() -> str:
+    """创建并切换到新的修复分支"""
+    ts = datetime.now().strftime("%Y%m%d-%H%M")
+    branch_name = f"auto-fix/{ts}"
+    result = run_git(["checkout", "-b", branch_name])
+    if result.returncode != 0:
+        raise RuntimeError(f"创建分支失败: {result.stderr}")
+    print(f"  🌀 创建分支: {branch_name}")
+    return branch_name
+
+
+def delete_local_branch(branch_name: str):
+    """删除本地分支（切换回 main 后执行）"""
+    run_git(["branch", "-D", branch_name], check=False)
+
+
+def create_pull_request(branch_name: str, title: str, body: str) -> Optional[str]:
+    """使用 GitHub API 创建 PR。需要 GITHUB_TOKEN 环境变量。"""
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PAT")
+    if not token:
+        print("  ⚠️ 未配置 GITHUB_TOKEN，跳过 PR 创建")
+        return None
+
+    repo = "SASquarisss/remote-test"
+    url = f"https://api.github.com/repos/{repo}/pulls"
+
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+    }
+
+    data = {
+        "title": title,
+        "head": branch_name,
+        "base": "main",
+        "body": body,
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(data).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            pr_url = result.get("html_url")
+            print(f"  🔗 PR 已创建: {pr_url}")
+            return pr_url
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8")
+        print(f"  ❌ PR 创建失败: {e.code} {err_body[:200]}")
+        return None
+    except Exception as e:
+        print(f"  ❌ PR 创建异常: {e}")
+        return None
+
+
+def generate_pr_body(opinion_file: str, items: List[ReviewItem],
+                     fix_results: List) -> str:
+    """生成 PR 描述"""
+    lines = [
+        f"## 自动修复报告",
+        f"",
+        f"基于评审意见: `{opinion_file}`",
+        f"",
+        f"### 已实施的修复",
+    ]
+    for it in items:
+        if it.is_agreed:
+            fr = next((r for r in fix_results if r and r.item_id == it.idx), None)
+            status = "✅" if (fr and fr.success) else "❌"
+            lines.append(f"- {status} #{it.idx} {it.title} (`{it.file_path}`)")
+    lines.append("")
+    lines.append("### 等待确认的建议")
+    for it in items:
+        if it.needs_user_confirm:
+            lines.append(f"- 📝 #{it.idx} ({it.classification}): {it.title}")
+    lines.append("")
+    lines.append("### 已拒绝的建议")
+    for it in items:
+        if it.classification == "不同意":
+            lines.append(f"- 🚫 #{it.idx} {it.title}")
+    return "\n".join(lines)
+
+
+# ========================================================================
 # 文件操作
 # ========================================================================
 
@@ -340,19 +421,6 @@ def append_reply(file_path, content):
     """在文件末尾追加回复内容"""
     with open(file_path, "a", encoding="utf-8") as f:
         f.write("\n\n---\n\n" + content + "\n\n---\n")
-    return file_path
-
-
-def append_user_feedback(file_path, user_content):
-    """追加用户反馈，标识为用户意见"""
-    now = get_now_str()
-    section = f"""
-# 用户确认 | {now}
-
-{user_content}
-"""
-    with open(file_path, "a", encoding="utf-8") as f:
-        f.write("\n\n---\n\n" + section + "\n\n---\n")
     return file_path
 
 
@@ -379,24 +447,39 @@ def git_push_changes(paths):
 # 报告生成
 # ========================================================================
 
-def generate_user_report(items: List[ReviewItem], fix_results: List) -> str:
+def generate_user_report(items: List[ReviewItem], fix_results: List,
+                         test_passed: bool, test_output: str,
+                         branch_name: Optional[str] = None,
+                         pr_url: Optional[str] = None) -> str:
     """生成发送给用户的报告"""
     lines = [f"📋 代码评审自动修复报告 ({get_now_str()})"]
+
+    if branch_name:
+        lines.append(f"🌀 修复分支: `{branch_name}`")
+    if pr_url:
+        lines.append(f"🔗 PR 链接: {pr_url}")
 
     agreed = [it for it in items if it.is_agreed]
     pending = [it for it in items if it.needs_user_confirm]
     rejected = [it for it in items if it.classification == "不同意"]
 
+    # 测试结果
+    if test_passed:
+        lines.append("\n✅ 测试通过")
+    else:
+        lines.append(f"\n❌ 测试失败，已回滚")
+        if test_output:
+            lines.append(f"```\n{test_output[:500]}\n```")
+
     # 已自动实施
     if agreed:
         lines.append("\n【已自动实施】")
         for it in agreed:
-            # 查找对应的执行结果
             fr = next((r for r in fix_results if r and r.item_id == it.idx), None)
             if fr and fr.success:
-                lines.append(f"✅ #{it.idx} {it.title} → 修改了 {fr.file_path}")
+                lines.append(f"✅ #{it.idx} {it.title} → `{fr.file_path}`")
             elif fr:
-                lines.append(f"❌ #{it.idx} {it.title} → 自动修复失败: {fr.message}")
+                lines.append(f"❌ #{it.idx} {it.title} → 失败: {fr.message}")
             else:
                 lines.append(f"⚠️ #{it.idx} {it.title} → 未找到执行结果")
 
@@ -406,7 +489,7 @@ def generate_user_report(items: List[ReviewItem], fix_results: List) -> str:
         for it in pending:
             lines.append(f"📝 #{it.idx} ({it.classification}): {it.title}")
             lines.append(f"   理由: {it.reason}")
-            lines.append(f'   请回复"同意{it.idx}"或"不同意{it.idx}"')
+            lines.append(f"   请回复“同意{it.idx}”或“不同意{it.idx}”")
 
     # 已拒绝
     if rejected:
@@ -422,7 +505,7 @@ def generate_user_report(items: List[ReviewItem], fix_results: List) -> str:
 # 主流程
 # ========================================================================
 
-def process_opinion(opinion_path):
+def process_opinion(opinion_path, state: ReviewState):
     need, reason = needs_reply(opinion_path)
     if not need:
         print(f"  ⏭️ 跳过 {opinion_path.name}: {reason}")
@@ -431,14 +514,18 @@ def process_opinion(opinion_path):
     print(f"  📄 处理 {opinion_path.name} ({reason})")
     blocks = parse_discussion(opinion_path)
     analysis = analyze_with_llm(blocks)
-
-    # 解析分类
     items = parse_classified_items(analysis)
-    print(f"  解析到 {len(items)} 条建议")
+    print(f"  📝 解析到 {len(items)} 条建议")
+
+    # 创建分支
+    branch_name = create_fix_branch()
+    pr_url = None
+    state_items = {}
 
     # 执行"同意"级别的修复
     fix_results = []
     agreed_items = [it for it in items if it.is_agreed]
+
     if agreed_items:
         print(f"  ⚙️ 尝试自动实施 {len(agreed_items)} 条修复...")
         for it in agreed_items:
@@ -457,67 +544,139 @@ def process_opinion(opinion_path):
                 print(f"    ⚠️ #{it.idx} {it.title}: 缺少 patch 信息，跳过")
                 fix_results.append(None)
 
-    # 追加分析到 md 文件
+        # 运行测试
+        print("  🧪 运行测试...")
+        test_passed, test_output = run_tests()
+
+        if test_passed:
+            print("  ✅ 测试通过")
+            # commit + push 分支
+            run_git(["add", "-A"], check=False)
+            commit_msg = f"auto-fix: apply {len([r for r in fix_results if r and r.success])} fixes on {branch_name}"
+            run_git(["commit", "-m", commit_msg], check=False)
+            run_git(["push", "-u", "origin", branch_name], check=False)
+
+            # 创建 PR
+            pr_title = f"auto-fix: {opinion_path.name}"
+            pr_body = generate_pr_body(opinion_path.name, items, fix_results)
+            pr_url = create_pull_request(branch_name, pr_title, pr_body)
+
+            # 记录状态
+            for it in agreed_items:
+                fr = next((r for r in fix_results if r and r.item_id == it.idx), None)
+                state_items[str(it.idx)] = {
+                    "state": "auto_fixed" if (fr and fr.success) else "failed_patch",
+                    "classification": it.classification,
+                    "branch": branch_name,
+                    "pr_url": pr_url,
+                }
+        else:
+            print(f"  ❌ 测试失败，回滚所有修复")
+            rollback_all_fixes([r for r in fix_results if r])
+            # 切换回 main 并删除分支
+            run_git(["checkout", "main"], check=False)
+            run_git(["branch", "-D", branch_name], check=False)
+            branch_name = None
+
+            # 降级所有"同意"为 failed_test
+            for it in agreed_items:
+                state_items[str(it.idx)] = {
+                    "state": "failed_test",
+                    "classification": "failed_test",
+                    "reason": test_output[:500],
+                }
+    else:
+        test_passed = True
+        test_output = "无需自动实施的建议"
+        # 没有同意的建议，删除空分支
+        run_git(["checkout", "main"], check=False)
+        run_git(["branch", "-D", branch_name], check=False)
+        branch_name = None
+
+    # 记录非同意级别
+    for it in items:
+        if str(it.idx) not in state_items:
+            if it.classification == "不同意":
+                state_items[str(it.idx)] = {
+                    "state": "rejected",
+                    "classification": it.classification,
+                }
+            elif it.needs_user_confirm:
+                state_items[str(it.idx)] = {
+                    "state": "pending_user",
+                    "classification": it.classification,
+                }
+
+    # 切换回 main 分支
+    ensure_on_main()
+
+    # 追加分析到 md 文件（在 main 上）
     append_reply(opinion_path, analysis)
 
-    return opinion_path, reason, items, fix_results
+    # 保存状态
+    state.set_opinion(
+        opinion_path.name,
+        state_items,
+        branch=branch_name,
+        pr_url=pr_url
+    )
+
+    return opinion_path, reason, items, fix_results, test_passed, test_output, branch_name, pr_url
 
 
 def main():
     try:
         load_env()
+        state = ReviewState()
 
-        # 1. git pull --rebase
+        # 1. 确保在 main 分支
+        ensure_on_main()
+
+        # 2. git pull --rebase
         pull_result = run_git(["pull", "--rebase", "origin", "main"], check=False)
         if pull_result.returncode != 0:
             raise RuntimeError(f"git pull 失败: {pull_result.stderr}")
 
-        # 2. 查找最近48小时内的意见文件
+        # 3. 查找最近48小时内的意见文件
         opinion_files = find_recent_opinion_files(48)
         if not opinion_files:
             print("⚠️ 未找到最近48小时内的评审意见文件")
             return 0
 
         processed = []
-        skip_reasons = []
-        all_items = []
-        all_fix_results = []
+        all_reports = []
 
         for opinion_path in opinion_files:
-            result = process_opinion(opinion_path)
+            result = process_opinion(opinion_path, state)
             if result[0]:
                 processed.append(result[0])
-                all_items.extend(result[2])
-                all_fix_results.extend(result[3])
+                _, _, items, fix_results, test_passed, test_output, branch, pr = result
+                report = generate_user_report(
+                    items, fix_results, test_passed, test_output,
+                    branch_name=branch, pr_url=pr
+                )
+                all_reports.append(report)
             else:
-                skip_reasons.append(f"{opinion_path.name}: {result[1]}")
+                print(f"  跳过: {result[1]}")
 
         if not processed:
             print("✅ 无需回复，所有对话已收敛或等待对方")
-            if skip_reasons:
-                for r in skip_reasons:
-                    print(f"   {r}")
             return 0
 
-        # 3. push 所有变更（意见文件 + 自动修复的代码）
-        paths_to_push = list(processed)
-        # 检查是否有代码修改需要提交
-        status = run_git(["status", "--short"], check=False)
-        if status.stdout.strip():
-            # 有变更（包括代码修改）
-            pass
+        # 4. push main（md 文件更新）
+        pushed = git_push_changes(processed)
 
-        pushed = git_push_changes(paths_to_push)
-
-        # 4. 生成用户报告
-        user_report = generate_user_report(all_items, all_fix_results)
-        print("\n" + user_report)
+        # 5. 输出汇总报告
+        for report in all_reports:
+            print("\n" + report)
 
         return 0
 
     except Exception as e:
         print(f"❌ 评审流程异常: {str(e)}")
         traceback.print_exc()
+        # 尝试切换回 main
+        ensure_on_main()
         return 1
 
 

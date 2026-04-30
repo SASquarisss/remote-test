@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "opinions": {
+    "test.md": {
+      "last_updated": "2026-04-30T11:28:00.214747",
+      "items": {
+        "1": {
+          "state": "auto_fixed"
+        }
+      },
+      "branch": "test-branch",
+      "pr_url": null
+    }
+  },
+  "meta": {}
+}

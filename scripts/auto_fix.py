@@ -2,6 +2,7 @@
 """
 自动修复执行器
 安全解析 LLM 输出的 SEARCH/REPLACE patch，备份、应用、验证、回滚
+新增：测试运行支持
 """
 
 import os
@@ -37,7 +38,6 @@ def _repo_relative(path: str) -> Path:
     """将路径转为 repo 内的绝对路径，防止越界"""
     p = Path(path)
     if p.is_absolute():
-        # 确保在 REPO_PATH 内
         try:
             p.relative_to(REPO_PATH)
             return p
@@ -58,10 +58,7 @@ def backup_file(file_path: Path) -> Path:
 
 
 def apply_search_replace(file_path: Path, search: str, replace: str) -> Tuple[bool, str]:
-    """
-    在文件中执行精确的 SEARCH/REPLACE。
-    search 必须能在文件中唯一匹配；若不唯一或不存在则失败。
-    """
+    """在文件中执行精确的 SEARCH/REPLACE"""
     if not file_path.exists():
         return False, f"文件不存在: {file_path}"
 
@@ -70,19 +67,16 @@ def apply_search_replace(file_path: Path, search: str, replace: str) -> Tuple[bo
     except Exception as e:
         return False, f"读取失败: {e}"
 
-    # 严格匹配：去除末尾的换行差异（SEARCH 和 REPLACE 可能末尾少一个 \n）
     search_stripped = search.rstrip("\n")
     replace_stripped = replace.rstrip("\n")
 
     occurrences = content.count(search)
+    use_stripped = False
     if occurrences == 0:
-        # 尝试忽略末尾换行差异
         occurrences = content.count(search_stripped)
         if occurrences == 0:
             return False, "SEARCH 片段在文件中未找到"
         use_stripped = True
-    else:
-        use_stripped = False
 
     if occurrences > 1:
         return False, f"SEARCH 片段在文件中匹配了 {occurrences} 处，不唯一"
@@ -145,80 +139,27 @@ def rollback_file(file_path: Path, backup_path: Path) -> bool:
         return False
 
 
-def parse_patches_from_markdown(markdown: str) -> List[Dict]:
-    """
-    从 LLM 输出的 markdown 中提取 patch 块。
-    预期格式：
-
-    #### 修复方案
-    **文件**: `path/to/file.py`
-    ```patch
-    SEARCH:
-    旧代码
-    REPLACE:
-    新代码
-    ```
-    """
-    patches = []
-    # 匹配 文件路径
-    file_pattern = r"\*\*文件\*\*:\s*`([^`]+)`"
-    # 匹配 SEARCH/REPLACE 块
-    patch_pattern = r"```patch\s*\nSEARCH:\s*\n(.*?)\nREPLACE:\s*\n(.*?)\n```"
-
-    # 先按条目分割，每个条目内可能有一个 patch
-    item_pattern = r"### \d+\.\s*(.+?)(?=\n### \d+\.|\n## |结束\b)"
-    # 更精确的方法：遍历所有 patch 块
-    for m in re.finditer(patch_pattern, markdown, re.DOTALL):
-        search_block = m.group(1)
-        replace_block = m.group(2)
-
-        # 向前查找最近的文件路径
-        before = markdown[:m.start()]
-        file_match = None
-        for fm in re.finditer(file_pattern, before):
-            file_match = fm
-        if not file_match:
-            continue
-
-        file_path = file_match.group(1).strip()
-        patches.append({
-            "file_path": file_path,
-            "search": search_block,
-            "replace": replace_block,
-        })
-
-    return patches
-
-
 def execute_fixes(item_id: int, title: str, file_path_str: str,
                   search: str, replace: str) -> FixResult:
-    """
-    执行单条修复。
-    流程：备份 → 应用 patch → 验证 → 提交
-    验证失败则回滚。
-    """
+    """执行单条修复：备份 → 应用 patch → 验证 → 提交"""
     try:
         file_path = _repo_relative(file_path_str)
     except ValueError as e:
         return FixResult(item_id, title, file_path_str, False, str(e))
 
-    # 1. 备份
     try:
         backup = backup_file(file_path)
     except Exception as e:
         return FixResult(item_id, title, file_path_str, False,
                         f"备份失败: {e}")
 
-    # 2. 应用 patch
     ok, msg = apply_search_replace(file_path, search, replace)
     if not ok:
         return FixResult(item_id, title, file_path_str, False, msg,
                         backup_path=str(backup))
 
-    # 3. 验证
     v_ok, v_msg = verify_file(file_path)
     if not v_ok:
-        # 验证失败，回滚
         rollback_file(file_path, backup)
         return FixResult(item_id, title, file_path_str, False,
                         f"验证失败: {v_msg}", backup_path=str(backup))
@@ -227,26 +168,70 @@ def execute_fixes(item_id: int, title: str, file_path_str: str,
                     f"已修改并通过验证 ({v_msg})", backup_path=str(backup))
 
 
-def execute_all_fixes(patches: List[Dict]) -> List[FixResult]:
-    """批量执行修复，返回结果列表"""
-    results = []
-    for i, p in enumerate(patches, 1):
-        result = execute_fixes(
-            item_id=i,
-            title=p.get("title", f"修复 #{i}"),
-            file_path_str=p["file_path"],
-            search=p["search"],
-            replace=p["replace"]
+def run_tests(test_dir: Optional[Path] = None) -> Tuple[bool, str]:
+    """
+    运行测试套件。
+    如果存在 pytest 和 tests/ 目录，运行 pytest。
+    如果没有测试，默认通过。
+    返回 (passed, output)
+    """
+    if test_dir is None:
+        test_dir = REPO_PATH / "tests"
+
+    if not test_dir.exists():
+        # 检查是否有 pytest
+        pytest_check = subprocess.run(
+            ["which", "pytest"], capture_output=True, text=True
         )
-        results.append(result)
-    return results
+        if pytest_check.returncode != 0:
+            return True, "未找到 pytest，跳过测试"
+
+        # 尝试运行 pytest 发现测试
+        result = subprocess.run(
+            ["pytest", str(REPO_PATH), "-q", "--tb=short", "--collect-only"],
+            capture_output=True, text=True, timeout=60
+        )
+        if "no tests collected" in result.stdout.lower() or "no tests ran" in result.stdout.lower() or result.returncode == 5:
+            return True, "未收集到测试用例，跳过"
+
+        # 运行测试
+        result = subprocess.run(
+            ["pytest", str(REPO_PATH), "-q", "--tb=short"],
+            capture_output=True, text=True, timeout=120
+        )
+    else:
+        result = subprocess.run(
+            ["pytest", str(test_dir), "-q", "--tb=short"],
+            capture_output=True, text=True, timeout=120
+        )
+
+    passed = result.returncode == 0
+    if result.returncode == 5:
+        return True, "未收集到测试用例，跳过"
+    output = (result.stdout + "\n" + result.stderr).strip()
+    if len(output) > 2000:
+        output = output[:2000] + "\n... (truncated)"
+    return passed, output
+
+
+def rollback_all_fixes(results: List[FixResult]):
+    """批量回滚所有已执行的修复"""
+    for r in reversed(results):
+        if r.success and r.backup_path:
+            try:
+                bp = Path(r.backup_path)
+                fp = _repo_relative(r.file_path)
+                if bp.exists():
+                    rollback_file(fp, bp)
+            except Exception as e:
+                print(f"  回滚 #{r.item_id} 失败: {e}")
 
 
 def format_report(results: List[FixResult]) -> str:
     """格式化执行报告"""
     if not results:
         return "无自动修复执行"
-    lines = ["【自动修复执行报告【"]
+    lines = ["【自动修复执行报告】"]
     for r in results:
         status = "✅ 成功" if r.success else "❌ 失败"
         lines.append(f"  #{r.item_id} {r.title}")
@@ -271,7 +256,8 @@ def hello():
     return "hello world"
 ```
 """
-    patches = parse_patches_from_markdown(test_md)
-    print("提取到 patches:", len(patches))
-    for p in patches:
-        print(p)
+    # patches = parse_patches_from_markdown(test_md)
+    # print("提取到 patches:", len(patches))
+    # for p in patches:
+    #     print(p)
+    print("auto_fix.py loaded")
