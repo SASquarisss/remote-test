@@ -117,6 +117,7 @@ def run_llm_extraction(rows, api_key, base_url, model):
                 ],
                 temperature=0.1,
                 max_tokens=4096,
+                timeout=60,
             )
             content = response.choices[0].message.content
             
@@ -308,7 +309,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--api-key', default=os.getenv('DEEPSEEK_API_KEY'))
     parser.add_argument('--base-url', default='https://api.deepseek.com/v1')
-    parser.add_argument('--model', default='deepseek-v4-pro')
+    parser.add_argument('--model', default='deepseek-chat')
     parser.add_argument('--batch-size', type=int, default=BATCH_SIZE)
     args = parser.parse_args()
     
