@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-REPO_PATH = Path("/root/.hermes/hermes-agent/remote-test")
+REPO_PATH = Path(os.environ.get("HERMES_REPO_PATH", Path(__file__).resolve().parent.parent))
 STATE_FILE = REPO_PATH / "opinion" / "status.json"
 
 
