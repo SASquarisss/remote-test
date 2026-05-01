@@ -1,0 +1,82 @@
+---
+# 代码评审报告 | 2026-04-30 10:00
+> 评审人：sxc的大剑
+
+## 评审摘要
+本次评审覆盖2026-04-30至2026-05-01期间共54次提交，涉及20个文件的3827行新增/修改。主要变更集中在：1) 自动修复与评审工作流重构（auto_fix.py、daily_review.py、review_state.py）；2) 法条提取正则与归一化优化（extract_legal_provisions_regex.py、legal_provision_extractor.py）；3) 新增本体论可视化（generate_ontology_viz.py）与自动迭代测试（auto_iterative_test.py）；4) 数据与补丁文件更新。整体代码质量较高，架构设计合理，但在路径硬编码、测试覆盖、并发安全等方面仍有改进空间。
+
+## 详细发现
+
+### 1. auto_fix.py 路径硬编码风险
+- **位置**：scripts/auto_fix.py:18
+- **严重程度**：🟡 警告
+- **描述**：REPO_PATH 使用环境变量回退机制，但 BACKUP_DIR 仍依赖 REPO_PATH。在 cron 或容器环境中，若环境变量未设置且脚本被软链调用，Path(__file__).resolve().parent.parent 可能解析到意外位置，导致备份文件散落在错误目录。
+- **建议修复**：增加路径校验日志，启动时打印 REPO_PATH 和 BACKUP_DIR 的绝对路径；或添加断言确保 REPO_PATH 下存在 .git 目录以验证路径正确性。
+
+### 2. daily_review.py 分支管理存在竞态条件
+- **位置**：scripts/daily_review.py:create_fix_branch / ensure_on_main
+- **严重程度**：🟡 警告
+- **描述**：create_fix_branch 在创建分支前调用了 ensure_on_main，但 ensure_on_main 使用 run_git(["checkout", "main"], check=False) 失败时静默忽略。如果当前分支有未提交更改，checkout 会失败，后续创建分支将基于错误分支，导致修复混入非 main 的代码。
+- **建议修复**：在 ensure_on_main 中增加 dirty 检查：若 git status --porcelain 非空，先 stash 或报错终止；checkout 失败时应 raise 而非静默忽略。
+
+### 3. review_state.py 状态文件路径硬编码
+- **位置**：scripts/review_state.py:14
+- **严重程度**：🟡 警告
+- **描述**：REPO_PATH 硬编码为 "/root/.hermes/hermes-agent/remote-test"，与 auto_fix.py 的动态解析不一致。若仓库被克隆到其他位置，状态文件将写入错误路径或创建幽灵目录。
+- **建议修复**：统一使用 Path(__file__).resolve().parent.parent 或从环境变量读取，保持与 auto_fix.py 一致。
+
+### 4. extract_legal_provisions_regex.py 正则复杂度上升
+- **位置**：scripts/extract_legal_provisions_regex.py:55-68
+- **严重程度**：🟢 建议
+- **描述**：简写格式正则增加了 "(?:^|[^\u4e00-\u9fa5])" 前缀和 statute 清洗逻辑，虽然修复了误匹配，但正则长度和回溯风险增加。中文数字集从 "一二三四五六七八九十百千万" 扩展为 "零一二三四五六七八九十百千万"，可能导致 "零条" 等无效匹配。
+- **建议修复**：为 _CN_NUMS 增加注释说明 "零" 的用途（仅用于条文编号如 "第一百零一条"）；考虑将复杂正则拆分为预过滤（快速排除）+ 精细匹配（慢速确认）两级结构，提升性能。
+
+### 5. legal_provision_extractor.py 白名单维护成本
+- **位置**：scripts/legal_provision_extractor.py:57-96
+- **严重程度**：🟢 建议
+- **描述**：LAW_NAME_WHITELIST 包含 30+ 条手动映射，且存在 "婚姻家庭编绡法" 疑似 typo（应为 "婚姻家庭编" 或 "婚姻法"）。白名单模式在新增法律时需要手动更新，维护成本高。
+- **建议修复**：1) 修正 "婚姻家庭编绡法" 为正确名称；2) 考虑从官方数据源（如国家法律法规数据库 API）定期同步法律名称列表，或至少将白名单外置为 YAML/JSON 配置文件，避免修改代码。
+
+### 6. generate_ontology_viz.py 缺乏输入校验
+- **位置**：scripts/generate_ontology_viz.py:26-28
+- **严重程度**：🟢 建议
+- **描述**：load_yaml 直接调用 yaml.safe_load，若 YAML 文件不存在或格式错误，会抛出未捕获的异常，导致可视化生成中断。当前没有 fallback 机制。
+- **建议修复**：增加 try/except 包裹 yaml.safe_load，文件缺失时输出友好错误信息并返回空 dict；或生成带有错误提示的 HTML 而非崩溃。
+
+### 7. auto_iterative_test.py 缺少异常重试与限流
+- **位置**：scripts/auto_iterative_test.py:88-120
+- **严重程度**：🟡 警告
+- **描述**：run_llm_extraction 中对每个 case 顺序调用 LLM，没有重试机制。若 API 临时故障或限流，整个批次会失败。此外，没有速率限制，高并发时可能触发服务商封禁。
+- **建议修复**：引入与 daily_review.py 相同的 retry_on_error 装饰器（指数退避）；增加 time.sleep(0.5) 或基于 Token 桶的速率限制；记录失败 case 的 ID 以便下次运行时优先重试。
+
+### 8. daily_review.py PR 创建失败处理不完善
+- **位置**：scripts/daily_review.py:create_pull_request
+- **严重程度**：🟢 建议
+- **描述**：create_pull_request 在 GITHUB_TOKEN 缺失时返回 None，但调用方未区分 "Token 缺失" 和 "API 调用失败"（如 422 验证失败）。这会导致状态记录中 pr_url 为 None，用户无法区分是配置问题还是网络问题。
+- **建议修复**：create_pull_request 返回 Tuple[bool, str]，第一个值表示是否成功，第二个值是 URL 或错误信息；调用方根据 bool 值打印不同级别的日志（error vs warning）。
+
+### 9. parse_guiding_cases_llm_v2.py 法条格式转换硬编码
+- **位置**：scripts/parse_guiding_cases_llm_v2.py:93-103
+- **严重程度**：🟢 建议
+- **描述**：legal_provision_extractor 输出格式到本体论标准格式的映射硬编码在代码中（'law_name' -> 'statute', 'article_number' -> 'article'）。若 extractor 侧字段名变更，此处会静默产生空值。
+- **建议修复**：在 scripts 目录下创建一个 constants.py 或 mapping.py，集中管理跨模块字段映射；或增加断言检查提取结果中必须包含非空 statute 和 article。
+
+### 10. 新增数据文件缺少 schema 校验
+- **位置**：data/raw/test_10_new_v2.csv
+- **严重程度**：🟢 建议
+- **描述**：新增的 CSV 数据文件包含 10 条测试数据，但没有配套的 schema 校验脚本或数据质量检查（如必填字段缺失、日期格式合法性、案号格式正则校验）。这可能导致下游 LLM 提取时因输入数据质量问题产生错误。
+- **建议修复**：在 tests/ 或 scripts/ 中增加 validate_raw_data.py，对 CSV 进行基础校验：必填字段非空、case_type 在枚举范围内、日期格式统一、案号符合正则。在 auto_iterative_test.py 加载数据前运行该校验。
+
+## 代码质量评分
+
+| 维度 | 评分 | 说明 |
+|------|------|------|
+| 完整性 | 8/10 | 自动修复、评审、状态管理、可视化、迭代测试等模块齐全，但缺少统一的数据校验层 |
+| 一致性 | 7/10 | 路径解析方式不统一（有的硬编码、有的动态解析），部分模块使用 unicode 转义字符而非原生中文 |
+| 准确性 | 8/10 | 法条正则修复精准，本体论映射正确，但存在 typo（婚姻家庭编绡法）和潜在的竞态条件 |
+| 可维护性 | 7/10 | 新增功能模块化良好，但白名单、字段映射等硬编码内容增加了维护成本；缺少单元测试覆盖 |
+
+## 附录
+- 评审时间：2026-04-30 10:00
+- 评审范围：前24小时内的代码变更（2026-04-30 10:00 ~ 2026-05-01 10:00）
+- 评审工具：Git diff + 人工分析
