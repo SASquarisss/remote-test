@@ -120,39 +120,43 @@
       "pr_url": "https://github.com/SASquarisss/remote-test/pull/11"
     },
     "2026-05-01.md": {
-      "last_updated": "2026-05-02T02:32:54.510246",
+      "last_updated": "2026-05-02T04:33:22.104437",
       "items": {
         "1": {
           "state": "auto_fixed",
           "classification": "同意",
-          "branch": "auto-fix/20260502-0232",
-          "pr_url": "https://github.com/SASquarisss/remote-test/pull/13"
+          "branch": "auto-fix/20260502-0433",
+          "pr_url": "https://github.com/SASquarisss/remote-test/pull/14"
         },
         "2": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260502-0232",
-          "pr_url": "https://github.com/SASquarisss/remote-test/pull/13"
+          "branch": "auto-fix/20260502-0433",
+          "pr_url": "https://github.com/SASquarisss/remote-test/pull/14"
         },
         "3": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260502-0232",
-          "pr_url": "https://github.com/SASquarisss/remote-test/pull/13"
+          "branch": "auto-fix/20260502-0433",
+          "pr_url": "https://github.com/SASquarisss/remote-test/pull/14"
+        },
+        "4": {
+          "state": "failed_patch",
+          "classification": "同意",
+          "branch": "auto-fix/20260502-0433",
+          "pr_url": "https://github.com/SASquarisss/remote-test/pull/14"
+        },
+        "5": {
+          "state": "failed_patch",
+          "classification": "同意",
+          "branch": "auto-fix/20260502-0433",
+          "pr_url": "https://github.com/SASquarisss/remote-test/pull/14"
         },
         "10": {
           "state": "failed_patch",
           "classification": "同意",
-          "branch": "auto-fix/20260502-0232",
-          "pr_url": "https://github.com/SASquarisss/remote-test/pull/13"
-        },
-        "4": {
-          "state": "pending_user",
-          "classification": "同意但不优先"
-        },
-        "5": {
-          "state": "pending_user",
-          "classification": "同意但不优先"
+          "branch": "auto-fix/20260502-0433",
+          "pr_url": "https://github.com/SASquarisss/remote-test/pull/14"
         },
         "6": {
           "state": "pending_user",
@@ -171,8 +175,8 @@
           "classification": "同意但不优先"
         }
       },
-      "branch": "auto-fix/20260502-0232",
-      "pr_url": "https://github.com/SASquarisss/remote-test/pull/13"
+      "branch": "auto-fix/20260502-0433",
+      "pr_url": "https://github.com/SASquarisss/remote-test/pull/14"
     }
   },
   "meta": {}
