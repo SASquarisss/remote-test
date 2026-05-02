@@ -10,12 +10,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path("/root/.hermes/hermes-agent/remote-test")
+REPO = Path(os.environ.get("REPO_PATH", Path(__file__).resolve().parent.parent))
 os.chdir(REPO)
 
 # 加载 .env 到环境变量
 env = os.environ.copy()
-with open("/root/.hermes/.env", "r") as f:
+env_path = Path(os.environ.get("ENV_FILE", Path.home() / ".hermes" / ".env"))
+with open(env_path, "r") as f:
     for line in f:
         line = line.strip()
         if not line or line.startswith("#"):
