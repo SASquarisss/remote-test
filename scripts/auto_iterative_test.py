@@ -28,7 +28,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.text_compressor import compress_for_llm
 
 REPO = Path(__file__).parent.parent
-MASTER_CSV = REPO / "data/raw/DataWorks_Excel_207022225952236023_20260427150349.csv"
+csv_files = sorted((REPO / "data/raw").glob("*.csv"), key=lambda p: p.stat().st_mtime)
+MASTER_CSV = csv_files[-1] if csv_files else REPO / "data/raw/default.csv"
 STATE_FILE = REPO / "data/processed/auto_test_state.json"
 REPORT_FILE = REPO / "data/processed/auto_test_report.md"
 PROMPT_FILE = REPO / "scripts/prompts/guiding_case_extraction.txt"
