@@ -1,4 +1,9 @@
 guiding_case_id,case_type_id
+guiding_case_2292,case_type_8960dd8c1a76
+guiding_case_6379,case_type_856b38ccbb62
+guiding_case_12931,case_type_6bedf2b0134a
+guiding_case_2626,case_type_5c93c6ee7aea
+guiding_case_714,case_type_36ba9d105213
 guiding_case_298,case_type_6a530db1f670
 guiding_case_323,case_type_136eeee078d5
 guiding_case_349,case_type_662bd81bb638
@@ -28,7 +33,6 @@ guiding_case_689,case_type_aa6e16ad1329
 guiding_case_692,case_type_06df11cf3807
 guiding_case_699,case_type_1537ce9adf4e
 guiding_case_700,case_type_b84eb0392232
-guiding_case_714,case_type_36ba9d105213
 guiding_case_731,case_type_10fc80b31b8c
 guiding_case_750,case_type_1771bd21d45f
 guiding_case_774,case_type_9d9967bf2b24
@@ -49,3 +53,4 @@ guiding_case_1059,case_type_d536a72fa7aa
 guiding_case_1081,case_type_f6fc327e3f65
 guiding_case_1089,case_type_3c155ea688cd
 guiding_case_1109,case_type_302cbeef1068
+guiding_case_1112,case_type_8796274684d3
