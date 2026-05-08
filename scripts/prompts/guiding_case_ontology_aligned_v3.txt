@@ -43,13 +43,21 @@
 ### Evidence（关键证据）
 从basic_facts、judgment_reason中提取关键证据：
 - `content`: 证据内容摘要
-- `evidence_type`: 证据类型。"documentary"（书证）、"physical"（物证）、"forensic"（鉴定意见）、"witness_testimony"（证人证言）、"electronic"（电子数据）、"expert_conclusion"（专家意见）、"audio_visual"（视听资料）、"inspection_record"（勘验笔录）、"other"
+- `evidence_type`: 证据类型。基于《民事诉讼法》第63条法定证据类型：
+  "documentary"（书证）、"physical"（物证）、"audio_visual"（视听资料）、"electronic_data"（电子数据）、
+  "witness_testimony"（证人证言）、"party_statement"（当事人陈述）、"expert_opinion"（鉴定意见）、"inspection_record"（勘验笔录）
 - `submitted_by`: 提交方名称
 - `is_key_evidence`: 是否是关键定案证据（true/false）
 
 ### JudgmentResult（判决结果/裁判主文）
 从case_summary或judgment_reason中提取结构化判决结果：
-- `result_type`: 结果类型。"liable"（承担责任）、"not_liable"（不承担责任）、"convicted"（定罪）、"acquitted"（无罪）、"dismissed"（驳回起诉/上诉）、"partially_upheld"（部分维持）、"fully_upheld"（完全维持）、"reversed"（撤销原判）、"remanded"（发回重审）、"settled"（调解结案）、"mediation_agreement"（调解协议）、"arbitration_award"（仲裁裁决）、"administrative_decision"（行政决定）、"execution_upheld"（维持执行）、"execution_revoked"（撤销执行）、"execution_terminated"（终结执行）
+- `result_type`: 结果类型。
+  刑事："guilty"（有罪判决）、"not_guilty"（无罪判决）、"acquitted"（无罪释放）、"remanded"（发回重审）、"sentence_upheld"（维持原判）、"death_penalty_reviewed"（死刑复核）
+  民事："liable"（承担责任）、"not_liable"（不承担责任）、"partially_liable"（部分承担责任）、"dismissed"（驳回起诉/上诉）、"withdrawn"（撤诉）、"settled"（调解结案）、"partially_upheld"（部分维持）、"punitive_damages"（惩罚性赔偿）、"procedural_ruling"（程序性裁定）、"bankruptcy_declared"（宣告破产）
+  行政："upheld"（维持）、"revoked"（撤销）、"ordered_to_act"（责令履行）、"ordered_to_redo"（责令重做）、"confirmed_illegal"（确认违法）
+  执行："execution_upheld"（维持执行）、"execution_revoked"（撤销执行）、"execution_objection_upheld"（执行异议成立）、"added_executor"（追加被执行人）、"execution_terminated"（终结执行）
+  检察监督："procuratorial_suggestion_issued"（制发检察建议）、"procuratorial_appeal_lodged"（提起抗诉）
+  通用："mediation_agreement"（调解书）、"arbitration_award"（仲裁裁决）、"administrative_decision"（行政决定）
 - `specific_judgment`: 具体判决内容（如刑期、赔偿金额等）
 - `case_number`: 关联案号
 
@@ -106,7 +114,11 @@
 - `credit_code`: 统一社会信用代码（如有，通常企业才有）
 - `roles`: 角色列表
   - `role_code`: 角色编码。可用枚举值：
-    `"plaintiff", "defendant", "third_party", "defendant_criminal", "victim", "witness", "prosecutor", "agent", "attorney", "applicant", "respondent", "appellant", "appellee", "retrial_applicant", "retrial_respondent", "mediator", "arbitrator", "beneficiary", "executor", "execute_respondent", "objector", "expert_witness", "interpreter"`
+    `"plaintiff", "defendant", "third_party", "defendant_criminal", "victim", "witness", "prosecutor", "agent", "attorney",
+     "applicant", "respondent", "appellant", "appellee", "retrial_applicant", "retrial_respondent", "judicial_review_applicant",
+     "enforcement_applicant", "enforcement_respondent", "executor", "execute_respondent", "objector",
+     "insolvency_debtor", "surety", "class_representative",
+     "mediator", "arbitrator", "beneficiary", "expert_witness", "interpreter"`
     遇到非标准角色，使用"other"+原文名称。
   - `role_name`: 原始角色名称（中文原词）
   - `case_number`: 关联案号（该当事人在哪个案号下担任此角色）
@@ -180,7 +192,7 @@
       "credit_code": null,
       "roles": [
         {
-          "role_code": "plaintiff|defendant|third_party|defendant_criminal|victim|witness|prosecutor|agent|attorney|applicant|respondent|appellant|appellee|retrial_applicant|retrial_respondent|mediator|arbitrator|beneficiary|executor|execute_respondent|objector|expert_witness|interpreter",
+          "role_code": "plaintiff|defendant|third_party|defendant_criminal|victim|witness|prosecutor|agent|attorney|applicant|respondent|appellant|appellee|retrial_applicant|retrial_respondent|judicial_review_applicant|enforcement_applicant|enforcement_respondent|executor|execute_respondent|objector|insolvency_debtor|surety|class_representative|mediator|arbitrator|beneficiary|expert_witness|interpreter",
           "role_name": "",
           "case_number": ""
         }
@@ -232,14 +244,14 @@
   "evidence": [
     {
       "content": "",
-      "evidence_type": "documentary|physical|forensic|witness_testimony|electronic|expert_conclusion|audio_visual|inspection_record|other",
+      "evidence_type": "documentary|physical|audio_visual|electronic_data|witness_testimony|party_statement|expert_opinion|inspection_record",
       "submitted_by": "",
       "is_key_evidence": true
     }
   ],
   "judgment_results": [
     {
-      "result_type": "liable|not_liable|convicted|acquitted|dismissed|partially_upheld|fully_upheld|reversed|remanded|settled|mediation_agreement|arbitration_award|administrative_decision|execution_upheld|execution_revoked|execution_terminated",
+      "result_type": "guilty|not_guilty|liable|not_liable|dismissed|withdrawn|partially_upheld|remanded|punitive_damages|procedural_ruling|bankruptcy_declared|settled|mediation_agreement|arbitration_award|administrative_decision|execution_upheld|execution_revoked|execution_terminated|added_executor",
       "specific_judgment": "",
       "case_number": ""
     }

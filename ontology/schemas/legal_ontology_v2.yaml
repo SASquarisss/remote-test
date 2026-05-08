@@ -28,7 +28,7 @@ types:
   LegalProvision:
     is_a: LegalNorm
     required: [article]
-    optional: [law_id, paragraph, item, content, status, legislative_purpose, related_provisions, repealed_date]
+    optional: [law_id, paragraph, item, content, status, legislative_purpose, related_provisions, repealed_date, references]
     status_enum: [effective, amended, repealed]
     description: "法律条文（当前生效版本）"
 
@@ -142,7 +142,7 @@ types:
     is_a: JudicialEntity
     required: [name, code]
     optional: [description, permissions]
-    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary]
+    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary, victim, criminal_defendant, enforcement_applicant, enforcement_respondent, judicial_review_applicant, insolvency_debtor, surety, class_representative]
     description: "法律角色"
 
   # ==================== 案件层 ====================
@@ -172,7 +172,7 @@ types:
     is_a: JudicialEntity
     required: [case_id, result_type]
     optional: [judgment_date, effective_date, sentence_term, compensation_amount, reasoning, sentencing_standard_id]
-    result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, mediation_agreement, arbitration_award, administrative_decision]
+    result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, partially_upheld, remanded, punitive_damages, procedural_ruling, bankruptcy_declared, mediation_agreement, arbitration_award, administrative_decision]
     description: "裁判结果"
 
   ExecutionInfo:
@@ -190,7 +190,7 @@ types:
   Evidence:
     is_a: JudicialEntity
     optional: [evidence_type, case_id, submitter_id, submission_date, examination_status, admission_status, description, file_path, chain_of_custody]
-    evidence_type_enum: [document, physical, digital, testimony, expert_opinion]
+    evidence_type_enum: [documentary, physical, audio_visual, electronic_data, witness_testimony, party_statement, expert_opinion, inspection_record]
     examination_status_enum: [not_examined, examined]
     admission_status_enum: [admitted, not_admitted]
     probative_force_enum: [valid, invalid]
@@ -211,7 +211,7 @@ types:
     is_a: JudicialEntity
     required: [case_id, role_code]
     optional: [subject_id, trial_level, is_primary, role_name]
-    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary]
+    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary, victim, criminal_defendant, enforcement_applicant, enforcement_respondent, judicial_review_applicant, insolvency_debtor, surety, class_representative]
     description: "案件参与人（含审级角色变更）"
 
 relations:
@@ -265,12 +265,6 @@ relations:
     to: TrialOrganization
     cardinality: one_to_one
     description: "案件由审判组织审理"
-
-  presides_over:
-    from: Judge
-    to: TrialOrganization
-    cardinality: one_to_one
-    description: "法官主持审判组织"
 
   undertakes:
     from: Judge
@@ -363,7 +357,8 @@ relations:
     from: TrialOrganization
     to: Judge
     cardinality: one_to_many
-    description: "审判组织包含法官"
+    attributes: [is_presiding]
+    description: "审判组织包含法官（is_presiding=true 表示审判长）"
 
   includes_clerk:
     from: TrialOrganization
@@ -442,9 +437,9 @@ constraints:
 
   # 8. 最高院管辖约束
   - type: CourtCase
-    rule: "Court.id == court_id AND Court.court_level == 'supreme' IMPLIES trial_level != 'second_instance'"
-    enforcement: block
-    description: "最高院判决不得上诉"
+    rule: "Court.id == court_id AND Court.court_level == 'supreme' AND trial_level != 'first_instance' IMPLIES trial_level != 'second_instance'"
+    enforcement: soft
+    description: "最高院判决不得上诉（最高院一审案件可上诉，二审/再审判决不可再次上诉）"
 
   # 9. 量刑标准区间约束
   - type: SentencingStandard

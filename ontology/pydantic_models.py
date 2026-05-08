@@ -59,6 +59,7 @@ class LegalProvision(LegalNorm):
     status: Optional[Literal["effective", "amended", "repealed"]] = None
     legislative_purpose: Optional[str] = None
     related_provisions: Optional[List[str]] = None
+    references: Optional[List[str]] = None
     repealed_date: Optional[date] = None
 
 
@@ -240,6 +241,7 @@ class JudgmentResult(JudicialEntity):
         "guilty", "not_guilty", "acquitted", "remanded", "sentence_upheld", "death_penalty_reviewed",
         # 民事
         "liable", "not_liable", "partially_liable", "dismissed", "withdrawn", "settled",
+        "partially_upheld", "punitive_damages", "procedural_ruling", "bankruptcy_declared",
         # 行政
         "upheld", "revoked", "ordered_to_act", "ordered_to_redo", "confirmed_illegal",
         # 执行
@@ -284,7 +286,7 @@ class LegalDocument(JudicialEntity):
 
 
 class Evidence(JudicialEntity):
-    evidence_type: Optional[Literal["document", "physical", "digital", "testimony", "expert_opinion"]] = None
+    evidence_type: Optional[Literal["documentary", "physical", "audio_visual", "electronic_data", "witness_testimony", "party_statement", "expert_opinion", "inspection_record"]] = None
     case_id: Optional[str] = None
     submitter_id: Optional[str] = None
     submission_date: Optional[date] = None
@@ -325,13 +327,13 @@ class CaseParticipant(JudicialEntity):
         # 刑事程序
         "prosecutor", "suspect", "defendant_criminal", "victim",
         # 执行程序
-        "executor", "execute_respondent", "applicant", "respondent", "objector",
+        "enforcement_applicant", "enforcement_respondent", "executor", "execute_respondent", "applicant", "respondent", "objector",
         # 行政程序
         "administrative_counterpart", "administrative_agency",
-        # 上诉/再审
-        "appellant", "appellee", "retrial_applicant", "retrial_respondent",
+        # 上诉/再审/复议
+        "appellant", "appellee", "retrial_applicant", "retrial_respondent", "judicial_review_applicant",
         # 其他
-        "expert_witness", "interpreter", "relator", "mediator", "arbitrator", "beneficiary"
+        "expert_witness", "interpreter", "relator", "mediator", "arbitrator", "beneficiary", "insolvency_debtor", "surety", "class_representative"
     ]
     trial_level: Optional[Literal["first_instance", "second_instance", "retrial", "execution"]] = None
     is_primary: Optional[bool] = None
