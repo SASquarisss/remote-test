@@ -67,14 +67,15 @@
 - `guiding_case_number`: 指导案例编号（如"指导案例XX号"），如无则留空
 - `guiding_case_name`: 案例名称（必须填写，从web_name或当事人信息拼接生成）
 - `publication_date`: 发布日期（从trial_year推断，格式YYYY-MM-DD）
-- `binding_force`: 约束力。"指导性案例"→"mandatory"，"典型案例"→"persuasive"
+- `binding_force`: 约束力。"指导性案例"→"mandatory"，"典型案例"→"persuasive"，其他→"reference"。**注意：binding_force 使用自己的枚举值（mandatory/persuasive/reference），与 case_level 的枚举值（guiding_case/typical_case/reference_case）不同，不能混用。**
 - `guiding_points`: 裁判要旨/指导要点（从judgment_essence提取）
 - `key_words`: 关键词列表（从key_words字段提取，逗号分隔）
-- `case_level`: 案例层级。"01"→"guiding_case"，"02"→"typical_case"，其他→"reference_case"
+- `case_level`: 案例层级。"01"→"guiding_case"（指导性案例），"02"→"typical_case"（典型案例），其他→"reference_case"（参考案例）。**注意：此字段由输入字段【案例层级】直接映射，严格按规则执行，不能自行推断。**
 - `trial_procedure`: 审判程序（一审/二审/再审/执行）
 - `storage_no`: 案例库内部编号
-- `source_url`: 来源URL
-- `judgment_mean`: 裁判意义
+- `source_url`: 来源URL（直接使用输入中的【来源URL】字段值，原样传递，不要修改或留空）
+- `judgment_mean`: 裁判意义（直接使用输入中的【裁判意义】字段值）
+- `key_words`: 关键词列表（直接使用输入中的【关键词】字段值，逗号分隔）
 
 ### 2. CaseType（案件类型）
 从case_type字段解析：
@@ -122,7 +123,7 @@
 - `article`: **必填**，条号。纯数字。如"第30条"→"30"，"第二百六十六条"→"266"，"第二十条之一"→"236之一"。不能留空。
 - `paragraph`: 款号（如"第1款"→"1"。如未明确提及则留空）
 - `item`: 项号（如"第(一)项"→"1"。如未明确提及则留空）
-- `content`: **必填**，法条引用原文片段。从文本中找到该法条被引用的上下文，提取50-100字左右。不能为空。
+- `content`: **必填**，法条引用原文片段。从文本中找到该法条被引用的上下文，提取50-100字左右。**如果文本中没有该法条的完整原文（仅有条文编号），则使用法条名称和条款号作为内容，如："《中华人民共和国企业破产法》第四十七条：……（根据上下文概括）"，不能为空。**
 - `citation_position`: 引用位置。"基本事实"→"basic_facts"，"裁判理由"→"judgment_reason"，"裁判要旨"→"judgment_essence"，"关联信息"→"related_info"，"相关法律"→"related_law"
 - `citation_purpose`: 引用目的。"适用依据"（作为判决依据），"说理依据"（用于论证说理），"反驳依据"（用于反驳对方观点）
 

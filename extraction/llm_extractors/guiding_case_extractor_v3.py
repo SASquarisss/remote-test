@@ -71,21 +71,73 @@ def load_csv(path: str) -> List[Dict[str, str]]:
     return rows
 
 
+def enforce_case_level(row: Dict[str, str], output: Dict[str, Any]) -> Dict[str, Any]:
+    """Enforce case_level and binding_force from CSV case_level column (hard override)."""
+    if not isinstance(output, dict):
+        return output
+
+    csv_cl = row.get("case_level", "").strip().replace("\\N", "").strip()
+    cl_map = {"01": "guiding_case", "02": "typical_case"}
+    bf_map = {"01": "mandatory", "02": "persuasive"}
+
+    enforced_cl = cl_map.get(csv_cl, "reference_case")
+    enforced_bf = bf_map.get(csv_cl, "reference")
+
+    if "guiding_case" in output and isinstance(output["guiding_case"], dict):
+        output["guiding_case"]["case_level"] = enforced_cl
+        output["guiding_case"]["binding_force"] = enforced_bf
+
+    return output
+
+
+def enforce_source_url(row: Dict[str, str], output: Dict[str, Any]) -> Dict[str, Any]:
+    """Copy web_url from input to output's source_url if output has it empty."""
+    if not isinstance(output, dict):
+        return output
+    input_url = row.get("web_url", "").strip()
+    if input_url and "guiding_case" in output and isinstance(output["guiding_case"], dict):
+        existing = output["guiding_case"].get("source_url", "").strip()
+        if not existing:
+            output["guiding_case"]["source_url"] = input_url
+    return output
+
+
+def fill_empty_provision_content(output: Dict[str, Any]) -> Dict[str, Any]:
+    """Fill empty legal_provision.content with a fallback description."""
+    if not isinstance(output, dict):
+        return output
+    provisions = output.get("legal_provisions") or []
+    for p in provisions:
+        if not p.get("content", "").strip():
+            statute = p.get("statute", "").strip()
+            article = p.get("article", "").strip()
+            if statute and article:
+                p["content"] = f"《{statute}》第{article}条（提取自相关法条引用）"
+            elif statute:
+                p["content"] = f"《{statute}》（提取自相关法条引用）"
+            else:
+                p["content"] = "法条引用（提取自相关法条引用）"
+    return output
+
+
 def build_llm_input(row: Dict[str, str]) -> str:
     fields = [
         ("web_name", "案例来源"),
+        ("web_url", "来源URL"),
         ("case_type", "案由分类"),
         ("storage_no", "入库编号"),
         ("court_name", "审理法院"),
         ("trial_procedure", "审判程序"),
         ("trial_year", "裁判年份"),
-        ("case_level", "审级"),
+        ("case_level", "案例层级"),
         ("basic_facts", "基本案情"),
         ("judgment_reason", "裁判理由"),
         ("judgment_essence", "裁判要旨"),
         ("related_info", "相关案情/关联案件"),
         ("related_law", "相关法条"),
         ("related_judgment_body", "关联裁判文书"),
+        ("key_words", "关键词"),
+        ("judgment_mean", "裁判意义"),
     ]
     lines = []
     for key, label in fields:
@@ -239,6 +291,12 @@ def process_one(idx: int, row: Dict[str, str], prompt: str, config: Dict[str, An
     try:
         output = call_llm(prompt, text, config)
         elapsed = time.time() - t0
+        # Post-processing: enforce case_level/binding_force from CSV
+        output = enforce_case_level(row, output)
+        # Post-processing: copy web_url to source_url
+        output = enforce_source_url(row, output)
+        # Post-processing: fill empty provision content
+        output = fill_empty_provision_content(output)
         eval_result = evaluate_output(output, row_id)
         print(f"  {elapsed:.0f}s score={eval_result['score']:.0f} cases={eval_result['court_case_count']} provisions={eval_result['provision_count']}", flush=True)
         return {
