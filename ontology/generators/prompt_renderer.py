@@ -597,6 +597,7 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 
 ## 强制提取要点
 - **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
+- **证据提取（Evidence）必须从 basic_facts、judgment_reason 中全面提取**：包括当事人提交的证据名称、类型、证明目的、是否被法院采信。平均每个案例应提取 2-5 条关键证据，如果为空则说明需要重新检查文本中的证据描述。
 - **案号提取**：一个指导性案例往往包含多个审级，你必须从 basic_facts、related_info、related_judgment_body 中找出所有案号，为每个案号生成一个 court_case。**注意多个审级的案号不同**。
 - **filing_date必须填写**：从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
 - **角色映射**：每个 party 的 role_code 和 role_name 都必须有值。遇到非标准角色，使用"other"+原文名称。

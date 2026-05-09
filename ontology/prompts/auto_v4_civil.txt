@@ -12,6 +12,7 @@
 
 ## 强制提取要点
 - **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
+- **证据提取（Evidence）必须从 basic_facts、judgment_reason 中全面提取**：包括当事人提交的证据名称、类型、证明目的、是否被法院采信。平均每个案例应提取 2-5 条关键证据，如果为空则说明需要重新检查文本中的证据描述。
 - **案号提取**：一个指导性案例往往包含多个审级，你必须从 basic_facts、related_info、related_judgment_body 中找出所有案号，为每个案号生成一个 court_case。**注意多个审级的案号不同**。
 - **filing_date必须填写**：从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
 - **角色映射**：每个 party 的 role_code 和 role_name 都必须有值。遇到非标准角色，使用"other"+原文名称。
@@ -429,30 +430,6 @@
   "legal_provisions": [
     {
       "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释",
-      "article": "26",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "judgment_reason",
-      "citation_purpose": "说理依据"
-    },
-    {
-      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释（二）",
-      "article": "24",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "judgment_reason",
-      "citation_purpose": "说理依据"
-    },
-    {
-      "statute": "最高人民法院关于适用《中华人民共和国民事诉讼法》的解释",
-      "article": "105",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "judgment_reason",
-      "citation_purpose": "说理依据"
-    },
-    {
-      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释",
       "article": "1",
       "paragraph": "",
       "item": "",
@@ -466,6 +443,30 @@
       "item": "",
       "citation_position": "judgment_reason",
       "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释",
+      "article": "16",
+      "paragraph": "2",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释",
+      "article": "26",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释（二）",
+      "article": "24",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
     }
   ],
   "evidence": [
@@ -474,7 +475,7 @@
       "is_key_evidence": true
     },
     {
-      "evidence_type": "documentary",
+      "evidence_type": "witness_testimony",
       "is_key_evidence": true
     },
     {
@@ -488,14 +489,14 @@
       "specific_judgment": "某建设公司于本判决生效后十日内支付张某工程款2105184.41元及设计变更签证单增加工程款592400元。"
     },
     {
-      "result_type": "fully_upheld",
+      "result_type": "dismissed",
       "specific_judgment": "驳回上诉，维持原判。"
     }
   ],
   "case_summary": {
-    "key_facts": "2016年，某建设公司承包某置业公司某公馆项目景观绿化工程，后与杨某签订内部承包协议。实际上，张某组织人员施工，某建设公司后声明更换项目负责人为张某，并与张某补签《项目合作协议书》。工程竣工验收后，双方对工程款和设计变更签证增加款结算产生争议。张某起诉要求支付剩余工程款2142000元及增加款592400元。某建设公司主张实际施工人为杨某，张某未参与施工。法院查明张某为实际施工人，一审、二审支持张某部分诉请，再审调整了工程款和增加款数额，扣除某建设公司垫付的维修费用后，判令某建设公司支付工程款1756153.41元及增加款585291.2元。",
-    "disputed_issues": "1.案涉工程的实际施工人是谁；2.某建设公司是否应支付工程款及设计变更签证单增加工程款；3.一审程序是否违法；4.某置业公司是否应承担责任。",
-    "conclusion": "再审认定张某为实际施工人，某建设公司与张某之间的《项目合作协议书》无效，但工程已竣工验收，张某有权参照合同主张工程款。扣除某建设公司垫付的养护维修费用后，某建设公司应支付工程款1756153.41元及设计变更签证单增加工程款585291.2元，共计2341444.61元。"
+    "key_facts": "2016年，某建设公司与某置业公司签订《工程施工合同书》，承包某公馆项目绿化及安装工程，后与杨某签订内部承包协议。张某实际组织施工并完成竣工验收。某建设公司后更换项目负责人为张某，并补签《项目合作协议书》。工程总价款10003865.07元，双方对设计变更签证单增加工程款592400元无异议。张某要求支付剩余工程款及增加款，某建设公司主张实际施工人为杨某。",
+    "disputed_issues": "1. 案涉工程的实际施工人是谁；2. 某建设公司是否应支付工程款及设计变更签证单增加工程款；3. 一审法院审理程序是否违法；4. 某建设公司是否应抵扣垫付的维修养护等费用。",
+    "conclusion": "再审认定张某为实际施工人，某建设公司应向张某支付工程款1756153.41元及设计变更签证单增加工程款585291.2元，合计2341444.61元。某建设公司垫付的必要维修费用已扣除，但其他杂项费用不予支持。"
   }
 }
 ```

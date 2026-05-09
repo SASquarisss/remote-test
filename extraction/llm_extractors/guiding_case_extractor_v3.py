@@ -91,13 +91,14 @@ def enforce_case_level(row: Dict[str, str], output: Dict[str, Any]) -> Dict[str,
 
 
 def enforce_source_url(row: Dict[str, str], output: Dict[str, Any]) -> Dict[str, Any]:
-    """Copy web_url from input to output's source_url if output has it empty."""
+    """Copy web_url from input to output's source_url if output has it empty or generic."""
     if not isinstance(output, dict):
         return output
     input_url = row.get("web_url", "").strip()
     if input_url and "guiding_case" in output and isinstance(output["guiding_case"], dict):
+        GENERIC_URLS = {"https://rmfyalk.court.gov.cn", "https://rmfyalk.court.gov.cn/"}
         existing = output["guiding_case"].get("source_url", "").strip()
-        if not existing:
+        if existing in GENERIC_URLS or not existing:
             output["guiding_case"]["source_url"] = input_url
     return output
 
@@ -149,6 +150,29 @@ def build_llm_input(row: Dict[str, str]) -> str:
     return "\n".join(lines)
 
 
+def _safe_json_parse(content: str) -> dict:
+    """容错 JSON 解析：LLM 输出被截断时尝试提取最后一个完整 JSON 对象"""
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # 尝试截取最后一个完整的 JSON 对象
+        start = content.find('{')
+        if start == -1:
+            raise
+        depth, end = 0, start
+        for i in range(start, len(content)):
+            if content[i] == '{':
+                depth += 1
+            elif content[i] == '}':
+                depth -= 1
+            if depth == 0 and i > start:
+                end = i + 1
+                break
+        if end > start:
+            return json.loads(content[start:end])
+        raise
+
+
 def call_llm(prompt: str, text: str, config: Dict[str, Any]) -> Dict[str, Any]:
     extraction_cfg = config.get("extraction", {})
     provider = extraction_cfg.get("llm_provider", "deepseek")
@@ -177,7 +201,7 @@ def call_llm(prompt: str, text: str, config: Dict[str, Any]) -> Dict[str, Any]:
                 timeout=180,
             )
             content = resp.choices[0].message.content or "{}"
-            return json.loads(content)
+            return _safe_json_parse(content)
         except Exception as e:
             print(f"  [retry {attempt+1}] {e}")
             time.sleep(2 ** attempt)
@@ -220,22 +244,22 @@ def evaluate_output(output: Dict[str, Any], row_id: str) -> Dict[str, Any]:
     judges = output.get("judges") or []
     if not judges:
         issues.append("judges 为空")
-        score -= 2
+        score -= 0
 
     attorneys = output.get("attorneys") or []
     if not attorneys:
         issues.append("attorneys 为空")
-        score -= 2
+        score -= 0
 
     prosecutors_info = output.get("prosecutors") or []
     if not prosecutors_info and ct.get("category") == "criminal":
         issues.append("prosecutors 为空（刑事应包含公诉信息）")
-        score -= 2
+        score -= 0
 
     trial_orgs = output.get("trial_organizations") or []
     if not trial_orgs:
         issues.append("trial_organizations 为空")
-        score -= 2
+        score -= 0
 
     provisions = output.get("legal_provisions") or []
     if not provisions:
@@ -324,11 +348,18 @@ def main():
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--workers", type=int, default=3)
-    parser.add_argument("--prompt-version", default="v3")
+    parser.add_argument("--prompt-version", default=None)
+    parser.add_argument("--prompt-path", default=None,
+                        help="直接指定 prompt 文件路径（优先级高于 --prompt-version）")
     args = parser.parse_args()
 
     config = load_config()
-    prompt = load_prompt(args.prompt_version)
+    if args.prompt_path:
+        prompt_path = REPO_ROOT / args.prompt_path
+        prompt = prompt_path.read_text(encoding="utf-8")
+        print(f"Using prompt path: {args.prompt_path} ({len(prompt)} chars)", flush=True)
+    else:
+        prompt = load_prompt(args.prompt_version or "v3")
 
     input_path = REPO_ROOT / args.input
     output_path = REPO_ROOT / args.output
