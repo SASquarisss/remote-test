@@ -198,8 +198,15 @@ types:
 
   DisputeFocus:
     is_a: JudicialEntity
-    optional: [case_id, content, focus_category_id, canonical_template_id]
-    description: "案件争议焦点"
+    optional: [case_id, content, focus_category_id, canonical_template_id, resolved_by_provision_ids, resolution_logic]
+    description: "案件争议焦点（v2.1新增：resolved_by_provision_ids关联法律条文，resolution_logic法院解决逻辑）"
+
+  LegalProvisionElement:
+    is_a: LegalNorm
+    required: [provision_id, element_type]
+    optional: [content, applicable_fact_pattern]
+    element_type_enum: [subject_element, object_element, act_element, result_element, causality_element, subjective_element, legal_consequence, exception_clause]
+    description: "法条构成要件要素（主体/行为/结果/因果关系/主观要件等结构化分解，用于事实→法条匹配推理）"
 
   Fact:
     is_a: JudicialEntity
@@ -392,6 +399,25 @@ relations:
     cardinality: one_to_many
     description: "案件具有事实"
 
+  matches_element:
+    from: Fact
+    to: LegalProvisionElement
+    cardinality: many_to_many
+    attributes: [match_score, match_reasoning]
+    description: "案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配）"
+
+  resolved_by:
+    from: DisputeFocus
+    to: LegalProvision
+    cardinality: many_to_many
+    description: "争议焦点由法律条文解决（争议焦点→法条映射）"
+
+  leads_to:
+    from: [Fact, DisputeFocus]
+    to: JudgmentResult
+    cardinality: many_to_many
+    description: "事实/争议焦点推导出裁判结果（三段论推理的结论链路）"
+
 constraints:
   # 1. 官方案号正则
   - type: CourtCase
@@ -470,7 +496,7 @@ engineering:
     Court: "name + district.code"
     Person: "name + case_id（每个案件内独立）"
     Organization: "credit_code（全局唯一，跨案件关联）"
-  data_version: "2026.04.v2"
+  data_version: "2026.05.v2.1"
   incremental_update: true
   graph_storage:
     node_prefix: "LEGAL_"

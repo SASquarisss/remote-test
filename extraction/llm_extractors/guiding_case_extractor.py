@@ -34,14 +34,19 @@ if _HERMES_ENV.exists():
     load_dotenv(_HERMES_ENV)
 
 
-def load_prompt(version: str = "v2") -> str:
-    prompt_path = REPO_ROOT / f"extraction/llm_extractors/prompt_{version}.txt"
+def load_prompt(version: str = "v3") -> str:
+    if version == "v3":
+        prompt_path = REPO_ROOT / "scripts/prompts/guiding_case_ontology_aligned_v3.txt"
+    elif version == "v2":
+        prompt_path = REPO_ROOT / "extraction/llm_extractors/prompt_v2.txt"
+    else:
+        prompt_path = REPO_ROOT / f"extraction/llm_extractors/prompt_{version}.txt"
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
-def robust_parse_tsv(path: Path) -> List[Dict[str, str]]:
-    """Reuse robust parser from parse_guiding_cases.py"""
+def load_csv_or_tsv(path: Path) -> List[Dict[str, str]]:
+    """Load CSV or TSV, handling both comma and tab delimiters."""
     HEADER = [
         "id", "web_name", "web_url", "case_type", "storage_no", "court_name",
         "key_words", "trial_procedure", "trial_year", "case_level",
@@ -51,31 +56,28 @@ def robust_parse_tsv(path: Path) -> List[Dict[str, str]]:
     ]
     EXPECTED_COLS = len(HEADER)
 
-    raw_lines: List[str] = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            raw_lines.append(line.rstrip("\n\r"))
+    with open(path, "r", encoding="utf-8-sig") as f:
+        raw = f.read()
 
-    merged: List[str] = []
-    current = ""
-    for line in raw_lines:
-        stripped = line.lstrip()
-        if stripped and stripped.split(None, 1)[0].isdigit():
-            if current:
-                merged.append(current)
-            current = line
-        else:
-            current += "\n" + line
-    if current:
-        merged.append(current)
+    # Detect delimiter
+    lines = raw.splitlines()
+    if not lines:
+        return []
+    sample = "\n".join(lines[:5])
+    tab_count = sample.count("\t")
+    comma_count = sample.count(",")
+    delimiter = "\t" if tab_count > comma_count else ","
 
-    rows: List[Dict[str, str]] = []
-    for line in merged:
-        parts = line.split("\t")
+    import csv
+    rows = []
+    reader = csv.reader(raw.splitlines(), delimiter=delimiter, quotechar='"')
+    for idx, parts in enumerate(reader):
+        if idx == 0:
+            continue  # skip header
         if len(parts) < EXPECTED_COLS:
             parts += [""] * (EXPECTED_COLS - len(parts))
         elif len(parts) > EXPECTED_COLS:
-            parts = parts[:EXPECTED_COLS - 1] + ["\t".join(parts[EXPECTED_COLS - 1:])]
+            parts = parts[:EXPECTED_COLS]
         rows.append(dict(zip(HEADER, parts)))
     return rows
 
@@ -228,10 +230,30 @@ def call_llm(prompt: str, text: str, config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def evaluate_output(output: Dict[str, Any], row_id: str) -> Dict[str, Any]:
-    """Quick automated evaluation."""
+    """Quick automated evaluation - v3 compatible."""
     issues = []
     score = 100.0
 
+    # Check guiding_case (support both nested and flat)
+    gc = output.get("guiding_case") or output
+    for field in ["guiding_case_number", "guiding_case_name", "binding_force"]:
+        val = gc.get(field) if isinstance(gc, dict) else output.get(field)
+        if not val:
+            issues.append(f"{field} 为空")
+            score -= 5
+    # Also check storage_no
+    storage_no = gc.get("storage_no") if isinstance(gc, dict) else output.get("storage_no")
+    if not storage_no:
+        issues.append("storage_no 为空")
+        score -= 3
+
+    # Check case_type
+    ct = output.get("case_type") or {}
+    if not ct.get("category"):
+        issues.append("case_type.category 为空")
+        score -= 5
+
+    # Check court_cases
     court_cases = output.get("court_cases") or []
     if not court_cases:
         issues.append("court_cases 为空或缺失")
@@ -241,26 +263,69 @@ def evaluate_output(output: Dict[str, Any], row_id: str) -> Dict[str, Any]:
             if not cc.get("case_number"):
                 issues.append(f"court_cases[{i}].case_number 为空")
                 score -= 10
-            # Check parties
-            parties = cc.get("parties") or []
-            for j, p in enumerate(parties):
-                if not p.get("role_code"):
-                    issues.append(f"court_cases[{i}].parties[{j}].role_code 为空 (名称={p.get('name')})")
-                    score -= 5
-                if not p.get("role_name"):
-                    issues.append(f"court_cases[{i}].parties[{j}].role_name 为空 (名称={p.get('name')})")
-                    score -= 2
+            # filing_date is now required
+            if not cc.get("filing_date"):
+                issues.append(f"court_cases[{i}].filing_date 为空")
+                score -= 5
 
-    # Check required top-level fields
-    for field in ["guiding_case_number", "guiding_case_name", "binding_force"]:
-        if not output.get(field):
-            issues.append(f"{field} 为空")
-            score -= 5
+    # Check new entities (lightweight - only warn, don't penalize heavily)
+    judges = output.get("judges") or []
+    if not judges:
+        issues.append("judges 为空")
+        score -= 2
 
-    # Check case_type
+    attorneys = output.get("attorneys") or []
+    if not attorneys:
+        issues.append("attorneys 为空")
+        score -= 2
+
+    prosecutors_info = output.get("prosecutors") or []
     ct = output.get("case_type") or {}
-    if not ct.get("category"):
-        issues.append("case_type.category 为空")
+    if not prosecutors_info and ct.get("category") == "criminal":
+        issues.append("prosecutors 为空（刑事应包含公诉信息）")
+        score -= 2
+
+    trial_orgs = output.get("trial_organizations") or []
+    if not trial_orgs:
+        issues.append("trial_organizations 为空")
+        score -= 2
+
+    # Check legal_provisions
+    provisions = output.get("legal_provisions") or []
+    if not provisions:
+        issues.append("legal_provisions 为空或缺失")
+        score -= 15
+    else:
+        for i, p in enumerate(provisions):
+            if not p.get("article"):
+                issues.append(f"legal_provisions[{i}].article 为空")
+                score -= 5
+            if not p.get("content"):
+                issues.append(f"legal_provisions[{i}].content 为空（法条原文片段必须填写）")
+                score -= 3
+
+    # Check evidence
+    evidence = output.get("evidence") or []
+    if not evidence:
+        issues.append("evidence 为空")
+        score -= 2
+
+    # Check judgment_results
+    judgment_results = output.get("judgment_results") or []
+    if not judgment_results:
+        issues.append("judgment_results 为空")
+        score -= 3
+
+    # Check case_summary
+    cs = output.get("case_summary") or {}
+    if not cs.get("disputed_issues"):
+        issues.append("case_summary.disputed_issues 为空")
+        score -= 10
+    if not cs.get("conclusion"):
+        issues.append("case_summary.conclusion 为空")
+        score -= 10
+    if not cs.get("key_facts"):
+        issues.append("case_summary.key_facts 为空")
         score -= 5
 
     return {
@@ -268,7 +333,10 @@ def evaluate_output(output: Dict[str, Any], row_id: str) -> Dict[str, Any]:
         "score": max(0, score),
         "issues": issues,
         "court_case_count": len(court_cases),
-        "party_count": sum(len(cc.get("parties") or []) for cc in court_cases),
+        "judge_count": len(judges),
+        "attorney_count": len(attorneys),
+        "provision_count": len(provisions),
+        "evidence_count": len(evidence),
     }
 
 
@@ -278,7 +346,7 @@ def main():
     parser.add_argument("--input", default="data_samples/guiding_cases_raw.csv")
     parser.add_argument("--output", default="data_lake/extracted_guiding_cases.jsonl")
     parser.add_argument("--limit", type=int, default=0, help="0 = all")
-    parser.add_argument("--prompt-version", default="v2")
+    parser.add_argument("--prompt-version", default="v3")
     parser.add_argument("--start", type=int, default=0, help="Start index")
     parser.add_argument("--append", action="store_true", help="Append to output file instead of overwrite")
     args = parser.parse_args()
@@ -290,10 +358,7 @@ def main():
     output_path = REPO_ROOT / args.output
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    rows = robust_parse_tsv(input_path)
-    # Skip header-like row if present
-    if rows and not rows[0].get("id", "").isdigit():
-        rows = rows[1:]
+    rows = load_csv_or_tsv(input_path)
 
     if args.limit > 0:
         rows = rows[args.start:args.start + args.limit]
@@ -313,7 +378,7 @@ def main():
         try:
             output = call_llm(prompt, text, config)
             eval_result = evaluate_output(output, row_id)
-            print(f"  Score: {eval_result['score']:.1f}, Cases: {eval_result['court_case_count']}, Parties: {eval_result['party_count']}")
+            print(f"  Score: {eval_result['score']:.1f}, Cases: {eval_result['court_case_count']}, Judges: {eval_result['judge_count']}, Attorneys: {eval_result['attorney_count']}, Provisions: {eval_result['provision_count']}")
             if eval_result["issues"]:
                 for issue in eval_result["issues"]:
                     print(f"    - {issue}")
@@ -332,10 +397,12 @@ def main():
                 "eval": {"error": str(e)},
             })
 
-    # Write JSONL
+    # Write each result immediately
     mode = "a" if args.append else "w"
     with open(output_path, mode, encoding="utf-8") as f:
-        for r in results:
+        pass
+    for r in results:
+        with open(output_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
     print(f"\nDone. Results written to {output_path}")

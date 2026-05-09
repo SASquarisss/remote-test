@@ -164,17 +164,6 @@ ENUM_ZH_MAP: Dict[str, Dict[str, str]] = {
         "disputed": "有争议事实",
         "to_be_proven": "待证事实",
     },
-    # LegalProvisionElement element_type
-    "LegalProvisionElement.element_type": {
-        "subject_element": "主体要件（如：行为人具备完全民事行为能力）",
-        "object_element": "客体要件（如：合同标的物）",
-        "act_element": "行为要件（如：不履行合同义务）",
-        "result_element": "结果要件（如：造成他人损害）",
-        "causality_element": "因果关系（如：行为与损害之间有因果关系）",
-        "subjective_element": "主观要件（如：故意/过失）",
-        "legal_consequence": "法律后果（如：应当承担违约责任）",
-        "exception_clause": "免责/除外条款（如：不可抗力除外）",
-    },
     # Law
     "Law.law_level": {
         "constitution": "宪法",
@@ -261,7 +250,6 @@ def render_enum_reference(ontology: OntologySchema) -> str:
             "GuidingCase.", "CaseType.", "CourtCase.", "CaseParticipant.",
             "LegalRole.", "Evidence.", "JudgmentResult.", "LegalProvision.",
             "Court.", "TrialOrganization.", "Fact.", "CaseSummary.",
-            "DisputeFocus.", "LegalProvisionElement.",
         ])
     }
 
@@ -331,7 +319,6 @@ EXTRACTION_ENTITY_CONFIG = [
             ("trial_procedure", "审判程序", "中文名称，如'一审'、'二审'、'再审'"),
             ("court", "法院信息", "含name（法院完整名称）和court_level（法院层级，见枚举值表）"),
             ("status", "案件状态", "已判决且生效→effective，刚判决→judged，见枚举值表"),
-            ("cause_of_action", "法律关系定性", "**必填**，从judgment_reason/basic_facts中推断本案的法律关系性质（如'买卖合同纠纷'、'侵权责任纠纷'、'婚姻家庭纠纷'等）。从judgment_reason中法律定性表述或case_type字段推断"),
         ],
     },
     {
@@ -367,8 +354,6 @@ EXTRACTION_ENTITY_CONFIG = [
             ("evidence_type", "证据类型", "见枚举值表，documentary/physical/audio_visual等"),
             ("submitted_by", "提交方名称", ""),
             ("is_key_evidence", "是否关键定案证据", "true/false"),
-            ("admission_status", "法院采信状态", "admitted→已采信，not_admitted→未采信。**必填**，从judgment_reason中提取法院对该证据的认定结论"),
-            ("examination_status", "质证状态", "examined→已质证，not_examined→未经质证。从文本中提取"),
         ],
     },
     {
@@ -377,7 +362,6 @@ EXTRACTION_ENTITY_CONFIG = [
         "fields": [
             ("result_type", "结果类型", "见枚举值表。刑事：guilty/not_guilty/remanded；民事：liable/dismissed/withdrawn等"),
             ("specific_judgment", "具体判决内容", "如刑期、赔偿金额等"),
-            ("reasoning", "裁判推理过程", "**必填**，从judgment_reason提取法院的推理链条：事实认定→法律适用→结论推导的完整逻辑。300字以内，保留关键推理节点"),
             ("case_number", "关联案号", ""),
         ],
     },
@@ -428,34 +412,6 @@ EXTRACTION_ENTITY_CONFIG = [
             ("case_number", "关联案号", ""),
             ("members", "合议庭成员列表", "含审判长、审判员、人民陪审员等"),
             ("summary", "合议庭组成描述原文", ""),
-        ],
-    },
-    {
-        "name": "DisputeFocusNode",
-        "display_name": "争议焦点（推理节点）",
-        "fields": [
-            ("content", "争议焦点内容", "**必填**，从case_summary.disputed_issues中提取，按争议焦点拆分为每条一条"),
-            ("resolved_by_provision_ids", "解决该焦点的法条ID列表", "如判决书明确指明某法条解决了该争议焦点则填写，否则留空。格式：['民法典_577', '民法典_509']"),
-            ("resolution_logic", "法院解决逻辑", "从judgment_reason中提取法院解决该争议焦点的推理要点"),
-        ],
-    },
-    {
-        "name": "FactNode",
-        "display_name": "事实（推理节点）",
-        "fields": [
-            ("content", "事实内容", "**必填**，从key_facts中提取关键事实，按事实要素拆分"),
-            ("fact_type", "事实类型", "undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实，见枚举值表"),
-        ],
-    },
-    {
-        "name": "LegalProvisionElement",
-        "display_name": "法条构成要件",
-        "fields": [
-            ("statute", "所属法典", "如'民法典'、'刑法'"),
-            ("article", "对应条号", "纯数字，如577"),
-            ("element_type", "构成要件类型", "subject_element→主体要件，act_element→行为要件，result_element→结果要件，causality_element→因果关系，subjective_element→主观要件，legal_consequence→法律后果，见枚举值表"),
-            ("content", "要件内容", "该构成要件要素的具体法律描述，原文或摘要"),
-            ("applicable_fact_pattern", "适配事实模式", "哪些类型的事实会匹配该要件"),
         ],
     },
 ]
@@ -511,9 +467,9 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append(f'    "guiding_points": "",')
     lines.append(f'    "key_words": [],')
     lines.append(f'    "case_level": "guiding_case{P}typical_case{P}reference_case",')
-    for f in ["trial_procedure", "storage_no", "source_url"]:
-        lines.append(f'    "{f}": "",')
-    lines.append(f'    "judgment_mean": ""')
+    for f in ["trial_procedure", "storage_no", "source_url", "judgment_mean"]:
+        lines.append(f'    "{f}": ""')
+    lines[-1] = lines[-1].rstrip(",")  # last one no comma
     lines.append('  },')
 
     # CaseType
@@ -538,8 +494,7 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append(f'        "court_level": "{P.join(e_clvl)}"')
     lines.append('      },')
     e_st = enums.get("CourtCase.status", {}).get("values", ["effective", "judged"])
-    lines.append(f'      "status": "{P.join(e_st)}",')
-    lines.append(f'      "cause_of_action": ""')
+    lines.append(f'      "status": "{P.join(e_st)}"')
     lines.append('    }')
     lines.append('  ],')
 
@@ -563,10 +518,10 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append('  ],')
 
     for arr_name, arr_fields in [
-        ("attorneys", [("name", '""'), ("law_firm", '""'), ("representation_for", '""'), ("case_number", '""')]),
-        ("judges", [("name", '""'), ("role", '"presiding_judge|judge|acting_judge|people_juror|clerk"'), ("case_number", '""')]),
-        ("prosecutors", [("name", '""'), ("role", '"public_prosecutor|procurator|protest_organ"'), ("unit", '""'), ("case_number", '""')]),
-        ("trial_organizations", [("case_number", '""'), ("members", "[]"), ("summary", '""')]),
+        ("attorneys", [("name", ""), ("law_firm", ""), ("representation_for", ""), ("case_number", "")]),
+        ("judges", [("name", ""), ("role", "presiding_judge|judge|acting_judge|people_juror|clerk"), ("case_number", "")]),
+        ("prosecutors", [("name", ""), ("role", "public_prosecutor|procurator|protest_organ"), ("unit", ""), ("case_number", "")]),
+        ("trial_organizations", [("case_number", ""), ("members", "[]"), ("summary", "")]),
     ]:
         lines.append(f'  "{arr_name}": [')
         lines.append('    {')
@@ -595,11 +550,7 @@ def render_json_schema(ontology: OntologySchema) -> str:
          "witness_testimony", "party_statement", "expert_opinion", "inspection_record"])
     lines.append(f'      "evidence_type": "{P.join(e_ev)}",')
     lines.append(f'      "submitted_by": "",')
-    lines.append(f'      "is_key_evidence": true,')
-    e_adv = enums.get("Evidence.admission_status", {}).get("values", ["admitted", "not_admitted"])
-    lines.append(f'      "admission_status": "{P.join(e_adv)}",')
-    e_exa = enums.get("Evidence.examination_status", {}).get("values", ["examined", "not_examined"])
-    lines.append(f'      "examination_status": "{P.join(e_exa)}"')
+    lines.append(f'      "is_key_evidence": true')
     lines.append('    }')
     lines.append('  ],')
 
@@ -612,7 +563,6 @@ def render_json_schema(ontology: OntologySchema) -> str:
          "procedural_ruling", "bankruptcy_declared"])
     lines.append(f'      "result_type": "{P.join(e_jr)}",')
     lines.append(f'      "specific_judgment": "",')
-    lines.append(f'      "reasoning": "",')
     lines.append(f'      "case_number": ""')
     lines.append('    }')
     lines.append('  ],')
@@ -622,44 +572,7 @@ def render_json_schema(ontology: OntologySchema) -> str:
     for f in ["key_facts", "disputed_issues", "conclusion", "amount_involved", "guiding_points"]:
         lines.append(f'    "{f}": "",')
     lines[-1] = lines[-1].rstrip(",")
-    lines.append('  },')
-
-    # court_cause
-    lines.append('  "court_cause": {')
-    lines.append(f'    "cause_of_action": "根据judgment_reason推断"')
     lines.append('  }')
-
-    # fact_nodes
-    lines.append('  "fact_nodes": [')
-    lines.append('    {')
-    lines.append(f'      "content": "",')
-    e_ft = enums.get("Fact.fact_type", {}).get("values", ["undisputed", "disputed", "to_be_proven"])
-    lines.append(f'      "fact_type": "{P.join(e_ft)}"')
-    lines.append('    }')
-    lines.append('  ],')
-
-    # dispute_focus_nodes
-    lines.append('  "dispute_focus_nodes": [')
-    lines.append('    {')
-    lines.append(f'      "content": "",')
-    lines.append(f'      "resolved_by_provision_ids": [],')
-    lines.append(f'      "resolution_logic": ""')
-    lines.append('    }')
-    lines.append('  ],')
-
-    # legal_provision_elements
-    lines.append('  "legal_provision_elements": [')
-    lines.append('    {')
-    lines.append(f'      "statute": "",')
-    lines.append(f'      "article": "",')
-    e_el = enums.get("LegalProvisionElement.element_type", {}).get("values",
-        ["subject_element", "object_element", "act_element", "result_element",
-         "causality_element", "subjective_element", "legal_consequence", "exception_clause"])
-    lines.append(f'      "element_type": "{P.join(e_el)}",')
-    lines.append(f'      "content": "",')
-    lines.append(f'      "applicable_fact_pattern": ""')
-    lines.append('    }')
-    lines.append('  ]')
 
     lines.append("}")
     lines.append("```")
@@ -683,18 +596,11 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
 
 ## 强制提取要点
-- **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
-- **证据提取（Evidence）必须从 basic_facts、judgment_reason 中全面提取**：包括当事人提交的证据名称、类型、证明目的、**法院是否采信（admission_status）**、**是否经质证（examination_status）**。平均每个案例应提取 2-5 条关键证据。
+- **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。
 - **案号提取**：一个指导性案例往往包含多个审级，你必须从 basic_facts、related_info、related_judgment_body 中找出所有案号，为每个案号生成一个 court_case。**注意多个审级的案号不同**。
 - **filing_date必须填写**：从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
 - **角色映射**：每个 party 的 role_code 和 role_name 都必须有值。遇到非标准角色，使用"other"+原文名称。
 - **法条article必须为纯数字**：如"第30条"→"30"，"第二百六十六条"→"266"，"第二十条之一"→"236之一"。
-- **法律关系定性（cause_of_action）必须提取**：从judgment_reason中提取法院认定的法律关系性质（如"买卖合同纠纷""侵权责任纠纷"），**不可留空**。
-- **裁判推理过程（reasoning）必须提取**：从judgment_reason中提取法院的推理链条——法院认定了哪些事实、引用了哪些法条、如何从事实推导出结论。
-- **证据采信状态（admission_status）和质证状态（examination_status）必须提取**：从judgment_reason中查找法院对每份证据的认定结论（"予以确认""不予采信"等）。**admission_status必须填写，不可留空**。
-- **争议焦点拆分为独立节点（dispute_focus_nodes）**：从case_summary.disputed_issues中提取每个争议焦点，标注其解决依据和法院推理逻辑。
-- **关键事实拆分为独立节点（fact_nodes）**：从key_facts中提取关键事实要素，标注事实类型（无争议/有争议/待证事实）。
-- **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），标注每个要件的适配事实模式。
 """
 
 
