@@ -202,7 +202,6 @@ types:
     description: "案件争议焦点（v2.1新增：resolved_by_provision_ids关联法律条文，resolution_logic法院解决逻辑）"
 
   LegalProvisionElement:
-    is_a: LegalNorm
     required: [provision_id, element_type]
     optional: [content, applicable_fact_pattern]
     element_type_enum: [subject_element, object_element, act_element, result_element, causality_element, subjective_element, legal_consequence, exception_clause]

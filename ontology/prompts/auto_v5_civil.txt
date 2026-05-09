@@ -20,9 +20,8 @@
 - **法律关系定性（cause_of_action）必须提取**：从judgment_reason中提取法院认定的法律关系性质（如"买卖合同纠纷""侵权责任纠纷"），**不可留空**。
 - **裁判推理过程（reasoning）必须提取**：从judgment_reason中提取法院的推理链条——法院认定了哪些事实、引用了哪些法条、如何从事实推导出结论。
 - **证据采信状态（admission_status）和质证状态（examination_status）必须提取**：从judgment_reason中查找法院对每份证据的认定结论（"予以确认""不予采信"等）。**admission_status必须填写，不可留空**。
-- **争议焦点拆分为独立节点（dispute_focus_nodes）**：从case_summary.disputed_issues中提取每个争议焦点，标注其解决依据和法院推理逻辑。
-- **关键事实拆分为独立节点（fact_nodes）**：从key_facts中提取关键事实要素，标注事实类型（无争议/有争议/待证事实）。
-- **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），标注每个要件的适配事实模式。
+- **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
+- **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 
 ## 枚举值约束（自动生成 - 必须严格遵守）
 以下枚举值用于本体的全部字段。**所有输出值必须严格匹配下表，不得自创值或使用中文作为输出。**
@@ -172,25 +171,11 @@
 | `members` | 含审判长、审判员、人民陪审员等 |
 | `summary` |  |
 
-### 争议焦点（推理节点）（`DisputeFocusNode`）
-
-| 字段 | 说明 |
-|---|---|
-| `content` | **必填**，从case_summary.disputed_issues中提取，按争议焦点拆分为每条一条 |
-| `resolved_by_provision_ids` | 如判决书明确指明某法条解决了该争议焦点则填写，否则留空。格式：['民法典_577', '民法典_509'] |
-| `resolution_logic` | 从judgment_reason中提取法院解决该争议焦点的推理要点 |
-
-### 事实（推理节点）（`FactNode`）
-
-| 字段 | 说明 |
-|---|---|
-| `content` | **必填**，从key_facts中提取关键事实，按事实要素拆分 |
-| `fact_type` | undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实，见枚举值表 [枚举值见参考表] |
-
 ### 法条构成要件（`LegalProvisionElement`）
 
 | 字段 | 说明 |
 |---|---|
+| `provision_index` | **必填**，指明该构成要件属于legal_provisions数组中第几个法条（从0开始） |
 | `statute` | 如'民法典'、'刑法' |
 | `article` | 纯数字，如577 |
 | `element_type` | subject_element→主体要件，act_element→行为要件，result_element→结果要件，causality_element→因果关系，subjective_element→主观要件，legal_consequence→法律后果，见枚举值表 [枚举值见参考表] |
@@ -317,24 +302,9 @@
     "amount_involved": "",
     "guiding_points": ""
   },
-  "court_cause": {
-    "cause_of_action": "根据judgment_reason推断"
-  }
-  "fact_nodes": [
-    {
-      "content": "",
-      "fact_type": "undisputed|disputed|to_be_proven"
-    }
-  ],
-  "dispute_focus_nodes": [
-    {
-      "content": "",
-      "resolved_by_provision_ids": [],
-      "resolution_logic": ""
-    }
-  ],
   "legal_provision_elements": [
     {
+      "provision_index": 0,
       "statute": "",
       "article": "",
       "element_type": "subject_element|object_element|act_element|result_element|causality_element|subjective_element|legal_consequence|exception_clause",

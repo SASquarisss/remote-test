@@ -431,26 +431,10 @@ EXTRACTION_ENTITY_CONFIG = [
         ],
     },
     {
-        "name": "DisputeFocusNode",
-        "display_name": "争议焦点（推理节点）",
-        "fields": [
-            ("content", "争议焦点内容", "**必填**，从case_summary.disputed_issues中提取，按争议焦点拆分为每条一条"),
-            ("resolved_by_provision_ids", "解决该焦点的法条ID列表", "如判决书明确指明某法条解决了该争议焦点则填写，否则留空。格式：['民法典_577', '民法典_509']"),
-            ("resolution_logic", "法院解决逻辑", "从judgment_reason中提取法院解决该争议焦点的推理要点"),
-        ],
-    },
-    {
-        "name": "FactNode",
-        "display_name": "事实（推理节点）",
-        "fields": [
-            ("content", "事实内容", "**必填**，从key_facts中提取关键事实，按事实要素拆分"),
-            ("fact_type", "事实类型", "undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实，见枚举值表"),
-        ],
-    },
-    {
         "name": "LegalProvisionElement",
         "display_name": "法条构成要件",
         "fields": [
+            ("provision_index", "关联法条索引", "**必填**，指明该构成要件属于legal_provisions数组中第几个法条（从0开始）"),
             ("statute", "所属法典", "如'民法典'、'刑法'"),
             ("article", "对应条号", "纯数字，如577"),
             ("element_type", "构成要件类型", "subject_element→主体要件，act_element→行为要件，result_element→结果要件，causality_element→因果关系，subjective_element→主观要件，legal_consequence→法律后果，见枚举值表"),
@@ -624,40 +608,18 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines[-1] = lines[-1].rstrip(",")
     lines.append('  },')
 
-    # court_cause
-    lines.append('  "court_cause": {')
-    lines.append(f'    "cause_of_action": "根据judgment_reason推断"')
-    lines.append('  }')
-
-    # fact_nodes
-    lines.append('  "fact_nodes": [')
-    lines.append('    {')
-    lines.append(f'      "content": "",')
-    e_ft = enums.get("Fact.fact_type", {}).get("values", ["undisputed", "disputed", "to_be_proven"])
-    lines.append(f'      "fact_type": "{P.join(e_ft)}"')
-    lines.append('    }')
-    lines.append('  ],')
-
-    # dispute_focus_nodes
-    lines.append('  "dispute_focus_nodes": [')
-    lines.append('    {')
-    lines.append(f'      "content": "",')
-    lines.append(f'      "resolved_by_provision_ids": [],')
-    lines.append(f'      "resolution_logic": ""')
-    lines.append('    }')
-    lines.append('  ],')
-
-    # legal_provision_elements
+    # legal_provision_elements (added by provision_index to link back to legal_provisions[])
     lines.append('  "legal_provision_elements": [')
     lines.append('    {')
-    lines.append(f'      "statute": "",')
-    lines.append(f'      "article": "",')
+    lines.append('      "provision_index": 0,')
+    lines.append('      "statute": "",')
+    lines.append('      "article": "",')
     e_el = enums.get("LegalProvisionElement.element_type", {}).get("values",
         ["subject_element", "object_element", "act_element", "result_element",
          "causality_element", "subjective_element", "legal_consequence", "exception_clause"])
     lines.append(f'      "element_type": "{P.join(e_el)}",')
-    lines.append(f'      "content": "",')
-    lines.append(f'      "applicable_fact_pattern": ""')
+    lines.append('      "content": "",')
+    lines.append('      "applicable_fact_pattern": ""')
     lines.append('    }')
     lines.append('  ]')
 
@@ -692,9 +654,8 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 - **法律关系定性（cause_of_action）必须提取**：从judgment_reason中提取法院认定的法律关系性质（如"买卖合同纠纷""侵权责任纠纷"），**不可留空**。
 - **裁判推理过程（reasoning）必须提取**：从judgment_reason中提取法院的推理链条——法院认定了哪些事实、引用了哪些法条、如何从事实推导出结论。
 - **证据采信状态（admission_status）和质证状态（examination_status）必须提取**：从judgment_reason中查找法院对每份证据的认定结论（"予以确认""不予采信"等）。**admission_status必须填写，不可留空**。
-- **争议焦点拆分为独立节点（dispute_focus_nodes）**：从case_summary.disputed_issues中提取每个争议焦点，标注其解决依据和法院推理逻辑。
-- **关键事实拆分为独立节点（fact_nodes）**：从key_facts中提取关键事实要素，标注事实类型（无争议/有争议/待证事实）。
-- **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），标注每个要件的适配事实模式。
+- **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
+- **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 """
 
 
