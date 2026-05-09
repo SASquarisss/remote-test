@@ -11,7 +11,7 @@
 8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
 
 ## 强制提取要点
-- **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。
+- **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
 - **案号提取**：一个指导性案例往往包含多个审级，你必须从 basic_facts、related_info、related_judgment_body 中找出所有案号，为每个案号生成一个 court_case。**注意多个审级的案号不同**。
 - **filing_date必须填写**：从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
 - **角色映射**：每个 party 的 role_code 和 role_name 都必须有值。遇到非标准角色，使用"other"+原文名称。
@@ -275,6 +275,227 @@
     "conclusion": "",
     "amount_involved": "",
     "guiding_points": ""
+  }
+}
+```
+
+
+
+## Few-shot 示例（自动生成）
+
+> 案由: 民事-建设工程合同纠纷 | 入库编号: 2023-16-2-115-001 | 来源: 历史最佳解析（score=91.0）
+
+### 输入案件文本
+```
+【案由分类】民事-建设工程合同纠纷
+
+【入库编号】2023-16-2-115-001
+
+【审判程序】再审
+
+【案例层级】02
+
+【基本案情】
+张某诉称：2016年4月，河南省某建设有限公司（以下简称某建设公司）将其承包的第三人某置业有限公司（以下简称某置业公司）某公馆项目的景观绿化及安装工程二标段以包工包料形式分包给张某施工，工程总价款10050000元，双方商定某建设公司扣除管理费及应缴纳税费后向张某支付工程款。张某组织工人进行施工，于2016年12月25日竣工，后张某就部分工程进行了维修，某建设公司支付部分款项后对剩余工程款2142000元及设计变更签证单增加工程款592400元未支付。请求判令支付工程款2142000元及设计变更签证单增加费用592400元。　　某建设公司辩称：该工程第一阶段由某建设公司与杨某签订施工合同，杨某在2017年7月撤场，完成工程量为78%，工程款已全部支付完毕。第二阶段施工，张某虽与我公司签订了合同，但实际未履行任何合同义务，签证部分工程是我公司项目主管唐某某办理实施，并无张某签名，存在缺陷的工程维修及后续工程均由我公司自行完成，我公司与第三人某置业公司结算时对该部分工程款没有主张。工程的实际施工人是杨某，张某要求支付工程款无事实和法律依据，应当驳回。　　某置业公司述称：我公司仅和某建设公司存在承包关系，与张某没有直接的承包关系，且工程款已经支付完毕，不应承担责任。　　杨某述称：2016年4月，我与某建设公司签订合同，承包案涉工程，2016年年底已经施工完毕。工程的实际施工人是杨某，后期
+...（案情较长，已截断）
+
+【裁判理由】
+法院生效裁判认为，本案的争议焦点有四个。包括：一是一审法院审理程序是否违法；二是案涉工程的实际施工人的认定；三是某建设公司应否向张某支付工程款2142000元及设计变更签证单增加工程款592400元；四是对于某建设公司认为原审认定某置业公司在扣除质保金后支付相关工程款，某建设公司就变更增加部分工程款予以放弃错误的问题。　　一、关于一审法院审理程序是否违法的问题　　经查，一审庭审中，已告知各方当事人本案由审判员独任审理，某建设公司对此未提出异议；二审庭审中，某建设公司明确表示对该程序问题听从合议庭的意见，二审法院经审理对其主张的该程序问题未予支持。某建设公司在一审未提出异议，二审中已明确表示对该程序问题听从合议庭意见的情形下，再审中又主张一审法院适用简易程序违法的理由不能成立，且一审法院对本案适用简易程序进行审理，并不影响当事人答辩、质证、上诉等诉讼权利的实现。对某建设公司的此项主张，再审不
+...（裁判理由较长，已截断）
+```
+
+### 期望输出（示例，仅展示字段格式）
+```json
+{
+  "guiding_case": {
+    "guiding_case_name": "张某与河南省某建设有限公司建设工程施工合同纠纷再审案",
+    "publication_date": "2020-06-17",
+    "binding_force": "persuasive",
+    "guiding_points": "建设工程施工合同纠纷中，实际施工人签订的《建设工程施工合同》无效，实际施工人请求参照合同约定支付工程价款的，应予支持。承包人与不同施工主体分别签订施工合同，各方当事人对实际施工人的身份产生争议，虽均无法提供签证、工程进度表等证据直接证明对工程实际进行施工，但提供了施工合同、工程款支付凭证、缴纳税费凭证等其他证据的，应根据合同内容、工程款支付情况、税费缴纳情况等证据，运用证据规则，对证据有无证明力和证明力大小进行判断，合理作出认定。一要准确查明案件事实，确定当事人之间的法律关系；二要根据案件事实和当事人主张，合理公平地确定举证责任，由当事人对自己的主张分别提供相应的证据；三要运用逻辑推理和日常生活经验法则，对当事人提供证据的证明力有无和大小独立地、自主地进行判断，确定待证事实是否具有高度可能性，使认定的法律事实尽可能接近客观事实。",
+    "case_level": "typical_case",
+    "storage_no": "2023-16-2-115-001"
+  },
+  "case_type": {
+    "category": "civil",
+    "level1": "建设工程合同纠纷",
+    "level2": ""
+  },
+  "court_cases": [
+    {
+      "case_number": "(2019)青0104民初228号",
+      "filing_date": "2019-01-01",
+      "trial_level": "first_instance",
+      "trial_procedure": "一审"
+    },
+    {
+      "case_number": "(2019)青01民终1006号",
+      "filing_date": "2019-01-01",
+      "trial_level": "second_instance",
+      "trial_procedure": "二审"
+    },
+    {
+      "case_number": "(2020)青民再13号",
+      "filing_date": "2020-01-01",
+      "trial_level": "retrial",
+      "trial_procedure": "再审"
+    }
+  ],
+  "legal_subjects": [
+    {
+      "name": "张某",
+      "subject_type": "natural_person",
+      "roles": [
+        {
+          "role_code": "plaintiff",
+          "role_name": "原告",
+          "case_number": "(2019)青0104民初228号"
+        },
+        {
+          "role_code": "appellee",
+          "role_name": "被上诉人",
+          "case_number": "(2019)青01民终1006号"
+        },
+        {
+          "role_code": "retrial_respondent",
+          "role_name": "再审被申请人",
+          "case_number": "(2020)青民再13号"
+        }
+      ]
+    },
+    {
+      "name": "河南省某建设有限公司",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "defendant",
+          "role_name": "被告",
+          "case_number": "(2019)青0104民初228号"
+        },
+        {
+          "role_code": "appellant",
+          "role_name": "上诉人",
+          "case_number": "(2019)青01民终1006号"
+        },
+        {
+          "role_code": "retrial_applicant",
+          "role_name": "再审申请人",
+          "case_number": "(2020)青民再13号"
+        }
+      ]
+    },
+    {
+      "name": "某置业有限公司",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "third_party",
+          "role_name": "第三人",
+          "case_number": "(2019)青0104民初228号"
+        },
+        {
+          "role_code": "third_party",
+          "role_name": "第三人",
+          "case_number": "(2019)青01民终1006号"
+        },
+        {
+          "role_code": "third_party",
+          "role_name": "第三人",
+          "case_number": "(2020)青民再13号"
+        }
+      ]
+    },
+    {
+      "name": "杨某",
+      "subject_type": "natural_person",
+      "roles": [
+        {
+          "role_code": "third_party",
+          "role_name": "第三人",
+          "case_number": "(2019)青0104民初228号"
+        },
+        {
+          "role_code": "appellant",
+          "role_name": "上诉人",
+          "case_number": "(2019)青01民终1006号"
+        },
+        {
+          "role_code": "retrial_respondent",
+          "role_name": "再审被申请人",
+          "case_number": "(2020)青民再13号"
+        }
+      ]
+    }
+  ],
+  "legal_provisions": [
+    {
+      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释",
+      "article": "26",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释（二）",
+      "article": "24",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "最高人民法院关于适用《中华人民共和国民事诉讼法》的解释",
+      "article": "105",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释",
+      "article": "1",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释",
+      "article": "2",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true
+    },
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true
+    },
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true
+    }
+  ],
+  "judgment_results": [
+    {
+      "result_type": "liable",
+      "specific_judgment": "某建设公司于本判决生效后十日内支付张某工程款2105184.41元及设计变更签证单增加工程款592400元。"
+    },
+    {
+      "result_type": "fully_upheld",
+      "specific_judgment": "驳回上诉，维持原判。"
+    }
+  ],
+  "case_summary": {
+    "key_facts": "2016年，某建设公司承包某置业公司某公馆项目景观绿化工程，后与杨某签订内部承包协议。实际上，张某组织人员施工，某建设公司后声明更换项目负责人为张某，并与张某补签《项目合作协议书》。工程竣工验收后，双方对工程款和设计变更签证增加款结算产生争议。张某起诉要求支付剩余工程款2142000元及增加款592400元。某建设公司主张实际施工人为杨某，张某未参与施工。法院查明张某为实际施工人，一审、二审支持张某部分诉请，再审调整了工程款和增加款数额，扣除某建设公司垫付的维修费用后，判令某建设公司支付工程款1756153.41元及增加款585291.2元。",
+    "disputed_issues": "1.案涉工程的实际施工人是谁；2.某建设公司是否应支付工程款及设计变更签证单增加工程款；3.一审程序是否违法；4.某置业公司是否应承担责任。",
+    "conclusion": "再审认定张某为实际施工人，某建设公司与张某之间的《项目合作协议书》无效，但工程已竣工验收，张某有权参照合同主张工程款。扣除某建设公司垫付的养护维修费用后，某建设公司应支付工程款1756153.41元及设计变更签证单增加工程款585291.2元，共计2341444.61元。"
   }
 }
 ```
