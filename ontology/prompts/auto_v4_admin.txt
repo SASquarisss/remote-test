@@ -1,0 +1,502 @@
+你是一个专业的法律文本解析工具。你的任务是从人民法院案例库的案件文本中提取结构化信息，输出必须与法律本体论结构高度对齐。
+
+## 核心原则
+1. 严格输出JSON，不要任何额外解释
+2. 使用本体论定义的枚举值，不要自创
+3. 尽量从文本中提取完整信息，不要遗漏
+4. 案件摘要必须结构化：关键事实、争议焦点、裁判结论
+5. 法条引用必须标注引用位置和引用目的
+6. 当事人角色必须映射到标准枚举值
+7. **所有缺失字段必须尽力从其他文本源推断，不能留空**
+8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
+
+## 强制提取要点
+- **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
+- **案号提取**：一个指导性案例往往包含多个审级，你必须从 basic_facts、related_info、related_judgment_body 中找出所有案号，为每个案号生成一个 court_case。**注意多个审级的案号不同**。
+- **filing_date必须填写**：从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
+- **角色映射**：每个 party 的 role_code 和 role_name 都必须有值。遇到非标准角色，使用"other"+原文名称。
+- **法条article必须为纯数字**：如"第30条"→"30"，"第二百六十六条"→"266"，"第二十条之一"→"236之一"。
+
+## 枚举值约束（自动生成 - 必须严格遵守）
+以下枚举值用于本体的全部字段。**所有输出值必须严格匹配下表，不得自创值或使用中文作为输出。**
+
+| 字段路径 | 允许值 | 中文说明 |
+|---|---|---|
+| `CaseParticipant.role_code` | `plaintiff`, `defendant`, `third_party`, `witness`, `agent`, `expert_witness`, `interpreter`, `prosecutor`, `applicant`, `respondent`, `relator`, `appellant`, `appellee`, `retrial_applicant`, `retrial_respondent`, `mediator`, `arbitrator`, `beneficiary`, `victim`, `criminal_defendant`, `enforcement_applicant`, `enforcement_respondent`, `judicial_review_applicant`, `insolvency_debtor`, `surety`, `class_representative` | `plaintiff` → 原告; `defendant` → 被告; `third_party` → 第三人; `witness` → 证人; `agent` → 诉讼代理人; `expert_witness` → 鉴定人; `interpreter` → 翻译人员; `prosecutor` → 公诉人/检察机关; `applicant` → 申请人; `respondent` → 被申请人; `relator` → 利害关系人; `appellant` → 上诉人; `appellee` → 被上诉人; `retrial_applicant` → 再审申请人; `retrial_respondent` → 再审被申请人; `mediator` → 调解员; `arbitrator` → 仲裁员; `beneficiary` → 受益人/被救助人; `victim` → 被害人; `criminal_defendant` → 刑事被告人; `enforcement_applicant` → 执行申请人; `enforcement_respondent` → 执行被申请人; `judicial_review_applicant` → 司法复核申请人; `insolvency_debtor` → 破产债务人; `surety` → 担保人; `class_representative` → 诉讼代表人 |
+| `CaseType.category` | `civil`, `criminal`, `administrative`, `ip`, `execution`, `state_compensation` | `civil` → 民事; `criminal` → 刑事; `administrative` → 行政; `ip` → 知识产权; `execution` → 执行; `state_compensation` → 国家赔偿 |
+| `Court.court_level` | `supreme`, `high`, `intermediate`, `basic`, `special` | `supreme` → 最高人民法院; `high` → 高级人民法院; `intermediate` → 中级人民法院; `basic` → 基层人民法院; `special` → 专门法院 |
+| `CourtCase.dispute_resolution_type` | `litigation`, `mediation`, `arbitration`, `judicial_aid`, `administrative_review` | `litigation` → 诉讼; `mediation` → 调解; `arbitration` → 仲裁; `judicial_aid` → 司法救助; `administrative_review` → 行政复议 |
+| `CourtCase.status` | `filing`, `trial`, `judged`, `effective`, `appealed`, `retried`, `executing`, `terminated` | `filing` → 立案中; `trial` → 审理中; `judged` → 已判决; `effective` → 已生效; `appealed` → 已上诉; `retried` → 再审中; `executing` → 执行中; `terminated` → 已终结 |
+| `CourtCase.trial_level` | `first_instance`, `second_instance`, `retrial` | `first_instance` → 一审; `second_instance` → 二审; `retrial` → 再审 |
+| `Evidence.admission_status` | `admitted`, `not_admitted` | `admitted` → 已采信; `not_admitted` → 未采信 |
+| `Evidence.evidence_type` | `documentary`, `physical`, `audio_visual`, `electronic_data`, `witness_testimony`, `party_statement`, `expert_opinion`, `inspection_record` | `documentary` → 书证; `physical` → 物证; `audio_visual` → 视听资料; `electronic_data` → 电子数据; `witness_testimony` → 证人证言; `party_statement` → 当事人陈述; `expert_opinion` → 鉴定意见; `inspection_record` → 勘验笔录 |
+| `Evidence.examination_status` | `not_examined`, `examined` | `not_examined` → 未经质证; `examined` → 已质证 |
+| `Fact.fact_type` | `undisputed`, `disputed`, `to_be_proven` | `undisputed` → 无争议事实; `disputed` → 有争议事实; `to_be_proven` → 待证事实 |
+| `GuidingCase.binding_force` | `mandatory`, `persuasive`, `reference` | `mandatory` → 强制参照（指导性案例）; `persuasive` → 参考效力（典型案例）; `reference` → 一般参考（其他案例） |
+| `JudgmentResult.result_type` | `guilty`, `not_guilty`, `liable`, `not_liable`, `dismissed`, `withdrawn`, `partially_upheld`, `remanded`, `punitive_damages`, `procedural_ruling`, `bankruptcy_declared`, `mediation_agreement`, `arbitration_award`, `administrative_decision` | `guilty` → 有罪判决（刑事）; `not_guilty` → 无罪判决（刑事）; `liable` → 承担责任（民事）; `not_liable` → 不承担责任（民事）; `dismissed` → 驳回起诉/上诉; `withdrawn` → 撤诉; `partially_upheld` → 部分维持; `remanded` → 发回重审; `punitive_damages` → 惩罚性赔偿; `procedural_ruling` → 程序性裁定; `bankruptcy_declared` → 宣告破产; `mediation_agreement` → 调解书; `arbitration_award` → 仲裁裁决; `administrative_decision` → 行政决定 |
+| `LegalProvision.status` | `effective`, `amended`, `repealed` | `effective` → 现行有效; `amended` → 已被修改; `repealed` → 已被废止 |
+| `TrialOrganization.organization_type` | `sole_judge`, `collegiate_bench`, `judicial_committee` | `sole_judge` → 独任审判; `collegiate_bench` → 合议庭; `judicial_committee` → 审判委员会 |
+
+
+## 本体论实体映射（自动生成）
+
+### 指导性案例/典型案例（`GuidingCase`）
+
+| 字段 | 说明 |
+|---|---|
+| `guiding_case_number` | 如'指导案例XX号'，从storage_no或文本推断; 如无则留空 |
+| `guiding_case_name` | 必须填写，从web_name或当事人信息拼接生成 |
+| `publication_date` | 格式YYYY-MM-DD，从trial_year字段推断 |
+| `binding_force` | 指导性案例→mandatory，典型案例→persuasive，其他→reference [枚举值见参考表] |
+| `guiding_points` | 从judgment_essence提取 |
+| `key_words` | 字符串数组，从key_words字段提取（逗号分隔） |
+| `case_level` | 由输入字段【案例层级】直接映射：01→guiding_case，02→typical_case，其他→reference_case |
+| `trial_procedure` | 一审/二审/再审/执行等 |
+| `storage_no` | 直接使用输入字段【案例库编号】 |
+| `source_url` | 直接使用输入字段【来源URL】，原样传递 |
+| `judgment_mean` | 直接使用输入字段【裁判意义】 |
+
+### 案件类型（`CaseType`）
+
+| 字段 | 说明 |
+|---|---|
+| `category` | 见枚举值表映射 [枚举值见参考表] |
+| `level1` | case_type中'-'前的部分 |
+| `level2` | case_type中'-'后的部分 |
+
+### 法院案件（`CourtCase`）
+
+| 字段 | 说明 |
+|---|---|
+| `case_number` | 格式：(YYYY)地区简称+案由+第N号。**从basic_facts/related_info/related_judgment_body全面提取** |
+| `filing_date` | **必填**，格式YYYY-MM-DD。从案号年份或文本中'受理'/'立案'关键词推断 |
+| `judgment_date` | 格式YYYY-MM-DD |
+| `trial_level` | 一审→first_instance，二审→second_instance，再审→retrial [枚举值见参考表] |
+| `trial_procedure` | 中文名称，如'一审'、'二审'、'再审' |
+| `court` | 含name（法院完整名称）和court_level（法院层级，见枚举值表） |
+| `status` | 已判决且生效→effective，刚判决→judged，见枚举值表 [枚举值见参考表] |
+
+### 法律主体 + 法律角色（`LegalSubject`）
+
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `subject_type` | 自然人→natural_person，企业/机关/组织→organization [枚举值见参考表] |
+| `org_type` | 仅subject_type=organization时填写，见枚举值表 [枚举值见参考表] |
+| `credit_code` | 如有则填写，通常企业才有 |
+| `roles` | 每个角色含role_code（枚举值）、role_name（中文原词）、case_number（关联案号） |
+
+### 法律条文引用（`LegalProvision`）
+
+| 字段 | 说明 |
+|---|---|
+| `case_number` | **必填**，该法条被哪个案号的案件引用 |
+| `statute` | 去掉书名号，保留核心名称，如'刑法'、'民法典' |
+| `article` | **必填**，纯数字。第30条→30，第二百六十六条→266，第二十条之一→236之一 |
+| `paragraph` | 第1款→1，如未明确提及则留空 |
+| `item` | 第(一)项→1，如未明确提及则留空 |
+| `content` | **必填**，从文本中找到该法条被引用上下文，提取50-100字 |
+| `citation_position` | basic_facts/judgment_reason/judgment_essence/related_info/related_law |
+| `citation_purpose` | 适用依据/说理依据/反驳依据 |
+
+### 关键证据（`Evidence`）
+
+| 字段 | 说明 |
+|---|---|
+| `content` |  |
+| `evidence_type` | 见枚举值表，documentary/physical/audio_visual等 [枚举值见参考表] |
+| `submitted_by` |  |
+| `is_key_evidence` | true/false |
+
+### 判决结果/裁判主文（`JudgmentResult`）
+
+| 字段 | 说明 |
+|---|---|
+| `result_type` | 见枚举值表。刑事：guilty/not_guilty/remanded；民事：liable/dismissed/withdrawn等 [枚举值见参考表] |
+| `specific_judgment` | 如刑期、赔偿金额等 |
+| `case_number` |  |
+
+### 案件结构化摘要（`CaseSummary`）
+
+| 字段 | 说明 |
+|---|---|
+| `key_facts` | 200字以内，客观陈述，不含法院观点 |
+| `disputed_issues` | **必填**，100字以内，从judgment_reason提炼 |
+| `conclusion` | **必填**，100字以内，概述法院最终裁判结果 |
+| `amount_involved` | 如有则填写，如'335049元' |
+| `guiding_points` | 仅指导性案例填写 |
+
+### 法官/审判人员（`Judge`）
+
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `role` | 审判长→presiding_judge，审判员→judge，代理审判员→acting_judge，人民陪审员→people_juror，书记员→clerk |
+| `case_number` |  |
+
+### 律师/诉讼代理人（`Attorney`）
+
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `law_firm` | 如是律师则填写 |
+| `representation_for` | 如'原告'、'被告'、'再审申请人' |
+| `case_number` |  |
+
+### 出庭检察人员（`ProsecutorInfo`）
+
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `role` | public_prosecutor(公诉人)/procurator(检察员)/protest_organ(抗诉机关) |
+| `unit` |  |
+| `case_number` |  |
+
+### 合议庭组成（`TrialOrganization`）
+
+| 字段 | 说明 |
+|---|---|
+| `case_number` |  |
+| `members` | 含审判长、审判员、人民陪审员等 |
+| `summary` |  |
+
+
+## 输出 JSON Schema（自动生成 — 严格遵循此结构）
+
+```json
+{
+  "guiding_case": {
+    "guiding_case_number": "",
+    "guiding_case_name": "",
+    "publication_date": "",
+    "binding_force": "mandatory|persuasive|reference",
+    "guiding_points": "",
+    "key_words": [],
+    "case_level": "guiding_case|typical_case|reference_case",
+    "trial_procedure": "",
+    "storage_no": "",
+    "source_url": "",
+    "judgment_mean": ""
+  },
+  "case_type": {
+    "category": "civil|criminal|administrative|ip|execution|state_compensation",
+    "level1": "",
+    "level2": ""
+  },
+  "court_cases": [
+    {
+      "case_number": "",
+      "filing_date": "",
+      "judgment_date": "",
+      "trial_level": "first_instance|second_instance|retrial",
+      "trial_procedure": "",
+      "court": {
+        "name": "",
+        "court_level": "supreme|high|intermediate|basic|special"
+      },
+      "status": "filing|trial|judged|effective|appealed|retried|executing|terminated"
+    }
+  ],
+  "legal_subjects": [
+    {
+      "name": "",
+      "subject_type": "natural_person|organization",
+      "org_type": "company|government_agency|ngo|law_firm|expert_institution|court|procuratorate|individual_business|partnership|sole_proprietorship",
+      "credit_code": null,
+      "roles": [
+        {
+          "role_code": "plaintiff|defendant|third_party|witness|agent|expert_witness|interpreter|prosecutor|applicant|respondent|relator|appellant|appellee|retrial_applicant|retrial_respondent|mediator|arbitrator|beneficiary|victim|criminal_defendant|enforcement_applicant|enforcement_respondent|judicial_review_applicant|insolvency_debtor|surety|class_representative",
+          "role_name": "",
+          "case_number": ""
+        }
+      ]
+    }
+  ],
+  "attorneys": [
+    {
+      "name": "",
+      "law_firm": "",
+      "representation_for": "",
+      "case_number": ""
+    }
+  ],
+  "judges": [
+    {
+      "name": "",
+      "role": "presiding_judge|judge|acting_judge|people_juror|clerk",
+      "case_number": ""
+    }
+  ],
+  "prosecutors": [
+    {
+      "name": "",
+      "role": "public_prosecutor|procurator|protest_organ",
+      "unit": "",
+      "case_number": ""
+    }
+  ],
+  "trial_organizations": [
+    {
+      "case_number": "",
+      "members": [],
+      "summary": ""
+    }
+  ],
+  "legal_provisions": [
+    {
+      "case_number": "",
+      "statute": "",
+      "article": "",
+      "paragraph": "",
+      "item": "",
+      "content": "",
+      "citation_position": "basic_facts|judgment_reason|judgment_essence|related_info|related_law",
+      "citation_purpose": "适用依据|说理依据|反驳依据"
+    }
+  ],
+  "evidence": [
+    {
+      "content": "",
+      "evidence_type": "documentary|physical|audio_visual|electronic_data|witness_testimony|party_statement|expert_opinion|inspection_record",
+      "submitted_by": "",
+      "is_key_evidence": true
+    }
+  ],
+  "judgment_results": [
+    {
+      "result_type": "guilty|not_guilty|liable|not_liable|dismissed|withdrawn|partially_upheld|remanded|punitive_damages|procedural_ruling|bankruptcy_declared|mediation_agreement|arbitration_award|administrative_decision",
+      "specific_judgment": "",
+      "case_number": ""
+    }
+  ],
+  "case_summary": {
+    "key_facts": "",
+    "disputed_issues": "",
+    "conclusion": "",
+    "amount_involved": "",
+    "guiding_points": ""
+  }
+}
+```
+
+
+
+## Few-shot 示例（行政案）
+
+> 案由: 行政-商标相关行政案件 | 入库编号: 2023-09-3-029-028 | 来源: 历史最佳解析（score=84.0）
+
+### 输入案件文本
+```
+【案由分类】行政-商标相关行政案件
+
+【入库编号】2023-09-3-029-028
+
+【审判程序】再审
+
+【案例层级】02
+
+【基本案情】
+“某斯特”商标（以下简称争议商标）于1998年9月7日申请注册，2000年3月7日被核准注册，指定使用在第33类“果酒（含酒精）”等商品上。2002年4月25日经核准转让给李某某。2005年7月，某股份有限公司（法国某某某兄弟股份有限公司的前身）以连续3年停止使用为由，向国家工商行政管理总局商标局（以下简称商标局）申请撤销争议商标。商标局以李某某未在法定期间内提交其使用争议商标的证据材料为由，决定撤销争议商标。李某某不服商标局决定，向国家工商行政管理总局商标评审委员会（以下简称商标评审委员会）申请复审，请求维持争议商标，并提交证据，其中包括：李某某与某提公司于2002年6月1日签订的商标使用许可合同，该合同授权某提公司在中国境内在第33类葡萄酒产品上使用争议商标；某提公司于2002年12月9日、2004年2月9日销售某斯特干红葡萄酒的增值税发票等。商标评审委员会经审查认为，根据李某某提交的证据，李某某自2002年6月1日起许可某提公司在葡萄酒商品上使用争议商标，某提公司分别在其销售葡萄酒的增值税专用发票上使用了争议商标。争议商标的前述使用事实符合《中华人民共和国商标法实施条例》第三条及第三十九条第三款关于商标使用的规定，未构成《中华人民共和国商标法》（以下简称商标法）第四十四条所指的连续3年停止使用应予撤销的情形。因此，商标评审委员会作出了第8357号决定，维持了争议商标的注册。法
+...（案情较长，已截断）
+
+【裁判理由】
+最高人民法院审查认为：注册商标长期搁置不用，该商标不仅不会发挥商标功能和作用，而且还会妨碍他人注册、使用，从而影响商标制度的良好运转。因此商标法第四十四条第四项规定，注册商标连续3年停止使用的，由商标局责令限期改正或者撤销其注册商标。应当注意的是，该条款的立法目的在于激活商标资源，清理闲置商标，撤销只是手段，而不是目的。因此只要在商业活动中公开、真实地使用了注册商标，且注册商标的使用行为本身没有违反商标法律规定，则注册商标权利人已经尽到法律规定的使用义务，不宜认定注册商标违反该项规定。本案中，李某某在评审程序中提交了李某某许可某提公司使用争议商标的合同和某提公司销售某斯特干红葡萄酒的增值税发票，在申请再审审查期间又补充提交了30余张销售发票和进口某斯特干红葡萄酒的相关材料。综合上述证据，可以证明某提公司在商业活动中对争议商标进行了公开、真实的使用，争议商标不属于商标法第四十四条第四项规定连
+...（裁判理由较长，已截断）
+```
+
+### 期望输出（示例，仅展示字段格式）
+```json
+{
+  "guiding_case": {
+    "guiding_case_name": "某斯特商标撤销复审行政纠纷",
+    "publication_date": "2011-11-17",
+    "binding_force": "persuasive",
+    "guiding_points": "商标法规定注册商标连续3年停止使用撤销制度的立法目的在于激活商标资源，清理闲置商标，撤销只是手段，而不是目的。只要在商业活动中公开、真实地使用了注册商标，且注册商标的使用行为本身没有违反商标法律规定，则注册商标权利人已经尽到法律规定的使用义务。使用争议商标有关的其他经营活动中是否违反其他方面的法律规定，并非商标法第四十四条第四项所要规范和调整的问题。",
+    "case_level": "typical_case",
+    "storage_no": "2023-09-3-029-028"
+  },
+  "case_type": {
+    "category": "administrative",
+    "level1": "行政",
+    "level2": "商标相关行政案件"
+  },
+  "court_cases": [
+    {
+      "case_number": "(2008)一中行初字第40号",
+      "filing_date": "2008-01-01",
+      "trial_level": "first_instance",
+      "trial_procedure": "一审"
+    },
+    {
+      "case_number": "(2008)高行终字第509号",
+      "filing_date": "2008-01-01",
+      "trial_level": "second_instance",
+      "trial_procedure": "二审"
+    },
+    {
+      "case_number": "(2010)知行字第55号",
+      "filing_date": "2010-01-01",
+      "trial_level": "retrial",
+      "trial_procedure": "再审"
+    }
+  ],
+  "legal_subjects": [
+    {
+      "name": "李某某",
+      "subject_type": "natural_person",
+      "roles": [
+        {
+          "role_code": "third_party",
+          "role_name": "第三人",
+          "case_number": "(2008)一中行初字第40号"
+        },
+        {
+          "role_code": "third_party",
+          "role_name": "第三人",
+          "case_number": "(2008)高行终字第509号"
+        },
+        {
+          "role_code": "retrial_respondent",
+          "role_name": "再审被申请人",
+          "case_number": "(2010)知行字第55号"
+        }
+      ]
+    },
+    {
+      "name": "法国某某某兄弟股份有限公司",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "plaintiff",
+          "role_name": "原告",
+          "case_number": "(2008)一中行初字第40号"
+        },
+        {
+          "role_code": "appellant",
+          "role_name": "上诉人",
+          "case_number": "(2008)高行终字第509号"
+        },
+        {
+          "role_code": "retrial_applicant",
+          "role_name": "再审申请人",
+          "case_number": "(2010)知行字第55号"
+        }
+      ]
+    },
+    {
+      "name": "国家工商行政管理总局商标评审委员会",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "defendant",
+          "role_name": "被告",
+          "case_number": "(2008)一中行初字第40号"
+        },
+        {
+          "role_code": "appellee",
+          "role_name": "被上诉人",
+          "case_number": "(2008)高行终字第509号"
+        },
+        {
+          "role_code": "retrial_respondent",
+          "role_name": "再审被申请人",
+          "case_number": "(2010)知行字第55号"
+        }
+      ]
+    },
+    {
+      "name": "某股份有限公司",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "other",
+          "role_name": "前身",
+          "case_number": "(2010)知行字第55号"
+        }
+      ]
+    },
+    {
+      "name": "某提公司",
+      "subject_type": "organization",
+      "roles": []
+    }
+  ],
+  "legal_provisions": [
+    {
+      "statute": "中华人民共和国商标法实施条例",
+      "article": "3",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "basic_facts",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国商标法实施条例",
+      "article": "39",
+      "paragraph": "3",
+      "item": "",
+      "citation_position": "basic_facts",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国商标法",
+      "article": "44",
+      "paragraph": "",
+      "item": "4",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "中华人民共和国商标法",
+      "article": "44",
+      "paragraph": "",
+      "item": "4",
+      "citation_position": "judgment_essence",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "中华人民共和国商标法",
+      "article": "49",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_info",
+      "citation_purpose": "适用依据"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true
+    },
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true
+    },
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true
+    }
+  ],
+  "judgment_results": [
+    {
+      "result_type": "dismissed",
+      "specific_judgment": "维持国家工商行政管理总局商标评审委员会第8357号决定。"
+    },
+    {
+      "result_type": "dismissed",
+      "specific_judgment": "驳回上诉，维持原判。"
+    }
+  ],
+  "case_summary": {
+    "key_facts": "争议商标“某斯特”于1998年申请，2000年核准注册在第33类，后转让给李某某。2005年，法国某公司以连续三年停止使用为由，向商标局申请撤销。商标局以李某某未提交使用证据为由撤销。李某某申请复审，提交了商标使用许可合同及某提公司销售葡萄酒的增值税发票，证明自2002年起许可某提公司使用争议商标。商标评审委员会认定使用符合规定，维持注册。法国某公司不服提起诉讼，一、二审均维持决定。法国某公司向最高人民法院申请再审，主张某提公司违反进出口检验法等法律，实际未合法使用。",
+    "disputed_issues": "争议商标是否构成连续三年停止使用，即被许可人的商业销售行为是否构成公开、真实的使用；使用过程中违反其他行政管理法规是否影响商标使用行为的认定，进而应当撤销注册商标。",
+    "conclusion": "最高人民法院认为，争议商标在商业活动中进行了公开、真实的使用，不构成商标法第四十四条第四项规定的连续三年停止使用。被许可人是否违反其他法律，不属于该条款调整范围。据此，裁定驳回法国某公司的再审申请。"
+  }
+}
+```
+
+
+## 案件文本
+{case_text}
+
+## JSON输出
