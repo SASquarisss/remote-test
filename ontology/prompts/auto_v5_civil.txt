@@ -316,6 +316,209 @@
 ```
 
 
+
+## Few-shot 示例（民事案）
+
+> 案由: 民事-损害股东利益责任纠纷 | 入库编号: 2024-08-2-275-001 | 来源: 历史最佳解析（score=95.0）
+
+### 输入案件文本
+```
+【案由分类】民事-损害股东利益责任纠纷
+
+【入库编号】2024-08-2-275-001
+
+【审判程序】二审
+
+【案例层级】02
+
+【基本案情】
+原告东某证券股份有限公司（以下简称某证券公司）诉称：2018年9月3日，因某证券公司与案外人李某之间的公证债权文书强制执行一案，北京市第二中级人民法院（以下简称北京二中院）依法裁定将李某持有的58410000股“皇某集团股份有限公司（以下简称某集团公司）”（证券代码：002XXX）股票作价人民币300694680元交付某证券公司抵偿债务，案涉股票的所有权及其他权利自裁定送达某证券公司时起转移。某证券公司于2018年9月12日完成了案涉股票的过户手续。根据被告某集团公司披露的公告，案涉股票由某集团公司于2014年向李某发行，用于购买李某持有的某影视集团有限公司（以下简称某影视公司）100%股权；李某对案涉股票设定有业绩承诺，承诺期为2014年至2017年；若李某完成约定的业绩承诺，则限售解除，案涉股票可自由转让。2018年4月26日，某集团公司发布公告，确认李某已完成2014年至2017年约定的业绩承诺，故案涉股票已满足解除限售条件。根据相关解除限售规则，上市公司及其董事会负有向交易所及证券登记结算公司出具文件、配合办理股票解除限售的义务。而在某证券公司多次提出申请要求办理解除限售的情况下，某集团公司一直未履行办理解除限售手续。某证券公司认为，上市公司股东所持股票符合解除限售条件的，上市公司应及时办理解除限售。某集团公司拒不办理解除限售手续的行为，已严重侵害了某证券公司的股东权利，并
+...（案情较长，已截断）
+
+【裁判理由】
+本案争议的焦点问题是：（一）李某向某集团公司出具的《承诺函》的真实性以及该函对某证券公司要求某集团公司解除限售是否具有约束力；（二）某集团公司通过的股东大会决议是否可以限制某证券公司请求解除限售条件；（三）若某集团公司应配合而不配合某证券公司解除限售，某集团公司应赔偿的某证券公司损失如何确定。　　一、李某向某集团公司出具的《承诺函》的真实性以及该函对某证券公司要求某集团公司解除限售是否具有约束力　　1.直至2020年8月，某集团公司才向某证券公司以及深圳证券交易所提及该份《承诺函》。此前某集团公司发布的多个公告中，不仅未曾提及该《承诺函》，而且明确披露解禁条件已成就。作为上市公司，如存在这样一份《承诺函》并新增了许多解禁条件，会影响原来已经符合条件的股票解禁，却不去对投资者提及，并不符合企业经营常理。在司法拍卖系争股票、某证券公司联系解除限售过程中，多次与某集团公司联系，但某集团公司从未提
+...（裁判理由较长，已截断）
+```
+
+### 期望输出（示例，仅展示字段格式）
+```json
+{
+  "guiding_case": {
+    "guiding_case_name": "东某证券股份有限公司诉皇某集团股份有限公司损害股东利益责任纠纷案",
+    "publication_date": "2022-07-25",
+    "binding_force": "persuasive",
+    "guiding_points": "上市公司股票限制出售存在种种原因，其中之一是为了防止相关持股主体利用信息不对称等获取短期利益，损害上市公司及其他股东利益，冲击股票市场稳定。在限售股相关承诺已完成的情况下，受让人针对其在司法执行程序中取得的股票，要求上市公司配合办理解除限售手续，上市公司举示未曾公开的隐藏承诺进行对抗的，应当判令上市公司配合办理解禁并赔偿损失。",
+    "case_level": "typical_case",
+    "storage_no": "2024-08-2-275-001"
+  },
+  "case_type": {
+    "category": "civil",
+    "level1": "民事",
+    "level2": "损害股东利益责任纠纷"
+  },
+  "court_cases": [
+    {
+      "case_number": "(2020)沪74民初3479号",
+      "filing_date": "2020-01-01",
+      "trial_level": "first_instance",
+      "trial_procedure": "一审"
+    },
+    {
+      "case_number": "(2021)沪民终514号",
+      "filing_date": "2021-01-01",
+      "trial_level": "second_instance",
+      "trial_procedure": "二审"
+    }
+  ],
+  "legal_subjects": [
+    {
+      "name": "东某证券股份有限公司",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "plaintiff",
+          "role_name": "原告",
+          "case_number": "(2020)沪74民初3479号"
+        },
+        {
+          "role_code": "appellee",
+          "role_name": "被上诉人",
+          "case_number": "(2021)沪民终514号"
+        }
+      ]
+    },
+    {
+      "name": "皇某集团股份有限公司",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "defendant",
+          "role_name": "被告",
+          "case_number": "(2020)沪74民初3479号"
+        },
+        {
+          "role_code": "appellant",
+          "role_name": "上诉人",
+          "case_number": "(2021)沪民终514号"
+        }
+      ]
+    }
+  ],
+  "legal_provisions": [
+    {
+      "statute": "中华人民共和国公司法",
+      "article": "137",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "中华人民共和国公司法",
+      "article": "144",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1165",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1184",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "深圳证券交易所中小企业板上市公司规范运作指引（2015年修订）",
+      "article": "4.3.6",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true,
+      "admission_status": "admitted",
+      "examination_status": "examined"
+    },
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true,
+      "admission_status": "admitted",
+      "examination_status": "examined"
+    },
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true,
+      "admission_status": "not_admitted",
+      "examination_status": "examined"
+    }
+  ],
+  "judgment_results": [
+    {
+      "result_type": "liable",
+      "specific_judgment": "一、被告某集团公司应于本判决生效之日起十日内为原告某证券公司所持的某集团公司共计58410000股限售股办理解除限售手续；二、被告某集团公司应于本判决生效之日起十日内赔偿原告某证券公司因延迟解除限售造成的损失人民币500万元；三、被告某集团公司应于本判决生效之日起十日内支付原告某证券公司律师费人民币18万元；四、驳回原告某证券公司的其余诉讼请求。",
+      "reasoning": "一审法院认为，某证券公司通过司法执行程序以股抵债取得股票，公开披露信息显示业绩承诺已完成且无其他限制，解除限售条件已成就；某集团公司以事后出现的承诺函及股东大会决议对抗，不符合信赖利益保护原则，不予支持；某集团公司拒不配合办理解除限售，侵害某证券公司股东权利，构成侵权，应赔偿损失，综合考量股票数量、历史成交价、过错程度等因素，酌情确定赔偿额为500万元。"
+    },
+    {
+      "result_type": "dismissed",
+      "specific_judgment": "驳回上诉，维持原判。",
+      "reasoning": "二审法院认为：一、《承诺函》真实性存疑，且从未及时披露，对善意受让人某证券公司无约束力；二、股东有权依法转让股份，股东大会无权以事后决议限制流通，董事会仅为受托办理手续，无权施加额外限制；三、某集团公司拒绝配合解禁致某证券公司丧失交易机会，构成侵权，依据《民法典》第1165条、第1184条应赔偿损失，原审酌定500万元合理。"
+    }
+  ],
+  "case_summary": {
+    "key_facts": "某证券公司因与李某之间的质押回购纠纷，通过法院执行程序以股抵债取得某集团公司58410000股限售股，并完成过户。公开信息显示，该股票对应的业绩承诺已全部完成，符合解除限售条件。某证券公司多次请求某集团公司办理解除限售，但某集团公司以李某出具的未曾公开的承诺函及股东大会决议为由拒绝。",
+    "disputed_issues": "1. 李某出具的《承诺函》的真实性及对某证券公司的约束力；2. 某集团公司股东大会决议能否限制某证券公司请求解除限售；3. 若某集团公司应配合而不配合，应如何确定损失赔偿数额。",
+    "conclusion": "法院认定承诺函真实性存疑且未及时披露，对某证券公司无约束力；股东大会无权以事后决议限制股东依法转让股票；某集团公司拒不配合解禁构成侵权，判决其办理解除限售手续并赔偿损失500万元及合理律师费。"
+  },
+  "legal_provision_elements": [
+    {
+      "statute": "中华人民共和国公司法",
+      "article": "137",
+      "element_type": "subject_element",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国公司法",
+      "article": "137",
+      "element_type": "act_element",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国公司法",
+      "article": "137",
+      "element_type": "legal_consequence",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国公司法",
+      "article": "144",
+      "element_type": "act_element",
+      "provision_index": 1
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1165",
+      "element_type": "subject_element",
+      "provision_index": 2
+    }
+  ]
+}
+```
+
+
 ## 案件文本
 {case_text}
 

@@ -117,12 +117,13 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
                     subjects = len(out.get("legal_subjects") or [])
                     evidence = len(out.get("evidence") or [])
                     results = len(out.get("judgment_results") or [])
+                    elements = len(out.get("legal_provision_elements") or [])
                     cs = out.get("case_summary") or {}
                     has_kf = bool((cs.get("key_facts") or "").strip())
                     has_di = bool((cs.get("disputed_issues") or "").strip())
                     has_con = bool((cs.get("conclusion") or "").strip())
 
-                    quality = raw + provisions*3 + cases*2 + subjects + evidence + results
+                    quality = raw + provisions*3 + cases*2 + subjects + evidence + results + elements*2
                     if not has_kf: quality -= 5
                     if not has_di: quality -= 5
                     if not has_con: quality -= 5
@@ -202,17 +203,21 @@ def clean_fewshot_output(output: dict) -> dict:
             for p in (output.get("legal_provisions") or [])[:5]
         ],
         "evidence": [
-            {k: e.get(k, "") for k in ["evidence_type", "is_key_evidence"]}
+            {k: e.get(k, "") for k in ["evidence_type", "is_key_evidence", "admission_status", "examination_status"]}
             for e in (output.get("evidence") or [])[:3]
         ],
         "judgment_results": [
-            {k: jr.get(k, "") for k in ["result_type", "specific_judgment"]}
+            {k: jr.get(k, "") for k in ["result_type", "specific_judgment", "reasoning"]}
             for jr in (output.get("judgment_results") or [])[:2]
         ],
         "case_summary": {
             k: (output.get("case_summary") or {}).get(k, "")
             for k in ["key_facts", "disputed_issues", "conclusion"]
         },
+        "legal_provision_elements": [
+            {k: el.get(k, "") for k in ["statute", "article", "element_type", "provision_index"]}
+            for el in (output.get("legal_provision_elements") or [])[:5]
+        ],
     }
 
 
