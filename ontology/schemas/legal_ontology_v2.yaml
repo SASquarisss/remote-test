@@ -142,24 +142,24 @@ types:
     is_a: JudicialEntity
     required: [name, code]
     optional: [description, permissions]
-    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary, victim, criminal_defendant, enforcement_applicant, enforcement_respondent, judicial_review_applicant, insolvency_debtor, surety, class_representative]
-    description: "法律角色"
+    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary, victim, criminal_defendant, enforcement_applicant, enforcement_respondent, judicial_review_applicant, insolvency_debtor, surety, class_representative, insurer]
+    description: "法律角色（2026.05.v2.2新增insurer——保险人角色，用于标注保险公司在案件中的身份）"
 
   # ==================== 案件层 ====================
   CourtCase:
     is_a: JudicialEntity
     required: [case_type_id, filing_date, court_id, status, trial_level]
-    optional: [case_number, claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, dispute_resolution_type]
+    optional: [case_number, claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, dispute_resolution_type, party_count]
     trial_level_enum: [first_instance, second_instance, retrial]
     status_enum: [filing, trial, judged, effective, appealed, retried, executing, terminated]
     dispute_resolution_type_enum: [litigation, mediation, arbitration, judicial_aid, administrative_review]
-    description: "法院案件（精简节点，全文存ES）"
+    description: "法院案件（精简节点，全文存ES。v2.2新增party_count——群体性案件当事人人数，dispute_resolution_type强制标注）"
 
   CaseSummary:
     is_a: JudicialEntity
     required: [case_id]
-    optional: [key_facts, disputed_issues, conclusion, fact_vector, issue_tags, amount_involved, sentencing_referral_id]
-    description: "案件结构化摘要（用于热层类案相似度计算）"
+    optional: [key_facts, disputed_issues, conclusion, fact_vector, issue_tags, amount_involved, sentencing_referral_id, claim_amount, judgment_amount]
+    description: "案件结构化摘要（用于热层类案相似度计算。v2.2新增claim_amount/judgment_amount——诉请金额/判决金额区分）"
 
   TrialOrganization:
     is_a: JudicialEntity
@@ -171,9 +171,9 @@ types:
   JudgmentResult:
     is_a: JudicialEntity
     required: [case_id, result_type]
-    optional: [judgment_date, effective_date, sentence_term, compensation_amount, reasoning, sentencing_standard_id]
+    optional: [judgment_date, effective_date, sentence_term, compensation_amount, reasoning, sentencing_standard_id, cost_allocation]
     result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, partially_upheld, remanded, punitive_damages, procedural_ruling, bankruptcy_declared, mediation_agreement, arbitration_award, administrative_decision]
-    description: "裁判结果"
+    description: "裁判结果（v2.2新增cost_allocation——诉讼费/案件受理费分担信息）"
 
   ExecutionInfo:
     is_a: JudicialEntity
@@ -189,12 +189,12 @@ types:
 
   Evidence:
     is_a: JudicialEntity
-    optional: [evidence_type, case_id, submitter_id, submission_date, examination_status, admission_status, description, file_path, chain_of_custody]
+    optional: [evidence_type, case_id, submitter_id, submission_date, examination_status, admission_status, description, file_path, chain_of_custody, expert_institution, expert_conclusion]
     evidence_type_enum: [documentary, physical, audio_visual, electronic_data, witness_testimony, party_statement, expert_opinion, inspection_record]
     examination_status_enum: [not_examined, examined]
     admission_status_enum: [admitted, not_admitted]
     probative_force_enum: [valid, invalid]
-    description: "证据"
+    description: "证据（v2.2新增expert_institution/expert_conclusion——鉴定机构名称和鉴定结论摘要）"
 
   DisputeFocus:
     is_a: JudicialEntity
@@ -495,7 +495,7 @@ engineering:
     Court: "name + district.code"
     Person: "name + case_id（每个案件内独立）"
     Organization: "credit_code（全局唯一，跨案件关联）"
-  data_version: "2026.05.v2.1"
+  data_version: "2026.05.v2.2"
   incremental_update: true
   graph_storage:
     node_prefix: "LEGAL_"

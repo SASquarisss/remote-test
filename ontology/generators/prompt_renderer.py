@@ -93,6 +93,7 @@ ENUM_ZH_MAP: Dict[str, Dict[str, str]] = {
         "insolvency_debtor": "破产债务人",
         "surety": "担保人",
         "class_representative": "诉讼代表人",
+        "insurer": "保险人",
     },
     # Evidence types
     "Evidence.evidence_type": {
@@ -331,7 +332,9 @@ EXTRACTION_ENTITY_CONFIG = [
             ("trial_procedure", "审判程序", "中文名称，如'一审'、'二审'、'再审'"),
             ("court", "法院信息", "含name（法院完整名称）和court_level（法院层级，见枚举值表）"),
             ("status", "案件状态", "已判决且生效→effective，刚判决→judged，见枚举值表"),
+            ("dispute_resolution_type", "争议解决类型", "**必填**。诉讼→litigation，调解→mediation，仲裁→arbitration。注意区分数据源来源：多元解纷案例库（web_name含'多元解纷'）→一律设为mediation"),
             ("cause_of_action", "法律关系定性", "**必填**，从judgment_reason/basic_facts中推断本案的法律关系性质（如'买卖合同纠纷'、'侵权责任纠纷'、'婚姻家庭纠纷'等）。从judgment_reason中法律定性表述或case_type字段推断"),
+            ("party_count", "当事人人数", "群体性案件填写，如'120户'、'18人'等，纯整数"),
         ],
     },
     {
@@ -369,6 +372,8 @@ EXTRACTION_ENTITY_CONFIG = [
             ("is_key_evidence", "是否关键定案证据", "true/false"),
             ("admission_status", "法院采信状态", "admitted→已采信，not_admitted→未采信。**必填**，从judgment_reason中提取法院对该证据的认定结论"),
             ("examination_status", "质证状态", "examined→已质证，not_examined→未经质证。从文本中提取"),
+            ("expert_institution", "鉴定机构名称", "如evidence_type=expert_opinion时填写鉴定机构全称"),
+            ("expert_conclusion", "鉴定结论摘要", "如evidence_type=expert_opinion时填写鉴定结论"),
         ],
     },
     {
@@ -379,6 +384,7 @@ EXTRACTION_ENTITY_CONFIG = [
             ("specific_judgment", "具体判决内容", "如刑期、赔偿金额等"),
             ("reasoning", "裁判推理过程", "**必填**，从judgment_reason提取法院的推理链条：事实认定→法律适用→结论推导的完整逻辑。300字以内，保留关键推理节点"),
             ("case_number", "关联案号", ""),
+            ("cost_allocation", "诉讼费分担", "如'案件受理费12800元，由原告承担30%，被告承担70%'"),
         ],
     },
     {
@@ -389,6 +395,8 @@ EXTRACTION_ENTITY_CONFIG = [
             ("disputed_issues", "争议焦点", "**必填**，100字以内，从judgment_reason提炼"),
             ("conclusion", "裁判结论", "**必填**，100字以内，概述法院最终裁判结果"),
             ("amount_involved", "标的金额", "如有则填写，如'335049元'"),
+            ("claim_amount", "诉请金额", "原告起诉时的诉求金额"),
+            ("judgment_amount", "判决金额", "法院最终判决的金额"),
             ("guiding_points", "指导要点", "仅指导性案例填写"),
         ],
     },
@@ -522,8 +530,11 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append(f'        "court_level": "{P.join(e_clvl)}"')
     lines.append('      },')
     e_st = enums.get("CourtCase.status", {}).get("values", ["effective", "judged"])
-    lines.append(f'      "status": "{P.join(e_st)}",')
-    lines.append(f'      "cause_of_action": ""')
+    lines.append('      "status": "' + P.join(e_st) + '",')
+    lines.append('      "cause_of_action": "",')
+    e_drt = enums.get("CourtCase.dispute_resolution_type", {}).get("values", ["litigation", "mediation", "arbitration", "judicial_aid", "administrative_review"])
+    lines.append('      "dispute_resolution_type": "' + P.join(e_drt) + '",')
+    lines.append('      "party_count": null')
     lines.append('    }')
     lines.append('  ],')
 
@@ -578,12 +589,14 @@ def render_json_schema(ontology: OntologySchema) -> str:
         ["documentary", "physical", "audio_visual", "electronic_data",
          "witness_testimony", "party_statement", "expert_opinion", "inspection_record"])
     lines.append(f'      "evidence_type": "{P.join(e_ev)}",')
-    lines.append(f'      "submitted_by": "",')
-    lines.append(f'      "is_key_evidence": true,')
+    lines.append('      "submitted_by": "",')
+    lines.append('      "is_key_evidence": true,')
     e_adv = enums.get("Evidence.admission_status", {}).get("values", ["admitted", "not_admitted"])
-    lines.append(f'      "admission_status": "{P.join(e_adv)}",')
+    lines.append('      "admission_status": "' + P.join(e_adv) + '",')
     e_exa = enums.get("Evidence.examination_status", {}).get("values", ["examined", "not_examined"])
-    lines.append(f'      "examination_status": "{P.join(e_exa)}"')
+    lines.append('      "examination_status": "' + P.join(e_exa) + '",')
+    lines.append('      "expert_institution": "",')
+    lines.append('      "expert_conclusion": ""')
     lines.append('    }')
     lines.append('  ],')
 
@@ -594,21 +607,22 @@ def render_json_schema(ontology: OntologySchema) -> str:
         ["guilty", "not_guilty", "liable", "not_liable", "dismissed",
          "withdrawn", "partially_upheld", "remanded", "punitive_damages",
          "procedural_ruling", "bankruptcy_declared"])
-    lines.append(f'      "result_type": "{P.join(e_jr)}",')
-    lines.append(f'      "specific_judgment": "",')
-    lines.append(f'      "reasoning": "",')
-    lines.append(f'      "case_number": ""')
+    lines.append('      "result_type": "' + P.join(e_jr) + '",')
+    lines.append('      "specific_judgment": "",')
+    lines.append('      "reasoning": "",')
+    lines.append('      "case_number": "",')
+    lines.append('      "cost_allocation": ""')
     lines.append('    }')
     lines.append('  ],')
 
     # case_summary
     lines.append('  "case_summary": {')
     for f in ["key_facts", "disputed_issues", "conclusion", "amount_involved", "guiding_points"]:
-        lines.append(f'    "{f}": "",')
+        lines.append('    "' + f + '": "",')
+    lines.append('    "claim_amount": "",')
+    lines.append('    "judgment_amount": ""')
     lines[-1] = lines[-1].rstrip(",")
     lines.append('  },')
-
-    # legal_provision_elements (added by provision_index to link back to legal_provisions[])
     lines.append('  "legal_provision_elements": [')
     lines.append('    {')
     lines.append('      "provision_index": 0,')
