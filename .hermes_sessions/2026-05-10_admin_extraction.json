@@ -20,5 +20,38 @@
     "prompt": "ontology/prompts/auto_v5_admin.txt",
     "running": true,
     "note": "PID=2963407, 3 workers"
+  },
+  {
+    "session_date": "2026-05-10",
+    "topic": "admin_extraction",
+    "timestamp": "2026-05-10T14:25:16.801027+00:00",
+    "repo_dir": "/root/remote-test",
+    "summary": "行政v2.2提取全部完成：37条全部成功",
+    "status": "completed",
+    "completed_ids": [
+      496,
+      692,
+      699,
+      1433,
+      1660,
+      2292,
+      2504,
+      2819,
+      3072,
+      3169,
+      3228,
+      3358,
+      3369,
+      3906,
+      3966,
+      4017,
+      5319,
+      5412,
+      5629
+    ],
+    "output_file": "data_lake/extracted_v2.2_admin_all.jsonl",
+    "prompt": "ontology/prompts/auto_v5_admin.txt",
+    "total": 37,
+    "note": "平均分88.8, admin全量完成"
   }
 ]
