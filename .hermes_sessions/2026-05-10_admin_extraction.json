@@ -1,0 +1,24 @@
+[
+  {
+    "session_date": "2026-05-10",
+    "topic": "admin_extraction",
+    "timestamp": "2026-05-10T09:33:58.306370+00:00",
+    "repo_dir": "/root/remote-test",
+    "summary": "行政v2.2提取：37条纯行政，8条已完成，29条nohup在跑",
+    "status": "running",
+    "completed_ids": [
+      699,
+      2292,
+      3228,
+      3358,
+      3369,
+      3906,
+      5319,
+      5412
+    ],
+    "output_file": "data_lake/extracted_v2.2_admin_all.jsonl",
+    "prompt": "ontology/prompts/auto_v5_admin.txt",
+    "running": true,
+    "note": "PID=2963407, 3 workers"
+  }
+]
