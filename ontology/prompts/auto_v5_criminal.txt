@@ -331,26 +331,26 @@
 
 
 
-## Few-shot 示例（民事案）
+## Few-shot 示例（刑事案）
 
-> 案由: 民事-专利权权属、侵权纠纷 | 入库编号: 2023-09-2-160-048 | 来源: 历史最佳解析（score=95.0）
+> 案由: 刑事-非法生产、买卖、运输制毒物品、走私制毒物品罪 | 入库编号: 2023-06-1-360-001 | 来源: 历史最佳解析（score=87.0）
 
 ### 输入案件文本
 ```
-【案由分类】民事-专利权权属、侵权纠纷
+【案由分类】刑事-非法生产、买卖、运输制毒物品、走私制毒物品罪
 
-【入库编号】2023-09-2-160-048
+【入库编号】2023-06-1-360-001
 
-【审判程序】二审
+【审判程序】一审
 
 【案例层级】02
 
 【基本案情】
-L某公司诉称：其为ZL201110369508.X号、名称为“主轴电机”的发明专利（简称涉案专利）的专利权人。日本某公司未经许可，为生产经营目的生产、销售含有型号为24C293K160、24C293K070、24C293J130和24C293G210主轴电机（以下统称被诉侵权产品）的DVD光驱、DVD刻录机，北京某公司未经许可为生产经营目的销售含有被诉侵权产品的DVD刻录机。L某公司认为被诉侵权产品使用的技术方案落入了涉案专利权利要求的保护范围，日本某公司与北京某公司的前述行为侵犯了L某公司对涉案专利享有的权利，请求法院判令：1.日本某公司立即停止生产、销售侵犯涉案专利权的被诉侵权产品；2.北京某公司立即停止销售使用被诉侵权产品的DVD刻录机产品；3.日本某公司销毁库存的被诉侵权产品、制造上述被诉侵权产品的专用模具和其他工具以及产品包装、说明书、相关产品推广资料、产品图纸、产品型录等；4.日本某公司赔偿L某公司因其侵权行为受到的损失以及向L某公司支付涉案专利临时保护期使用费共计人民币3 865 957元，并承担L某公司为调查和制止其侵权行为支付的合理调查费和律师费人民币30万元；5.日本某公司、北京某公司承担本案诉讼费。　　日本某公司辩称：第一，涉案24C293K160（以下简称K160）、24C293K070（以下简称K070）、24C293J130（以下简称J130）三种型号在
+法院经审理查明：　　1.2006年年底至2007年间，被告人解某、梁某先后两次从没有经营资质的被告人张某某处购买新康泰克75箱，二人将药品拆封后，将胶囊内的康泰克粉末装入塑料袋后向外出售。75箱新康泰克胶囊中含盐酸伪麻黄碱13500克。解某、梁某从中非法获利150余万元。　　2.2009年9月至2010年1月间，被告人解某某、梁某先后从没有经营资质的被告人张某某处购买新康泰克共计620余箱；后二人雇佣家政公司员工将药品拆封后，将胶囊内粉末装入塑料袋内，将其中的200袋康泰克粉末出售给李某（在逃），其余的426箱零50盒新康泰克分别在家政公司及解某某的别墅被起获。扣押的新康泰克胶囊中含有盐酸伪麻黄碱76680克，贩卖给李某（在逃）的新康泰克胶囊中含有盐酸伪麻黄碱36000克。　　被告人张某某先后向被告人解某某、解某、梁某非法销售新康泰克共计700余箱，非法经营数额共计137万余元，非法获利21万余元。解某某、梁某从中非法获利300余万元。　　3.2009年2月至10月间，被告人田某某冒用北京某科技开发中心、北京某甲公司的销售代表的名义从北京某乙公司购买新康泰克206箱，冒用北京某科技开发中心的名义从北京某丙公司购买新康泰克331箱，并将其中的300箱新康泰克销售给被告人张某某。田某某非法经营数额共计105万余元，其从中非法获利5000余元。　　4.2009年8月至2010年1月间，被
 ...（案情较长，已截断）
 
 【裁判理由】
-法院生效裁判认为：涉案专利在本案中应作为有效专利进行保护。J130型号主轴电机的技术方案同时落入涉案专利申请公布时请求保护的独立权利要求1的保护范围，以及经第269011号决定确认有效的涉案专利除权利要求4、20、40、50、65外的部分权利要求的保护范围，K160、K070、G210型号主轴电机的技术方案亦落入涉案专利除权利要求4、20、40、50、65外的部分权利要求的保护范围。日本某公司至少自2013年5月始开始制造、销售J130型号主轴电机，早于涉案专利授权公告日（即2014年7月2日），在涉案专利的临时保护期内实施了该发明，应当承担相应的民事责任。同时，日本某公司未经许可制造、销售J130、K160、K070、G210型号主轴电机，构成专利侵权，应当承担停止侵权、赔偿损失等民事责任。北京某公司未经许可，销售带有构成侵权的J130型号主轴电机的DVD刻录机，其行为同样属于实施涉案专
+法院生效裁判认为：被告人解某某、梁某、解某违反国家法律规定，非法买卖制造毒品的原料，其行为均已构成非法买卖制毒物品罪，且解某某、梁某非法买卖数量大。被告人张某某、田某某、王某某违反国家规定，非法经营，扰乱市场秩序，情节严重，其行为均已构成非法经营罪。鉴于解某某、梁某、解某、张某某、田某某、王某某能够坦白犯罪事实，且田某某、王某某能够积极缴纳罚金，均予以从轻处罚。对于解某某辩护人提出的关于对起诉书认定解某某的犯罪数额及认定非法买卖制毒物品数量大有异议，并建议判处其三年以下有期徒刑，最好适用缓刑的意见；梁某辩护人提出的关于其系从犯，有未遂情节，建议法庭对其判处三年以下有期徒刑的意见；解某辩护人提出的关于其系从犯的意见；张某某辩护人提出的关于起诉书指控其销售新康泰克的数量应为577箱，建议法庭对其减轻或免除处罚的意见；田某某辩护人提出的关于起诉书指控的部分事实不清、证据不足，其销售给张某某的新康
 ...（裁判理由较长，已截断）
 ```
 
@@ -358,193 +358,174 @@ L某公司诉称：其为ZL201110369508.X号、名称为“主轴电机”的发
 ```json
 {
   "guiding_case": {
-    "guiding_case_name": "L某公司诉日本某公司、北京某公司侵害发明专利权纠纷案",
-    "publication_date": "2017-09-07",
+    "guiding_case_name": "解某某等非法买卖制毒物品案",
+    "publication_date": "2011-07-29",
     "binding_force": "persuasive",
-    "guiding_points": "在发明申请临时保护期内实施该发明的技术方案虽然不构成侵犯专利权的行为，但该发明申请被授权后，专利权人有权主张临时保护期的利益或损失。临时保护期内实施发明所需支付的费用，可以参照有关专利许可使用费合理确定；没有专利许可使用费可以参照的，可以综合考虑专利权的类型、实施发明的行为性质和情节以及查明的事实等，参照专利法第六十五条有关侵权赔偿的规定处理。",
+    "guiding_points": "将麻黄碱类复方制剂拆解成粉末进行买卖的，应当以非法买卖制毒物品罪追究刑事责任。非法买卖麻黄碱类复方制剂，在案没有证据证明系用于非法买卖制毒物品的，一般不应认定为非法买卖制毒物品罪, 构成非法经营罪等其他犯罪的，依法定罪处罚。",
     "case_level": "typical_case",
-    "storage_no": "2023-09-2-160-048"
+    "storage_no": "2023-06-1-360-001"
   },
   "case_type": {
-    "category": "civil",
-    "level1": "民事",
-    "level2": "专利权权属、侵权纠纷"
+    "category": "criminal",
+    "level1": "刑事",
+    "level2": "非法生产、买卖、运输制毒物品罪、走私制毒物品罪"
   },
   "court_cases": [
     {
-      "case_number": "(2015)京知民初字第338号",
-      "filing_date": "2015-01-01",
+      "case_number": "(2011)昌刑初字第243号",
+      "filing_date": "2011-01-01",
       "trial_level": "first_instance",
       "trial_procedure": "一审"
-    },
-    {
-      "case_number": "(2017)京民终55号",
-      "filing_date": "2017-01-01",
-      "trial_level": "second_instance",
-      "trial_procedure": "二审"
     }
   ],
   "legal_subjects": [
     {
-      "name": "L某公司",
-      "subject_type": "organization",
+      "name": "解某某",
+      "subject_type": "natural_person",
       "roles": [
         {
-          "role_code": "plaintiff",
-          "role_name": "原告",
-          "case_number": "(2015)京知民初字第338号"
-        },
-        {
-          "role_code": "appellee",
-          "role_name": "被上诉人",
-          "case_number": "(2017)京民终55号"
+          "role_code": "defendant_criminal",
+          "role_name": "被告人",
+          "case_number": "(2011)昌刑初字第243号"
         }
       ]
     },
     {
-      "name": "日本某公司",
-      "subject_type": "organization",
+      "name": "梁某",
+      "subject_type": "natural_person",
       "roles": [
         {
-          "role_code": "defendant",
-          "role_name": "被告",
-          "case_number": "(2015)京知民初字第338号"
-        },
-        {
-          "role_code": "appellant",
-          "role_name": "上诉人",
-          "case_number": "(2017)京民终55号"
+          "role_code": "defendant_criminal",
+          "role_name": "被告人",
+          "case_number": "(2011)昌刑初字第243号"
         }
       ]
     },
     {
-      "name": "北京某公司",
-      "subject_type": "organization",
+      "name": "解某",
+      "subject_type": "natural_person",
       "roles": [
         {
-          "role_code": "defendant",
-          "role_name": "被告",
-          "case_number": "(2015)京知民初字第338号"
-        },
+          "role_code": "defendant_criminal",
+          "role_name": "被告人",
+          "case_number": "(2011)昌刑初字第243号"
+        }
+      ]
+    },
+    {
+      "name": "张某某",
+      "subject_type": "natural_person",
+      "roles": [
         {
-          "role_code": "appellee",
-          "role_name": "被上诉人",
-          "case_number": "(2017)京民终55号"
+          "role_code": "defendant_criminal",
+          "role_name": "被告人",
+          "case_number": "(2011)昌刑初字第243号"
+        }
+      ]
+    },
+    {
+      "name": "田某某",
+      "subject_type": "natural_person",
+      "roles": [
+        {
+          "role_code": "defendant_criminal",
+          "role_name": "被告人",
+          "case_number": "(2011)昌刑初字第243号"
+        }
+      ]
+    },
+    {
+      "name": "王某某",
+      "subject_type": "natural_person",
+      "roles": [
+        {
+          "role_code": "defendant_criminal",
+          "role_name": "被告人",
+          "case_number": "(2011)昌刑初字第243号"
         }
       ]
     }
   ],
   "legal_provisions": [
     {
-      "statute": "中华人民共和国专利法",
-      "article": "11",
+      "statute": "中华人民共和国刑法",
+      "article": "52",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_info",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "53",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_info",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "25",
       "paragraph": "1",
       "item": "",
       "citation_position": "related_info",
       "citation_purpose": "适用依据"
     },
     {
-      "statute": "中华人民共和国专利法",
-      "article": "13",
+      "statute": "中华人民共和国刑法",
+      "article": "64",
       "paragraph": "",
       "item": "",
       "citation_position": "related_info",
       "citation_purpose": "适用依据"
     },
     {
-      "statute": "中华人民共和国专利法",
-      "article": "59",
-      "paragraph": "1",
+      "statute": "中华人民共和国刑法",
+      "article": "67",
+      "paragraph": "3",
       "item": "",
       "citation_position": "related_info",
       "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国专利法",
-      "article": "65",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_info",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国专利法",
-      "article": "65",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "judgment_reason",
-      "citation_purpose": "说理依据"
     }
   ],
   "evidence": [
     {
-      "evidence_type": "documentary",
+      "evidence_type": "physical",
       "is_key_evidence": true,
-      "admission_status": "admitted",
-      "examination_status": "examined"
+      "admission_status": "",
+      "examination_status": ""
+    },
+    {
+      "evidence_type": "forensic",
+      "is_key_evidence": true,
+      "admission_status": "",
+      "examination_status": ""
     },
     {
       "evidence_type": "documentary",
       "is_key_evidence": true,
-      "admission_status": "admitted",
-      "examination_status": "examined"
-    },
-    {
-      "evidence_type": "documentary",
-      "is_key_evidence": false,
-      "admission_status": "not_admitted",
-      "examination_status": "examined"
+      "admission_status": "",
+      "examination_status": ""
     }
   ],
   "judgment_results": [
     {
-      "result_type": "liable",
-      "specific_judgment": "一、日本某公司于判决生效之日起立即停止制造、销售涉案24C293K160、24C293K070、24C293J130和24C293G210型号主轴电机；二、北京某公司自判决生效之日起立即停止销售含有24C293J130型号主轴电机的产品；三、日本某公司自判决生效之日起十日内支付L某公司发明专利临时保护期使用费共计2 426 834元；四、日本某公司自判决生效之日起十日内赔偿L某公司经济损失共计1 202 048元；五、日本某公司自本判决生效之日起十日内赔偿L某公司合理支出共计207 240元；六、驳回L某公司的其他诉讼请求。",
-      "reasoning": "涉案专利为有效专利，被诉侵权产品落入保护范围。日本某公司在临时保护期内制造销售J130产品，应支付临时保护期使用费；授权后继续制造销售四种型号，构成侵权。以某中国公司交易数据、勘验笔录及6%利润率为基础，扣除授权前采购利润后确定赔偿额；合理支出部分除行政调处律师费外其余予以支持。"
+      "result_type": "convicted",
+      "specific_judgment": "被告人解某某犯非法买卖制毒物品罪，判处有期徒刑三年六个月，罚金人民币150万元。",
+      "reasoning": ""
     },
     {
-      "result_type": "dismissed",
-      "specific_judgment": "驳回上诉，维持原判。",
-      "reasoning": "原审判决认定事实清楚，适用法律正确，审判程序合法，赔偿数额计算方法合理，日本某公司的上诉理由不能成立。"
+      "result_type": "convicted",
+      "specific_judgment": "被告人梁某犯非法买卖制毒物品罪，判处有期徒刑四年，罚金人民币200万元。",
+      "reasoning": ""
     }
   ],
   "case_summary": {
-    "key_facts": "L某公司系“主轴电机”发明专利的专利权人。日本某公司未经许可，自2013年起生产、销售四种型号的主轴电机，北京某公司销售含有该电机的DVD刻录机。涉案专利于2014年7月2日授权。日本某公司在临时保护期内已制造销售J130型号，授权后继续制造销售全部四种型号。经技术比对，被诉产品落入专利保护范围。双方就赔偿数额存在争议，日本某公司拒不提供部分产品数据。",
-    "disputed_issues": "1. 被诉侵权产品技术方案是否落入涉案专利权利要求保护范围；2. 日本某公司是否应支付发明专利临时保护期使用费及侵权损害赔偿，具体数额如何确定；3. 北京某公司应否承担停止销售的侵权责任。",
-    "conclusion": "法院认定侵权成立，日本某公司应支付临时保护期使用费2426834元，赔偿经济损失1202048元及合理开支207240元，并停止制造销售；北京某公司停止销售相关产品。二审维持原判。"
+    "key_facts": "2006年底至2010年间，被告人解某某、梁某、解某从无资质的张某某处购买新康泰克胶囊700余箱，拆粉后销售，含盐酸伪麻黄碱共12.6万余克，非法获利450余万元。被告人张某某非法销售新康泰克，经营额137万余元，获利21万余元。被告人田某某冒用名义购买537箱新康泰克，销售给张某某300箱，经营额105万余元。被告人王某某购进850箱，销售给张某某327箱，经营额63万余元。",
+    "disputed_issues": "将麻黄碱类复方制剂拆解成粉末进行买卖的行为，应认定为非法买卖制毒物品罪还是非法经营罪；无证据证明用于制毒的麻黄碱类复方制剂买卖行为的定性。",
+    "conclusion": "法院认为解某某、梁某、解某构成非法买卖制毒物品罪，张某某、田某某、王某某构成非法经营罪，根据犯罪事实、情节及认罪态度，分别判处相应有期徒刑及罚金。"
   },
-  "legal_provision_elements": [
-    {
-      "statute": "中华人民共和国专利法",
-      "article": "11",
-      "element_type": "subject_element",
-      "provision_index": 0
-    },
-    {
-      "statute": "中华人民共和国专利法",
-      "article": "11",
-      "element_type": "act_element",
-      "provision_index": 0
-    },
-    {
-      "statute": "中华人民共和国专利法",
-      "article": "11",
-      "element_type": "legal_consequence",
-      "provision_index": 0
-    },
-    {
-      "statute": "中华人民共和国专利法",
-      "article": "13",
-      "element_type": "subject_element",
-      "provision_index": 1
-    },
-    {
-      "statute": "中华人民共和国专利法",
-      "article": "13",
-      "element_type": "act_element",
-      "provision_index": 1
-    }
-  ]
+  "legal_provision_elements": []
 }
 ```
 
