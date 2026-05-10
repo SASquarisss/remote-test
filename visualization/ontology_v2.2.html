@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>法律本体论 v2.2 知识图谱</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: #f5f7fa; }
+#mynetwork { width: 100%; height: 100vh; }
+.legend {
+  position: fixed; bottom: 20px; left: 20px; z-index: 999;
+  background: rgba(255,255,255,0.96); border-radius: 10px;
+  padding: 14px 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  font-size: 13px; line-height: 1.6; border: 1px solid #e8e8e8;
+}
+.legend-item { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+.legend-color { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+.legend-label { font-size: 13px; color: #333; }
+.title-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #fff; padding: 10px 24px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.title-bar h1 { font-size: 17px; font-weight: 600; letter-spacing: 1px; }
+.title-bar .subtitle { font-size: 12px; opacity: 0.7; }
+.title-bar .stats { font-size: 12px; opacity: 0.8; display: flex; gap: 16px; }
+.tooltip-hint {
+  font-size: 11px; color: #999; margin-top: 2px;
+}
+</style>
+</head>
+<body>
+
+<div class="title-bar">
+  <div>
+    <h1>📜 法律本体论 v2.2</h1>
+    <div class="subtitle">Legal Ontology Knowledge Graph</div>
+  </div>
+  <div class="stats">
+    <span id="nodeCount">-</span> 类型节点
+    <span id="edgeCount">-</span> 关系边
+  </div>
+</div>
+
+<div id="mynetwork"></div>
+
+<div class="legend">
+  <div style="font-weight:600;margin-bottom:6px;font-size:14px;color:#333;">图例</div>
+  <div class="legend-item"><div class="legend-color" style="background:#2980b9;"></div><span class="legend-label">LegalNorm 系 (规范层)</span></div>
+  <div class="legend-item"><div class="legend-color" style="background:#d35400;"></div><span class="legend-label">JudicialEntity 系 (司法实体层)</span></div>
+  <div class="legend-item"><div class="legend-color" style="background:#27ae60;"></div><span class="legend-label">LegalSubject 系 (主体层)</span></div>
+  <div class="legend-item"><div class="legend-color" style="background:#16a085;"></div><span class="legend-label">Person 系 (自然人层)</span></div>
+  <div class="legend-item"><div class="legend-color" style="background:#7f8c8d;"></div><span class="legend-label">无继承 / 抽象父类</span></div>
+  <div class="tooltip-hint">🖱 悬停节点查看详细信息</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js"></script>
+<script>
+(function() {
+// ============================================================
+// 1. 类型定义 — is_a 继承关系 + 颜色分组 + 中文标注
+// ============================================================
+
+// 分组颜色表（基于根父类）
+var ROOT_COLORS = {
+  LegalNorm:      { bg: '#2980b9', border: '#1a5276', group: 'LegalNorm系' },
+  JudicialEntity: { bg: '#d35400', border: '#a04000', group: 'JudicialEntity系' },
+  LegalSubject:   { bg: '#27ae60', border: '#1e8449', group: 'LegalSubject系' },
+  Person:         { bg: '#16a085', border: '#0e6655', group: 'Person系' }
+};
+var DEFAULT_COLOR = { bg: '#7f8c8d', border: '#5d6d7e', group: '其他' };
+
+// 完整继承链：type -> 根父类
+var INHERITANCE_CHAIN = {
+  LegalNorm:    ['LegalNorm'],
+  JudicialEntity: ['JudicialEntity'],
+  LegalSubject: ['LegalSubject'],
+  Person:       ['Person'],
+  Law:          ['Law', 'LegalNorm'],
+  LegalProvision: ['LegalProvision', 'LegalNorm'],
+  LegalProvisionVersion: ['LegalProvisionVersion', 'LegalNorm'],
+  CaseType:     ['CaseType', 'LegalNorm'],
+  GuidingCase:  ['GuidingCase', 'LegalNorm'],
+  SentencingStandard: ['SentencingStandard', 'LegalNorm'],
+  Organization: ['Organization', 'LegalSubject'],
+  Court:        ['Court', 'Organization', 'LegalSubject'],
+  Procuratorate: ['Procuratorate', 'Organization', 'LegalSubject'],
+  LawFirm:      ['LawFirm', 'Organization', 'LegalSubject'],
+  ExpertInstitution: ['ExpertInstitution', 'Organization', 'LegalSubject'],
+  Judge:        ['Judge', 'Person'],
+  Attorney:     ['Attorney', 'Person'],
+  Clerk:        ['Clerk', 'Person'],
+  Prosecutor:   ['Prosecutor', 'Person'],
+  District:     ['District', 'JudicialEntity'],
+  LegalRole:    ['LegalRole', 'JudicialEntity'],
+  CourtCase:    ['CourtCase', 'JudicialEntity'],
+  CaseSummary:  ['CaseSummary', 'JudicialEntity'],
+  TrialOrganization: ['TrialOrganization', 'JudicialEntity'],
+  JudgmentResult: ['JudgmentResult', 'JudicialEntity'],
+  ExecutionInfo: ['ExecutionInfo', 'JudicialEntity'],
+  LegalDocument: ['LegalDocument', 'JudicialEntity'],
+  Evidence:     ['Evidence', 'JudicialEntity'],
+  DisputeFocus: ['DisputeFocus', 'JudicialEntity'],
+  Fact:         ['Fact', 'JudicialEntity'],
+  CaseParticipant: ['CaseParticipant', 'JudicialEntity'],
+  LegalProvisionElement: ['LegalProvisionElement']
+};
+
+function getRootColor(typeName) {
+  var chain = INHERITANCE_CHAIN[typeName];
+  if (!chain) return DEFAULT_COLOR;
+  for (var i = 0; i < chain.length; i++) {
+    if (ROOT_COLORS[chain[i]]) return ROOT_COLORS[chain[i]];
+  }
+  return DEFAULT_COLOR;
+}
+
+// 中文标注（从 legal_ontology_v2.zh.yaml 提取 description）
+var ZH_LABELS = {
+  LegalNorm: '法律规范顶层类',
+  JudicialEntity: '司法实体顶层类',
+  LegalSubject: '法律主体顶层类',
+  Law: '法律',
+  LegalProvision: '法律条文（当前生效版本）',
+  LegalProvisionVersion: '法律条文历史版本',
+  CaseType: '案由类型',
+  GuidingCase: '指导性案例',
+  SentencingStandard: '量刑/赔偿标准',
+  Person: '自然人（跨案件不消歧，每个案件独立节点）',
+  Judge: '法官',
+  Attorney: '律师',
+  Clerk: '书记员',
+  Prosecutor: '检察官',
+  Organization: '组织机构（企业用credit_code跨案件全局关联）',
+  Court: '法院',
+  Procuratorate: '检察院',
+  LawFirm: '律师事务所',
+  ExpertInstitution: '鉴定机构',
+  District: '辖区',
+  LegalRole: '法律角色（2026.05.v2.2新增insurer）',
+  CourtCase: '法院案件（精简节点，全文存ES）',
+  CaseSummary: '案件结构化摘要（用于热层类案相似度计算）',
+  TrialOrganization: '审判组织',
+  JudgmentResult: '裁判结果（v2.2新增cost_allocation）',
+  ExecutionInfo: '执行信息',
+  LegalDocument: '法律文书',
+  Evidence: '证据（v2.2新增expert_institution/expert_conclusion）',
+  DisputeFocus: '案件争议焦点',
+  Fact: '案件事实',
+  CaseParticipant: '案件参与人（含审级角色变更）',
+  LegalProvisionElement: '法条构成要件要素'
+};
+
+// 英文描述（从 legal_ontology_v2.yaml 提取）
+var EN_DESCRIPTIONS = {
+  LegalNorm: 'Top-level class for legal norms',
+  JudicialEntity: 'Top-level class for judicial entities',
+  LegalSubject: 'Top-level class for legal subjects',
+  Law: 'Law / Statute',
+  LegalProvision: 'Legal provision (current effective version)',
+  LegalProvisionVersion: 'Historical version of legal provision',
+  CaseType: 'Case type / Cause of action',
+  GuidingCase: 'Guiding case',
+  SentencingStandard: 'Sentencing/Compensation standard',
+  Person: 'Natural person (no cross-case disambiguation, independent per case)',
+  Judge: 'Judge',
+  Attorney: 'Attorney / Lawyer',
+  Clerk: 'Clerk',
+  Prosecutor: 'Prosecutor',
+  Organization: 'Organization (cross-case global correlation via credit_code)',
+  Court: 'Court',
+  Procuratorate: 'Procuratorate',
+  LawFirm: 'Law firm',
+  ExpertInstitution: 'Expert institution / Forensics body',
+  District: 'District / Jurisdiction area',
+  LegalRole: 'Legal role (v2.2 added insurer)',
+  CourtCase: 'Court case (lightweight node, full text in ES)',
+  CaseSummary: 'Case structured summary (for hot-layer similarity)',
+  TrialOrganization: 'Trial organization',
+  JudgmentResult: 'Judgment result',
+  ExecutionInfo: 'Execution information',
+  LegalDocument: 'Legal document',
+  Evidence: 'Evidence',
+  DisputeFocus: 'Dispute focus',
+  Fact: 'Case fact',
+  CaseParticipant: 'Case participant (with trial-level role changes)',
+  LegalProvisionElement: 'Legal provision constitutive element'
+};
+
+// ============================================================
+// 2. 所有类型节点（包含 is_a 抽象顶层）
+// ============================================================
+var TYPE_NAMES = ['LegalNorm', 'JudicialEntity', 'LegalSubject', 'Person',
+  'Law', 'LegalProvision', 'LegalProvisionVersion', 'CaseType', 'GuidingCase', 'SentencingStandard',
+  'Organization', 'Court', 'Procuratorate', 'LawFirm', 'ExpertInstitution',
+  'Judge', 'Attorney', 'Clerk', 'Prosecutor',
+  'District', 'LegalRole',
+  'CourtCase', 'CaseSummary', 'TrialOrganization', 'JudgmentResult', 'ExecutionInfo',
+  'LegalDocument', 'Evidence', 'DisputeFocus', 'Fact', 'CaseParticipant',
+  'LegalProvisionElement'
+];
+
+// ============================================================
+// 3. is_a 继承边
+// ============================================================
+var IS_A_EDGES = [
+  ['Law', 'LegalNorm'],
+  ['LegalProvision', 'LegalNorm'],
+  ['LegalProvisionVersion', 'LegalNorm'],
+  ['CaseType', 'LegalNorm'],
+  ['GuidingCase', 'LegalNorm'],
+  ['SentencingStandard', 'LegalNorm'],
+  ['Organization', 'LegalSubject'],
+  ['Court', 'Organization'],
+  ['Procuratorate', 'Organization'],
+  ['LawFirm', 'Organization'],
+  ['ExpertInstitution', 'Organization'],
+  ['Judge', 'Person'],
+  ['Attorney', 'Person'],
+  ['Clerk', 'Person'],
+  ['Prosecutor', 'Person'],
+  ['District', 'JudicialEntity'],
+  ['LegalRole', 'JudicialEntity'],
+  ['CourtCase', 'JudicialEntity'],
+  ['CaseSummary', 'JudicialEntity'],
+  ['TrialOrganization', 'JudicialEntity'],
+  ['JudgmentResult', 'JudicialEntity'],
+  ['ExecutionInfo', 'JudicialEntity'],
+  ['LegalDocument', 'JudicialEntity'],
+  ['Evidence', 'JudicialEntity'],
+  ['DisputeFocus', 'JudicialEntity'],
+  ['Fact', 'JudicialEntity'],
+  ['CaseParticipant', 'JudicialEntity']
+];
+
+// ============================================================
+// 4. 关系边
+// ============================================================
+var RELATION_EDGES = [
+  ['typically_applies', 'CaseType', 'LegalProvision'],
+  ['belongs_to', 'LegalProvision', 'Law'],
+  ['has_version', 'LegalProvision', 'LegalProvisionVersion'],
+  ['superseded_by', 'LegalProvisionVersion', 'LegalProvisionVersion'],
+  ['guides_case_type', 'GuidingCase', 'CaseType'],
+  ['cites_guiding_case', 'CourtCase', 'GuidingCase'],
+  ['applies_standard', 'CourtCase', 'SentencingStandard'],
+  ['has_summary', 'CourtCase', 'CaseSummary'],
+  ['tried_by', 'CourtCase', 'TrialOrganization'],
+  ['undertakes', 'Judge', 'CourtCase'],
+  ['plays_role', 'LegalSubject', 'LegalRole'],
+  ['has_jurisdiction_over', 'Court', 'District'],
+  ['prosecutes', 'Procuratorate', 'CourtCase'],
+  ['based_on', 'ExecutionInfo', 'JudgmentResult'],
+  ['signed_by', 'LegalDocument', 'Judge'],
+  ['has_case_type', 'CourtCase', 'CaseType'],
+  ['cites', 'CourtCase', 'LegalProvision'],
+  ['judgment_cites', 'JudgmentResult', 'LegalProvision'],
+  ['represents', 'Attorney', 'LegalSubject'],
+  ['employs', 'Procuratorate', 'Prosecutor'],
+  ['employs_attorney', 'LawFirm', 'Attorney'],
+  ['submitted_for', 'Evidence', 'CourtCase'],
+  ['proves_fact', 'Evidence', 'Fact'],
+  ['proves_focus', 'Evidence', 'DisputeFocus'],
+  ['includes', 'TrialOrganization', 'Judge'],
+  ['includes_clerk', 'TrialOrganization', 'Clerk'],
+  ['appeals_to', 'CourtCase', 'CourtCase'],
+  ['retries_from', 'CourtCase', 'CourtCase'],
+  ['has_dispute_focus', 'CourtCase', 'DisputeFocus'],
+  ['has_fact', 'CourtCase', 'Fact'],
+  ['matches_element', 'Fact', 'LegalProvisionElement'],
+  ['resolved_by', 'DisputeFocus', 'LegalProvision'],
+  ['leads_to_fact', 'Fact', 'JudgmentResult'],
+  ['leads_to_focus', 'DisputeFocus', 'JudgmentResult']
+];
+
+// 关系中文名
+var RELATION_LABELS = {
+  typically_applies: '典型适用',
+  belongs_to: '归属于',
+  has_version: '具有版本',
+  superseded_by: '被替代',
+  guides_case_type: '指导案由',
+  cites_guiding_case: '引用指导案例',
+  applies_standard: '适用标准',
+  has_summary: '具有摘要',
+  tried_by: '由…审理',
+  undertakes: '承办',
+  plays_role: '担任角色',
+  has_jurisdiction_over: '管辖',
+  prosecutes: '公诉',
+  based_on: '基于',
+  signed_by: '由…签署',
+  has_case_type: '具有案由',
+  cites: '引用法条',
+  judgment_cites: '裁判依据',
+  represents: '代理',
+  employs: '雇佣',
+  employs_attorney: '雇佣律师',
+  submitted_for: '提交给',
+  proves_fact: '证明事实',
+  proves_focus: '证明争议',
+  includes: '包含法官',
+  includes_clerk: '配备书记员',
+  appeals_to: '上诉至',
+  retries_from: '再审源自',
+  has_dispute_focus: '具有争议焦点',
+  has_fact: '具有事实',
+  matches_element: '匹配要件',
+  resolved_by: '由法条解决',
+  leads_to_fact: '推导出',
+  leads_to_focus: '推导出'
+};
+
+var RELATION_DESC = {
+  typically_applies: 'CaseType → LegalProvision (many_to_many)',
+  belongs_to: 'LegalProvision → Law (many_to_one)',
+  has_version: 'LegalProvision → LegalProvisionVersion (one_to_many)',
+  superseded_by: 'LegalProvisionVersion → LegalProvisionVersion (one_to_one)',
+  guides_case_type: 'GuidingCase → CaseType (one_to_many)',
+  cites_guiding_case: 'CourtCase → GuidingCase (many_to_many)',
+  applies_standard: 'CourtCase → SentencingStandard (many_to_many)',
+  has_summary: 'CourtCase → CaseSummary (one_to_one)',
+  tried_by: 'CourtCase → TrialOrganization (one_to_one)',
+  undertakes: 'Judge → CourtCase (one_to_many)',
+  plays_role: 'LegalSubject → LegalRole (many_to_many)',
+  has_jurisdiction_over: 'Court → District (one_to_one)',
+  prosecutes: 'Procuratorate → CourtCase (one_to_many)',
+  based_on: 'ExecutionInfo → JudgmentResult (one_to_one)',
+  signed_by: 'LegalDocument → Judge (many_to_one)',
+  has_case_type: 'CourtCase → CaseType (one_to_many)',
+  cites: 'CourtCase → LegalProvision (many_to_many)',
+  judgment_cites: 'JudgmentResult → LegalProvision (many_to_many)',
+  represents: 'Attorney → LegalSubject (many_to_many)',
+  employs: 'Procuratorate → Prosecutor (one_to_many)',
+  employs_attorney: 'LawFirm → Attorney (one_to_many)',
+  submitted_for: 'Evidence → CourtCase (many_to_one)',
+  proves_fact: 'Evidence → Fact (many_to_many)',
+  proves_focus: 'Evidence → DisputeFocus (many_to_many)',
+  includes: 'TrialOrganization → Judge (one_to_many)',
+  includes_clerk: 'TrialOrganization → Clerk (one_to_one)',
+  appeals_to: 'CourtCase → CourtCase (one_to_one)',
+  retries_from: 'CourtCase → CourtCase (one_to_one)',
+  has_dispute_focus: 'CourtCase → DisputeFocus (one_to_many)',
+  has_fact: 'CourtCase → Fact (one_to_many)',
+  matches_element: 'Fact → LegalProvisionElement (many_to_many)',
+  resolved_by: 'DisputeFocus → LegalProvision (many_to_many)',
+  leads_to_fact: 'Fact → JudgmentResult (many_to_many)',
+  leads_to_focus: 'DisputeFocus → JudgmentResult (many_to_many)'
+};
+
+// ============================================================
+// 5. 构建 vis-network 数据
+// ============================================================
+var nodes = [];
+var edges = [];
+var addedNodes = {};
+
+TYPE_NAMES.forEach(function(name) {
+  var c = getRootColor(name);
+  var zh = ZH_LABELS[name] || name;
+  var en = EN_DESCRIPTIONS[name] || name;
+  // 顶层父类用更大尺寸和特殊形状
+  var isRoot = (name === 'LegalNorm' || name === 'JudicialEntity' || name === 'LegalSubject' || name === 'Person');
+  var shape = isRoot ? 'hexagon' : 'box';
+  var size = isRoot ? 28 : 18;
+  nodes.push({
+    id: name,
+    label: zh,
+    title: '<b>' + name + '</b><br><i>' + (ZH_LABELS[name] || '') + '</i><hr style="margin:4px 0">' +
+           '<span style="color:#555;font-size:12px;">' + (EN_DESCRIPTIONS[name] || '') + '</span>' +
+           '<hr style="margin:4px 0"><span style="color:#888;font-size:11px;">' + c.group + ' | ' + name + '</span>',
+    shape: shape,
+    color: { background: c.bg, border: c.border },
+    font: { color: '#fff', size: size, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
+    borderWidth: isRoot ? 3 : 2,
+    size: isRoot ? 35 : 24,
+    group: c.group,
+    margin: { top: 8, bottom: 8, left: 10, right: 10 }
+  });
+  addedNodes[name] = true;
+});
+
+// is_a 继承边 (虚线)
+IS_A_EDGES.forEach(function(e) {
+  edges.push({
+    from: e[0],
+    to: e[1],
+    label: 'is_a',
+    font: { size: 10, color: '#7f8c8d', align: 'middle' },
+    dashes: true,
+    color: { color: '#95a5a6', highlight: '#7f8c8d', opacity: 0.6 },
+    width: 1.5,
+    arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+    title: '继承关系: ' + e[0] + ' → ' + e[1]
+  });
+});
+
+// 关系边 (实线)
+RELATION_EDGES.forEach(function(e) {
+  var relName = e[0];
+  var fromNode = e[1];
+  var toNode = e[2];
+  var cn = RELATION_LABELS[relName] || relName;
+  var desc = RELATION_DESC[relName] || '';
+  edges.push({
+    from: fromNode,
+    to: toNode,
+    label: cn,
+    font: { size: 11, color: '#2c3e50', align: 'middle', strokeWidth: 2, strokeColor: '#ffffff' },
+    color: { color: '#7f8c8d', highlight: '#2c3e50' },
+    width: 1.8,
+    arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+    smooth: { type: 'curvedCW', roundness: 0.12 },
+    title: '<b>' + relName + '</b><br>' + desc + '<br>' + (e[3] ? '→ ' + e[3] : ''),
+    dashes: false
+  });
+});
+
+// ============================================================
+// 6. 渲染
+// ============================================================
+var container = document.getElementById('mynetwork');
+var data = {
+  nodes: new vis.DataSet(nodes),
+  edges: new vis.DataSet(edges)
+};
+
+var options = {
+  layout: {
+    hierarchical: {
+      direction: 'UD',
+      sortMethod: 'directed',
+      nodeSpacing: 180,
+      treeSpacing: 250,
+      blockShifting: true,
+      edgeMinimization: true,
+      parentCentralization: true,
+      levelSeparation: 180
+    }
+  },
+  physics: {
+    hierarchicalRepulsion: {
+      nodeDistance: 200,
+      centralGravity: 0.3,
+      springLength: 180,
+      springConstant: 0.01,
+      damping: 0.6
+    },
+    solver: 'hierarchicalRepulsion',
+    stabilization: { iterations: 200 }
+  },
+  edges: {
+    smooth: { type: 'curvedCW', roundness: 0.12 },
+    font: { size: 11, color: '#2c3e50', face: 'Microsoft YaHei' }
+  },
+  nodes: {
+    font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' },
+    borderWidth: 2,
+    shadow: { enabled: true, size: 4, x: 0, y: 0 }
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 100,
+    navigationButtons: true,
+    keyboard: true,
+    zoomView: true,
+    dragView: true
+  },
+  groups: {
+    'LegalNorm系': { color: { background: '#2980b9', border: '#1a5276' } },
+    'JudicialEntity系': { color: { background: '#d35400', border: '#a04000' } },
+    'LegalSubject系': { color: { background: '#27ae60', border: '#1e8449' } },
+    'Person系': { color: { background: '#16a085', border: '#0e6655' } },
+    '其他': { color: { background: '#7f8c8d', border: '#5d6d7e' } }
+  }
+};
+
+var network = new vis.Network(container, data, options);
+
+// 更新统计
+network.on('stabilizationIterationsDone', function() {
+  document.getElementById('nodeCount').textContent = '📦 ' + nodes.length;
+  document.getElementById('edgeCount').textContent = '🔗 ' + edges.length;
+});
+
+// 窗口自适应
+window.addEventListener('resize', function() {
+  network.fit({ animation: true });
+});
+
+// 适配 title-bar 高度
+container.style.marginTop = '44px';
+container.style.height = 'calc(100vh - 44px)';
+
+})();
+</script>
+</body>
+</html>
