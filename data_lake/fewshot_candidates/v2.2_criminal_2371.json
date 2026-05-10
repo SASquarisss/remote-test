@@ -1,0 +1,228 @@
+{
+  "id": "2371",
+  "case_type": "刑事-受贿罪",
+  "storage_no": "2024-03-1-404-010",
+  "court_name": "山东省滨州市中级人民法院",
+  "input": "【案由分类】刑事-受贿罪\n\n【入库编号】2024-03-1-404-010\n\n【审判程序】二审\n\n【案例层级】02\n\n【关键词】刑事,受贿罪,房产,成交价格,评估价格\n\n【基本案情】检察机关指控：2003年10月至2006年6月，被告人刘某锋利用其担任山东省滨州市某街道办事处党委副书记、主任职务的便利，为张某东经营的公司在拨付技改资金、协调银行贷款方面提供帮助，收受现金1万元。2012年9月，刘某峰因孩子上学欲在天津购房，遂出售其在滨州某小区房产，经咨询得知该小区同户型房产近期以295万元成交出售，故以300万元出售其房产，并告知张某东，后张某东以300万元购买该房产，经鉴定该房产价值203.04715万元，其间差额96.05285万元构成受贿。此外，2003年10月至2020年9月，刘某锋利用职务便利以及职权形成的便利条件，为孟某亮等6人谋取不正当利益，非法收受人民币120万余元。　　法院经审理认定，检察机关起诉指控刘某峰收受该121万余元的行为构成受贿罪；检察机关指控刘某峰高价售房与实际价格的差额96.05285万元的事实不清，证据不足，该部分不构成受贿罪。　　山东省滨州市滨城区人民法院于2023年4月28日作出（2023）鲁1602刑初423号刑事判决：被告人刘某锋犯受贿罪，判处有期徒刑四年三个月，并处罚金人民币三十五万元。宣判后，刘某锋提出上诉。山东省滨州市中级人民法院于2023年8月18日作出（2023）鲁16刑终81号刑事裁定，驳回上诉，维持原判。\n\n【裁判理由】法院生效判决认为：被告人刘某锋将涉案房产出售给张某东的行为不构成受贿罪。主要理由：（1）刘某峰经咨询获知同小区秦某2012年出售相同户型的成交价为295万元，其以300万元对外出售并非明显高于市场价格，即便高于市场价也属于刘某峰认识错误，其并无受贿的主观故意；（2）尽管评估机构认定涉案房产价值为203.04715万元，但评估机构的评估依据是邹平“房产吧”网站2012年该小区3套房产的挂牌价，并未对挂牌房产真实性、是否成交及成交价进行核实，评估所依据的参考案例缺乏客观性，评估结论不能作为定案依据；（3）被告人刘某锋在担任滨州市某街道办事处主任期间虽为张某东经营的锦华公司提供过帮助，但其帮助均是协调关系，不足以让张某东向其行贿近100万元，且张某东已经向其行贿1万元；（4）2006年刘某峰已经离开张某东企业所在辖区，对张某东无制约关系，期间未再提供过帮助，六年之后刘某峰因子女上学用钱而出售房产并非假借出售房产受贿。综上，从刘某锋卖房目的、定价由来、卖房方式、卖房与提供帮助时间间隔及其提供帮助的价值等分析，现有证据不足以证明刘某锋通过高价卖房的方式收受张某东贿赂。\n\n【裁判要旨】对高价卖房型受贿，应当根据全案证据综合判定：一是审查国家工作人员确定房产价格的依据是否合理；二是国家工作人员为他人谋取的利益是否足以让对方支付房产评估价格与交易价格差的对价，以及国家工作人员出售房产期间对他人有无制约关系；三是审查房产评估报告是否具备客观真实性。经综合审查认为现有证据不足以认定被告人系假借出售房产获取贿赂的，则不应当认定为受贿。\n\n【相关法条和审级】《中华人民共和国刑法》第385条######　　一审：山东省滨州市滨城区人民法院（2023）鲁1602刑初423号刑事判决（2023年4月28日）　　二审：山东省滨州市中级人民法院（2023）鲁16刑终81号刑事裁定（2023年8月18日）",
+  "output": {
+    "guiding_case": {
+      "guiding_case_number": "",
+      "guiding_case_name": "刘某锋受贿案",
+      "publication_date": "2023-08-18",
+      "binding_force": "persuasive",
+      "guiding_points": "对高价卖房型受贿，应当根据全案证据综合判定：一是审查国家工作人员确定房产价格的依据是否合理；二是国家工作人员为他人谋取的利益是否足以让对方支付房产评估价格与交易价格差的对价，以及国家工作人员出售房产期间对他人有无制约关系；三是审查房产评估报告是否具备客观真实性。经综合审查认为现有证据不足以认定被告人系假借出售房产获取贿赂的，则不应当认定为受贿。",
+      "key_words": [
+        "刑事",
+        "受贿罪",
+        "房产",
+        "成交价格",
+        "评估价格"
+      ],
+      "case_level": "typical_case",
+      "trial_procedure": "二审",
+      "storage_no": "2024-03-1-404-010",
+      "source_url": "",
+      "judgment_mean": ""
+    },
+    "case_type": {
+      "category": "criminal",
+      "level1": "刑事",
+      "level2": "受贿罪"
+    },
+    "court_cases": [
+      {
+        "case_number": "(2023)鲁1602刑初423号",
+        "filing_date": "2023-01-01",
+        "judgment_date": "2023-04-28",
+        "trial_level": "first_instance",
+        "trial_procedure": "一审",
+        "court": {
+          "name": "山东省滨州市滨城区人民法院",
+          "court_level": "basic"
+        },
+        "status": "effective",
+        "cause_of_action": "受贿罪",
+        "dispute_resolution_type": "litigation",
+        "party_count": null
+      },
+      {
+        "case_number": "(2023)鲁16刑终81号",
+        "filing_date": "2023-04-28",
+        "judgment_date": "2023-08-18",
+        "trial_level": "second_instance",
+        "trial_procedure": "二审",
+        "court": {
+          "name": "山东省滨州市中级人民法院",
+          "court_level": "intermediate"
+        },
+        "status": "effective",
+        "cause_of_action": "受贿罪",
+        "dispute_resolution_type": "litigation",
+        "party_count": null
+      }
+    ],
+    "legal_subjects": [
+      {
+        "name": "刘某锋",
+        "subject_type": "natural_person",
+        "org_type": null,
+        "credit_code": null,
+        "roles": [
+          {
+            "role_code": "criminal_defendant",
+            "role_name": "被告人",
+            "case_number": "(2023)鲁1602刑初423号"
+          },
+          {
+            "role_code": "appellant",
+            "role_name": "上诉人",
+            "case_number": "(2023)鲁16刑终81号"
+          }
+        ]
+      },
+      {
+        "name": "张某东",
+        "subject_type": "natural_person",
+        "org_type": null,
+        "credit_code": null,
+        "roles": [
+          {
+            "role_code": "other行贿人",
+            "role_name": "行贿人",
+            "case_number": "(2023)鲁1602刑初423号"
+          }
+        ]
+      },
+      {
+        "name": "孟某亮",
+        "subject_type": "natural_person",
+        "org_type": null,
+        "credit_code": null,
+        "roles": [
+          {
+            "role_code": "other行贿人",
+            "role_name": "行贿人",
+            "case_number": "(2023)鲁1602刑初423号"
+          }
+        ]
+      }
+    ],
+    "attorneys": [],
+    "judges": [],
+    "prosecutors": [],
+    "trial_organizations": [],
+    "legal_provisions": [
+      {
+        "case_number": "(2023)鲁1602刑初423号",
+        "statute": "中华人民共和国刑法",
+        "article": "385",
+        "paragraph": "",
+        "item": "",
+        "content": "国家工作人员利用职务上的便利，索取他人财物的，或者非法收受他人财物，为他人谋取利益的，是受贿罪。",
+        "citation_position": "related_info",
+        "citation_purpose": "适用依据"
+      }
+    ],
+    "evidence": [
+      {
+        "content": "房产评估报告（认定涉案房产价值203.04715万元）",
+        "evidence_type": "expert_opinion",
+        "submitted_by": "检察机关",
+        "is_key_evidence": true,
+        "admission_status": "not_admitted",
+        "examination_status": "examined",
+        "expert_institution": "评估机构（未具名）",
+        "expert_conclusion": "涉案房产价值203.04715万元"
+      },
+      {
+        "content": "同户型房产成交价295万元的咨询信息",
+        "evidence_type": "party_statement",
+        "submitted_by": "被告人刘某锋",
+        "is_key_evidence": true,
+        "admission_status": "admitted",
+        "examination_status": "examined",
+        "expert_institution": "",
+        "expert_conclusion": ""
+      },
+      {
+        "content": "张某东行贿1万元的证据",
+        "evidence_type": "documentary",
+        "submitted_by": "检察机关",
+        "is_key_evidence": false,
+        "admission_status": "admitted",
+        "examination_status": "examined",
+        "expert_institution": "",
+        "expert_conclusion": ""
+      },
+      {
+        "content": "刘某锋收受孟某亮等6人120万余元的证据",
+        "evidence_type": "documentary",
+        "submitted_by": "检察机关",
+        "is_key_evidence": true,
+        "admission_status": "admitted",
+        "examination_status": "examined",
+        "expert_institution": "",
+        "expert_conclusion": ""
+      }
+    ],
+    "judgment_results": [
+      {
+        "result_type": "guilty",
+        "specific_judgment": "被告人刘某锋犯受贿罪，判处有期徒刑四年三个月，并处罚金人民币三十五万元。",
+        "reasoning": "法院认定刘某锋收受121万余元的行为构成受贿罪；但高价售房差额96.05285万元部分，因刘某锋定价依据合理、评估报告不客观、提供帮助价值不足以支付差额、时间间隔长且无制约关系，现有证据不足以证明其通过高价卖房收受贿赂，故不认定为受贿。",
+        "case_number": "(2023)鲁1602刑初423号",
+        "cost_allocation": ""
+      },
+      {
+        "result_type": "dismissed",
+        "specific_judgment": "驳回上诉，维持原判。",
+        "reasoning": "二审法院认为一审判决认定事实清楚，证据确实、充分，定罪准确，量刑适当，审判程序合法。",
+        "case_number": "(2023)鲁16刑终81号",
+        "cost_allocation": ""
+      }
+    ],
+    "case_summary": {
+      "key_facts": "2003年10月至2020年9月，刘某锋利用职务便利为张某东、孟某亮等7人谋取利益，收受现金121万余元。2012年9月，刘某锋以300万元出售自有房产给张某东，经鉴定该房产价值203.04715万元，差额96.05285万元被检察机关指控为受贿。",
+      "disputed_issues": "刘某锋高价出售房产给张某东的行为是否构成受贿罪，即差额96.05285万元是否属于受贿。",
+      "conclusion": "法院认定刘某锋收受121万余元构成受贿罪，判处有期徒刑四年三个月，并处罚金三十五万元；高价售房差额部分不构成受贿罪。二审驳回上诉，维持原判。",
+      "amount_involved": "1210000",
+      "guiding_points": "",
+      "claim_amount": "2170000",
+      "judgment_amount": "1210000"
+    },
+    "legal_provision_elements": [
+      {
+        "provision_index": 0,
+        "statute": "中华人民共和国刑法",
+        "article": "385",
+        "element_type": "subject_element",
+        "content": "国家工作人员",
+        "applicable_fact_pattern": "行为人具有国家工作人员身份"
+      },
+      {
+        "provision_index": 0,
+        "statute": "中华人民共和国刑法",
+        "article": "385",
+        "element_type": "act_element",
+        "content": "利用职务上的便利，索取他人财物或者非法收受他人财物",
+        "applicable_fact_pattern": "行为人利用职务便利收受财物"
+      },
+      {
+        "provision_index": 0,
+        "statute": "中华人民共和国刑法",
+        "article": "385",
+        "element_type": "subjective_element",
+        "content": "为他人谋取利益",
+        "applicable_fact_pattern": "行为人承诺、实施或实现为他人谋利"
+      },
+      {
+        "provision_index": 0,
+        "statute": "中华人民共和国刑法",
+        "article": "385",
+        "element_type": "legal_consequence",
+        "content": "构成受贿罪",
+        "applicable_fact_pattern": "满足上述要件"
+      }
+    ]
+  }
+}

@@ -333,24 +333,24 @@
 
 ## Few-shot 示例（刑事案）
 
-> 案由: 刑事-非法生产、买卖、运输制毒物品、走私制毒物品罪 | 入库编号: 2023-06-1-360-001 | 来源: 历史最佳解析（score=87.0）
+> 案由: 刑事-保险诈骗罪 | 入库编号: 2023-05-1-141-001 | 来源: 历史最佳解析（score=95）
 
 ### 输入案件文本
 ```
-【案由分类】刑事-非法生产、买卖、运输制毒物品、走私制毒物品罪
+【案由分类】刑事-保险诈骗罪
 
-【入库编号】2023-06-1-360-001
+【入库编号】2023-05-1-141-001
 
-【审判程序】一审
+【审判程序】二审
 
 【案例层级】02
 
 【基本案情】
-法院经审理查明：　　1.2006年年底至2007年间，被告人解某、梁某先后两次从没有经营资质的被告人张某某处购买新康泰克75箱，二人将药品拆封后，将胶囊内的康泰克粉末装入塑料袋后向外出售。75箱新康泰克胶囊中含盐酸伪麻黄碱13500克。解某、梁某从中非法获利150余万元。　　2.2009年9月至2010年1月间，被告人解某某、梁某先后从没有经营资质的被告人张某某处购买新康泰克共计620余箱；后二人雇佣家政公司员工将药品拆封后，将胶囊内粉末装入塑料袋内，将其中的200袋康泰克粉末出售给李某（在逃），其余的426箱零50盒新康泰克分别在家政公司及解某某的别墅被起获。扣押的新康泰克胶囊中含有盐酸伪麻黄碱76680克，贩卖给李某（在逃）的新康泰克胶囊中含有盐酸伪麻黄碱36000克。　　被告人张某某先后向被告人解某某、解某、梁某非法销售新康泰克共计700余箱，非法经营数额共计137万余元，非法获利21万余元。解某某、梁某从中非法获利300余万元。　　3.2009年2月至10月间，被告人田某某冒用北京某科技开发中心、北京某甲公司的销售代表的名义从北京某乙公司购买新康泰克206箱，冒用北京某科技开发中心的名义从北京某丙公司购买新康泰克331箱，并将其中的300箱新康泰克销售给被告人张某某。田某某非法经营数额共计105万余元，其从中非法获利5000余元。　　4.2009年8月至2010年1月间，被
+（一）被告人江某、余某灵诈骗部分　　2013年3月至7月，被告人江某分别驾驶浙H59***号东南菱帅轿车（被保险人系邵某某）、浙HZ6***号桑塔纳轿车（被保险人系陈某），在浙江省衢州市柯城区巨化中央大道昌苑菜场附近等地，以驾车故意碰撞路边电线杆、指示牌石墩、护栏，制造轿车撞击电线杆、指示牌石墩、护栏的虚假事故等方式，由其本人或者指使被告人余某灵冒充车辆驾驶员并提供相关材料，分别向中国某某财产保险股份有限公司衢州中心支公司（以下简称某某财产保险公司甲）、中国某某财产保险股份有限公司衢州市分公司（以下简称某某财产保险公司乙）报案并定损理赔，骗得理赔金共计人民币22，130元（以下币种同）。　　2014年12月1日12时许，被告人江某驾驶浙H93***号东南菱帅轿车（被保险人系陈某）搭载张某良、徐某南驾驶浙H0D***号丰田凯美瑞轿车至衢州市柯城区阳关水岸小区南侧道路，故意制造了两车刮擦的虚假事故，后江某指使张某良冒充浙H93***号东南菱帅轿车驾驶员并提供相关材料向某某财产保险公司甲报案并定损理赔，骗得理赔金4830元。　　（二）被告人江某、陈某保险诈骗部分　　1. 2013年10月30日12时许，被告人江某驾驶浙H11***号名爵轿车（车辆实际所有人系江某）至浙江省开化县长虹乡附近路段，故意制造了车辆碰撞路边山体的虚假事故，后提供相关材料向人民财产保险公司报案并定损理赔，骗得理赔金
 ...（案情较长，已截断）
 
 【裁判理由】
-法院生效裁判认为：被告人解某某、梁某、解某违反国家法律规定，非法买卖制造毒品的原料，其行为均已构成非法买卖制毒物品罪，且解某某、梁某非法买卖数量大。被告人张某某、田某某、王某某违反国家规定，非法经营，扰乱市场秩序，情节严重，其行为均已构成非法经营罪。鉴于解某某、梁某、解某、张某某、田某某、王某某能够坦白犯罪事实，且田某某、王某某能够积极缴纳罚金，均予以从轻处罚。对于解某某辩护人提出的关于对起诉书认定解某某的犯罪数额及认定非法买卖制毒物品数量大有异议，并建议判处其三年以下有期徒刑，最好适用缓刑的意见；梁某辩护人提出的关于其系从犯，有未遂情节，建议法庭对其判处三年以下有期徒刑的意见；解某辩护人提出的关于其系从犯的意见；张某某辩护人提出的关于起诉书指控其销售新康泰克的数量应为577箱，建议法庭对其减轻或免除处罚的意见；田某某辩护人提出的关于起诉书指控的部分事实不清、证据不足，其销售给张某某的新康
+法院生效裁判认为：被告人江某、余某灵以非法占有为目的，多次利用他人车辆制造保险事故，骗取保险金，数额较大，其行为均已构成诈骗罪；被告人江某、陈某以非法占有为目的，虚构事实、隐瞒真相，故意制造保险事故，骗取保险金，数额较大，其中江某以故意造成保险事故方式骗取保险金三次以上，并具有其他严重情节，其行为均已构成保险诈骗罪。江某一人犯数罪，应实行数罪并罚。江某系在公安机关对其抓捕未果后，以通知其领取他案退赔款到案的，可见江某不具有投案的自动性和主动性，不能认定为自首。本案部分属共同犯罪，江某在共同犯罪中起主要作用，是主犯，应按其参与的全部犯罪处罚；余某灵、陈某起次要、辅助作用，是从犯，应从轻处罚。江某主动向公安机关提供同案犯的租住处，协助公安机关抓获同案犯，具有立功表现，可减轻处罚；江某、余某灵、陈某归案后如实供述自己的罪行，可从轻处罚；江某已退赔全部赃款，可酌情从轻处罚。根据陈某的犯罪情节、悔罪
 ...（裁判理由较长，已截断）
 ```
 
@@ -358,90 +358,93 @@
 ```json
 {
   "guiding_case": {
-    "guiding_case_name": "解某某等非法买卖制毒物品案",
-    "publication_date": "2011-07-29",
+    "guiding_case_name": "江某等保险诈骗、诈骗案",
+    "publication_date": "2017-02-20",
     "binding_force": "persuasive",
-    "guiding_points": "将麻黄碱类复方制剂拆解成粉末进行买卖的，应当以非法买卖制毒物品罪追究刑事责任。非法买卖麻黄碱类复方制剂，在案没有证据证明系用于非法买卖制毒物品的，一般不应认定为非法买卖制毒物品罪, 构成非法经营罪等其他犯罪的，依法定罪处罚。",
+    "guiding_points": "已归案的犯罪分子协助司法机关抓捕其他犯罪嫌疑人（包括同案犯）的，能否认定有立功表现，关键在于如何理解行为人是否有协助抓捕行为以及协助行为对抓捕其他犯罪嫌疑人（包括同案犯）是否起决定性作用。相关司法解释中均只强调构成立功需有其他犯罪嫌疑人（包括同案犯）被抓获的实际结果，并没有规定带领侦查人员抓获其他犯罪嫌疑人（包括同案犯）的需要当场抓获才构成立功。因此，是否当场抓获并不当然阻却立功的认定。",
     "case_level": "typical_case",
-    "storage_no": "2023-06-1-360-001"
+    "storage_no": "2023-05-1-141-001"
   },
   "case_type": {
     "category": "criminal",
     "level1": "刑事",
-    "level2": "非法生产、买卖、运输制毒物品罪、走私制毒物品罪"
+    "level2": "保险诈骗罪"
   },
   "court_cases": [
     {
-      "case_number": "(2011)昌刑初字第243号",
-      "filing_date": "2011-01-01",
+      "case_number": "(2016)浙0802刑初358号",
+      "filing_date": "2016-01-01",
       "trial_level": "first_instance",
-      "trial_procedure": "一审"
+      "trial_procedure": "一审",
+      "dispute_resolution_type": "litigation",
+      "party_count": null
+    },
+    {
+      "case_number": "(2016)浙08刑终326号",
+      "filing_date": "2016-10-28",
+      "trial_level": "second_instance",
+      "trial_procedure": "二审",
+      "dispute_resolution_type": "litigation",
+      "party_count": null
     }
   ],
   "legal_subjects": [
     {
-      "name": "解某某",
+      "name": "江某",
       "subject_type": "natural_person",
       "roles": [
         {
-          "role_code": "defendant_criminal",
+          "role_code": "criminal_defendant",
           "role_name": "被告人",
-          "case_number": "(2011)昌刑初字第243号"
+          "case_number": "(2016)浙0802刑初358号"
+        },
+        {
+          "role_code": "criminal_defendant",
+          "role_name": "原审被告人",
+          "case_number": "(2016)浙08刑终326号"
         }
       ]
     },
     {
-      "name": "梁某",
+      "name": "余某灵",
       "subject_type": "natural_person",
       "roles": [
         {
-          "role_code": "defendant_criminal",
+          "role_code": "criminal_defendant",
           "role_name": "被告人",
-          "case_number": "(2011)昌刑初字第243号"
+          "case_number": "(2016)浙0802刑初358号"
+        },
+        {
+          "role_code": "criminal_defendant",
+          "role_name": "原审被告人",
+          "case_number": "(2016)浙08刑终326号"
         }
       ]
     },
     {
-      "name": "解某",
+      "name": "陈某",
       "subject_type": "natural_person",
       "roles": [
         {
-          "role_code": "defendant_criminal",
+          "role_code": "criminal_defendant",
           "role_name": "被告人",
-          "case_number": "(2011)昌刑初字第243号"
+          "case_number": "(2016)浙0802刑初358号"
+        },
+        {
+          "role_code": "criminal_defendant",
+          "role_name": "原审被告人",
+          "case_number": "(2016)浙08刑终326号"
         }
       ]
     },
     {
-      "name": "张某某",
-      "subject_type": "natural_person",
+      "name": "浙江省柯城区人民检察院",
+      "subject_type": "organization",
       "roles": [
         {
-          "role_code": "defendant_criminal",
-          "role_name": "被告人",
-          "case_number": "(2011)昌刑初字第243号"
-        }
-      ]
-    },
-    {
-      "name": "田某某",
-      "subject_type": "natural_person",
-      "roles": [
-        {
-          "role_code": "defendant_criminal",
-          "role_name": "被告人",
-          "case_number": "(2011)昌刑初字第243号"
-        }
-      ]
-    },
-    {
-      "name": "王某某",
-      "subject_type": "natural_person",
-      "roles": [
-        {
-          "role_code": "defendant_criminal",
-          "role_name": "被告人",
-          "case_number": "(2011)昌刑初字第243号"
+          "role_code": "prosecutor",
+          "role_name": "抗诉机关",
+          "case_number": "(2016)浙08刑终326号"
         }
       ]
     }
@@ -449,83 +452,124 @@
   "legal_provisions": [
     {
       "statute": "中华人民共和国刑法",
-      "article": "52",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_info",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑法",
-      "article": "53",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_info",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑法",
-      "article": "25",
-      "paragraph": "1",
-      "item": "",
-      "citation_position": "related_info",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑法",
-      "article": "64",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_info",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑法",
       "article": "67",
-      "paragraph": "3",
+      "paragraph": "",
       "item": "",
-      "citation_position": "related_info",
+      "citation_position": "related_law",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "69",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_law",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "198",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_law",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "266",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_law",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国刑事诉讼法",
+      "article": "236",
+      "paragraph": "1",
+      "item": "1",
+      "citation_position": "related_law",
       "citation_purpose": "适用依据"
     }
   ],
   "evidence": [
     {
-      "evidence_type": "physical",
+      "evidence_type": "documentary",
       "is_key_evidence": true,
-      "admission_status": "",
-      "examination_status": ""
-    },
-    {
-      "evidence_type": "forensic",
-      "is_key_evidence": true,
-      "admission_status": "",
-      "examination_status": ""
+      "admission_status": "admitted",
+      "examination_status": "examined",
+      "expert_institution": "",
+      "expert_conclusion": ""
     },
     {
       "evidence_type": "documentary",
       "is_key_evidence": true,
-      "admission_status": "",
-      "examination_status": ""
+      "admission_status": "admitted",
+      "examination_status": "examined",
+      "expert_institution": "",
+      "expert_conclusion": ""
+    },
+    {
+      "evidence_type": "documentary",
+      "is_key_evidence": true,
+      "admission_status": "admitted",
+      "examination_status": "examined",
+      "expert_institution": "",
+      "expert_conclusion": ""
     }
   ],
   "judgment_results": [
     {
-      "result_type": "convicted",
-      "specific_judgment": "被告人解某某犯非法买卖制毒物品罪，判处有期徒刑三年六个月，罚金人民币150万元。",
-      "reasoning": ""
+      "result_type": "guilty",
+      "specific_judgment": "一、被告人江某犯保险诈骗罪，判处有期徒刑三年二个月，并处罚金人民币二万元；犯诈骗罪，判处有期徒刑十个月，并处罚金人民币五千元，决定执行有期徒刑三年四个月，并处罚金人民币二万五千元；二、被告人陈某犯保险诈骗罪，判处有期徒刑一年，缓刑一年六个月，并处罚金人民币一万元；三、被告人余某灵犯诈骗罪，判处罚金人民币五千元。",
+      "reasoning": "法院认为：江某、余某灵以非法占有为目的，多次利用他人车辆制造保险事故，骗取保险金，数额较大，构成诈骗罪；江某、陈某以非法占有为目的，故意制造保险事故，骗取保险金，数额较大，江某具有其他严重情节，构成保险诈骗罪。江某一人犯数罪，应数罪并罚。江某不具有投案自动性，不构成自首。江某在共同犯罪中系主犯，余某灵、陈某系从犯。江某协助公安机关抓获同案犯，具有立功表现，可减轻处罚；江某、余某灵、陈某如实供述，可从轻处罚；江某退赔全部赃款，可酌情从轻。陈某符合缓刑条件，可宣告缓刑。",
+      "cost_allocation": ""
     },
     {
-      "result_type": "convicted",
-      "specific_judgment": "被告人梁某犯非法买卖制毒物品罪，判处有期徒刑四年，罚金人民币200万元。",
-      "reasoning": ""
+      "result_type": "dismissed",
+      "specific_judgment": "驳回抗诉，维持原判。",
+      "reasoning": "二审法院认为原判认定事实和适用法律正确、量刑适当，裁定驳回抗诉，维持原判。",
+      "cost_allocation": ""
     }
   ],
   "case_summary": {
-    "key_facts": "2006年底至2010年间，被告人解某某、梁某、解某从无资质的张某某处购买新康泰克胶囊700余箱，拆粉后销售，含盐酸伪麻黄碱共12.6万余克，非法获利450余万元。被告人张某某非法销售新康泰克，经营额137万余元，获利21万余元。被告人田某某冒用名义购买537箱新康泰克，销售给张某某300箱，经营额105万余元。被告人王某某购进850箱，销售给张某某327箱，经营额63万余元。",
-    "disputed_issues": "将麻黄碱类复方制剂拆解成粉末进行买卖的行为，应认定为非法买卖制毒物品罪还是非法经营罪；无证据证明用于制毒的麻黄碱类复方制剂买卖行为的定性。",
-    "conclusion": "法院认为解某某、梁某、解某构成非法买卖制毒物品罪，张某某、田某某、王某某构成非法经营罪，根据犯罪事实、情节及认罪态度，分别判处相应有期徒刑及罚金。"
+    "key_facts": "2013年至2015年，被告人江某单独或伙同余某灵、陈某等人，多次故意制造车辆碰撞事故，骗取保险金。江某参与诈骗金额26960元，保险诈骗金额26455元；陈某参与保险诈骗10440元；余某灵参与诈骗8040元。江某归案后主动提供同案犯陈某的租住地并带领公安机关抓捕，虽未当场抓获，但次日将陈某抓获。江某退赔全部赃款50375元。",
+    "disputed_issues": "江某协助公安机关抓捕同案犯但未当场抓获，是否构成立功。",
+    "conclusion": "一审以保险诈骗罪、诈骗罪判处江某有期徒刑三年四个月并处罚金，以保险诈骗罪判处陈某有期徒刑一年缓刑一年六个月并处罚金，以诈骗罪判处罚金余某灵五千元。二审驳回抗诉，维持原判。",
+    "claim_amount": "",
+    "judgment_amount": ""
   },
-  "legal_provision_elements": []
+  "legal_provision_elements": [
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "67",
+      "element_type": "subjective_element",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "67",
+      "element_type": "legal_consequence",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "67",
+      "element_type": "legal_consequence",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "69",
+      "element_type": "legal_consequence",
+      "provision_index": 1
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "198",
+      "element_type": "act_element",
+      "provision_index": 2
+    }
+  ]
 }
 ```
 

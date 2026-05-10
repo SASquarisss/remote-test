@@ -127,6 +127,17 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
                     if not has_kf: quality -= 5
                     if not has_di: quality -= 5
                     if not has_con: quality -= 5
+                    # v2.2: 新字段覆盖加分
+                    for cc in (out.get("court_cases") or []):
+                        if cc.get("dispute_resolution_type"): quality += 5
+                        if cc.get("party_count"): quality += 10
+                    for e in (out.get("evidence") or []):
+                        if e.get("expert_institution"): quality += 5
+                    for jr in (out.get("judgment_results") or []):
+                        if jr.get("cost_allocation"): quality += 5
+                    cs = out.get("case_summary") or {}
+                    if cs.get("claim_amount"): quality += 5
+                    if cs.get("judgment_amount"): quality += 5
 
                     candidates[cat].append({
                         "quality": quality, "score": raw,
@@ -188,7 +199,8 @@ def clean_fewshot_output(output: dict) -> dict:
         },
         "case_type": output.get("case_type", {}),
         "court_cases": [
-            {k: cc.get(k, "") for k in ["case_number", "filing_date", "trial_level", "trial_procedure"]}
+            {k: cc.get(k, "") for k in ["case_number", "filing_date", "trial_level", "trial_procedure",
+                                          "dispute_resolution_type", "party_count"]}
             for cc in (output.get("court_cases") or [])
         ],
         "legal_subjects": [
@@ -203,16 +215,18 @@ def clean_fewshot_output(output: dict) -> dict:
             for p in (output.get("legal_provisions") or [])[:5]
         ],
         "evidence": [
-            {k: e.get(k, "") for k in ["evidence_type", "is_key_evidence", "admission_status", "examination_status"]}
+            {k: e.get(k, "") for k in ["evidence_type", "is_key_evidence", "admission_status", "examination_status",
+                                         "expert_institution", "expert_conclusion"]}
             for e in (output.get("evidence") or [])[:3]
         ],
         "judgment_results": [
-            {k: jr.get(k, "") for k in ["result_type", "specific_judgment", "reasoning"]}
+            {k: jr.get(k, "") for k in ["result_type", "specific_judgment", "reasoning",
+                                          "cost_allocation"]}
             for jr in (output.get("judgment_results") or [])[:2]
         ],
         "case_summary": {
             k: (output.get("case_summary") or {}).get(k, "")
-            for k in ["key_facts", "disputed_issues", "conclusion"]
+            for k in ["key_facts", "disputed_issues", "conclusion", "claim_amount", "judgment_amount"]
         },
         "legal_provision_elements": [
             {k: el.get(k, "") for k in ["statute", "article", "element_type", "provision_index"]}
