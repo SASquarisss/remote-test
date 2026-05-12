@@ -1369,6 +1369,7 @@ function renderEdgePanel(edgeId) {
 var termExpanded = false;
 var termLastResult = null;
 var termVisNetwork = null;
+var API_BASE = 'http://124.222.18.99:9120';
 
 function toggleParseTerminal() {
   termExpanded = !termExpanded;
@@ -1392,7 +1393,8 @@ function doParse() {
   var btn = document.getElementById('btnParse');
   btn.disabled = true; btn.classList.add('loading');
   setTermStatus('正在解析...', '#2980b9');
-  fetch('/api/parse', {
+
+  fetch(API_BASE + '/api/parse', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text: text }),
@@ -1483,7 +1485,7 @@ function doSave() {
   if (!termLastResult) return;
   var btn = document.getElementById('btnSave');
   btn.disabled = true; btn.textContent = '保存中...';
-  fetch('/api/save', {
+  fetch(API_BASE + '/api/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
