@@ -384,6 +384,8 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             issues = "; ".join(issues)
         add_node("summary", issues[:60], "CaseSummary", "JudicialEntity", 1,
                  issues)
+        if court_cases:
+            add_edge(court_cases[0].get("case_number", f"cc_0"), "summary", "审理")
 
     return {"nodes": nodes, "edges": edges}
 

@@ -129,7 +129,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   font-size: 11px; color: #aaa; flex: 1;
 }
 .config-item-preview {
-  flex: 0 0 40px; text-align: center; line-height: 0;
+  flex: 0 0 42px; text-align: center; line-height: 0;
+}
+.config-item-size {
+  flex: 0 0 75px; display: flex; align-items: center; gap: 4px;
+}
+.config-size-slider {
+  width: 44px; height: 4px; cursor: pointer; accent-color: #2980b9;
+}
+.config-size-label {
+  font-size: 11px; color: #666; min-width: 16px; text-align: center;
 }
 .config-preview-box {
   display: inline-block; vertical-align: middle;
@@ -295,39 +304,42 @@ var DEFAULT_COLOR = { bg: '#7f8c8d', border: '#5d6d7e', group: '其他' };
 // 在 getEntityStyle(typeName) 中生效，支持业务细分（如案件审级、原被告）
 var ENTITY_STYLES = {
   // 案件类 — 圆角矩形（胶囊状）
-  CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A', note: '一审案件' },
+  CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A', size: 22, note: '一审案件' },
   // 二审/再审用浅蓝色
   // 最高法用深蓝色
   // 法律主体类 — 正方形
-  Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B', note: '原告/申请人' },
+  Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B', size: 18, note: '原告/申请人' },
   // 被告/被申请人用红色
   // 法院/审理机构用深蓝色
   // 代理律师用紫色
   // 法条/法律依据 — 正六边形
-  LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', note: '法条/法律依据' },
-  Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', note: '法律' },
+  LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法条/法律依据' },
+  Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法律' },
   // 证据/争议标的 — 圆柱体
-  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', note: '证据' },
+  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 18, note: '证据' },
   // 诉讼角色/关系 — 菱形
-  LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', note: '诉讼角色' },
+  LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', size: 16, note: '诉讼角色' },
   // 案件核心争议/焦点 — 五角星
-  CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428', note: '争议焦点' },
+  CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428', size: 20, note: '争议焦点' },
   // 其他辅助 — 三角形
-  LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', note: '辅助主体' },
-  LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', note: '辅助规范' },
-  GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C', note: '指导性案例' },
+  LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', size: 16, note: '辅助主体' },
+  LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', size: 16, note: '辅助规范' },
+  GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C', size: 22, note: '指导性案例' },
 };
 
 // 终端面板的 vis-network 使用此映射
 var TERM_SHAPES = {};
 var TERM_COLORS = {};
+var TERM_SIZES = {};
 Object.keys(ENTITY_STYLES).forEach(function(k) {
   TERM_SHAPES[k] = ENTITY_STYLES[k].shape;
   TERM_COLORS[k] = { bg: ENTITY_STYLES[k].color, border: ENTITY_STYLES[k].border };
+  TERM_SIZES[k] = ENTITY_STYLES[k].size || 18;
 });
 // Expose to window for terminal panel
 window.__TERM_SHAPES = TERM_SHAPES;
 window.__TERM_COLORS = TERM_COLORS;
+window.__TERM_SIZES = TERM_SIZES;
 
 // 完整继承链：type -> 根父类
 var INHERITANCE_CHAIN = {
@@ -1391,13 +1403,19 @@ window.applyEntityStyles = function() {
       // Compute a slightly darker border
       ENTITY_STYLES[typeName].border = darkenColor(colorInput.value, 0.2);
     }
+    var sizeSlider = item.querySelector('.config-size-slider');
+    var sizeLabel = item.querySelector('.config-size-label');
+    if (sizeSlider && sizeLabel) {
+      ENTITY_STYLES[typeName].size = parseInt(sizeSlider.value);
+      sizeLabel.textContent = sizeSlider.value;
+    }
   });
   syncTermMaps();
   // Update main vis-network node colors
   updateMainVisStyles();
   // Refresh SVG previews
   Object.keys(ENTITY_STYLES).forEach(function(k) {
-    renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border);
+    renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border, ENTITY_STYLES[k].size || 22);
   });
   document.getElementById('styleConfigOverlay').style.display = 'none';
 };
@@ -1417,20 +1435,21 @@ function buildStyleConfigTable() {
     html += '  <span class="config-item-type">' + k + '</span>';
     html += '  <span class="config-item-shape"><select class="config-shape-select">' + opts + '</select></span>';
     html += '  <span class="config-item-color"><input type="color" class="config-color-input" value="' + s.color + '"></span>';
+    html += '  <span class="config-item-size"><input type="range" class="config-size-slider" min="12" max="24" value="' + (s.size || 18) + '"><span class="config-size-label">' + (s.size || 18) + '</span></span>';
     html += '  <span class="config-item-preview"><span class="config-preview-box" id="preview_' + k + '"></span></span>';
     html += '</div>';
   });
   body.innerHTML = html;
   // Render SVG shapes for every entity
   Object.keys(ENTITY_STYLES).sort().forEach(function(k) {
-    renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border);
+    renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border, ENTITY_STYLES[k].size || 22);
   });
 }
 
-function renderShapePreview(containerId, shape, color, border) {
+function renderShapePreview(containerId, shape, color, border, sizeVal) {
   var el = document.getElementById(containerId);
   if (!el) return;
-  var size = 28;
+  var size = sizeVal || 22;
   var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
   var cx = size / 2, cy = size / 2, r = size / 2 - 2;
   switch (shape) {
@@ -1488,10 +1507,12 @@ function syncTermMaps() {
   Object.keys(ENTITY_STYLES).forEach(function(k) {
     TERM_SHAPES[k] = ENTITY_STYLES[k].shape;
     TERM_COLORS[k] = { bg: ENTITY_STYLES[k].color, border: ENTITY_STYLES[k].border };
+    TERM_SIZES[k] = ENTITY_STYLES[k].size || 18;
   });
   // Also expose globally for the terminal panel's renderTermVis
   window.__TERM_SHAPES = TERM_SHAPES;
   window.__TERM_COLORS = TERM_COLORS;
+  window.__TERM_SIZES = TERM_SIZES;
 }
 
 function updateMainVisStyles() {
@@ -1566,10 +1587,10 @@ function darkenColor(hex, factor) {
 }
 #parseTerminal .term-col:last-child { border-right: none; }
 #parseTerminal .term-col-left   { flex: 0 0 30%; }
-#parseTerminal .term-col-middle { flex: 0 0 35%; display: flex; flex-direction: column; }
-#parseTerminal .term-col-right  { flex: 1; display: flex; flex-direction: column; }
+#parseTerminal .term-col-middle { flex: 0 0 35%; display: flex; flex-direction: column; min-width: 0; }
+#parseTerminal .term-col-right  { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #parseTerminal .term-input-area {
-  flex: 1; display: flex; flex-direction: column; padding: 10px;
+  flex: 1; display: flex; flex-direction: column; padding: 10px; min-height: 0;
 }
 #parseTerminal .term-input-area textarea {
   flex: 1; resize: none; border: 1px solid #ddd;
@@ -1601,7 +1622,7 @@ function darkenColor(hex, factor) {
 @keyframes term-spin { to { transform: rotate(360deg); } }
 #parseTerminal .term-status { font-size: 12px; color: #999; margin-left: 8px; }
 #parseTerminal .term-json-area {
-  flex: 1; padding: 10px; overflow: auto;
+  flex: 1; padding: 10px; overflow: auto; min-height: 0;
 }
 #parseTerminal .term-json-area pre {
   margin: 0; font-size: 12px; line-height: 1.5;
@@ -1613,10 +1634,10 @@ function darkenColor(hex, factor) {
   color: #bbb; font-size: 13px; text-align: center; margin-top: 40%;
 }
 #parseTerminal .term-vis-area {
-  flex: 1; position: relative; overflow: hidden;
+  flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden;
 }
 #parseTerminal .term-vis-area #termVisContainer {
-  width: 100%; height: 100%;
+  width: 100%; height: 0; min-height: 0; flex: 1;
 }
 #parseTerminal .term-vis-placeholder {
   position: absolute; top: 50%; left: 50%;
@@ -1633,10 +1654,30 @@ function darkenColor(hex, factor) {
 }
 #parseTerminal .term-tab:hover { color: #555; }
 #parseTerminal .term-tab.active { color: #2980b9; border-bottom-color: #2980b9; font-weight: 600; }
-#parseTerminal .term-issues-area { overflow-y: auto; }
+.btn-tab-regen {
+  padding: 8px 24px; border: none; border-radius: 6px;
+  background: #2980b9; color: #fff; font-size: 14px;
+  cursor: pointer; font-weight: 600; transition: background 0.2s;
+}
+.btn-tab-regen:hover { background: #1a5276; }
+.btn-tab-regen:disabled { background: #95a5a6; cursor: not-allowed; }
+.btn-tab-regen.loading::after {
+  content: ' \u27f3'; display: inline-block;
+  animation: term-spin 1s linear infinite;
+}
+.term-tab-footer {
+  display: flex; justify-content: center; align-items: center;
+  padding: 8px; border-top: 1px solid #eee; background: #fafbfc;
+  flex-shrink: 0;
+}
+#parseTerminal .term-issues-area {
+  overflow-y: auto; display: flex; flex-direction: column; min-height: 0;
+}
 #parseTerminal .term-issues-area::-webkit-scrollbar { width: 4px; }
 #parseTerminal .term-issues-area::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
-#parseTerminal .term-eval-area { overflow-y: auto; }
+#parseTerminal .term-eval-area {
+  overflow-y: auto; display: flex; flex-direction: column; min-height: 0;
+}
 #parseTerminal .term-eval-area::-webkit-scrollbar { width: 4px; }
 #parseTerminal .term-eval-area::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
 .term-eval-section { margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding: 10px 12px; }
@@ -1652,6 +1693,28 @@ function darkenColor(hex, factor) {
 .term-eval-issue.minor { border-left-color: #f1c40f; background: #fffff0; }
 .term-eval-uncovered { padding: 6px 8px; margin: 3px 0; font-size: 12px; background: #f0f8ff; border-left: 3px solid #3498db; border-radius: 2px; }
 .term-eval-suggestion { padding: 4px 8px; font-size: 12px; color: #777; font-style: italic; }
+/* Tab footer with regen button — flush bottom */
+.term-tab-footer {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 12px; flex-shrink: 0;
+  border-top: 1px solid #eee; background: #f8f9fa;
+  min-height: 44px;
+}
+.btn-tab-regen {
+  padding: 8px 24px; border: 1px solid #2980b9; border-radius: 6px;
+  background: #fff; color: #2980b9; font-size: 14px;
+  cursor: pointer; font-weight: 600; transition: all 0.2s;
+}
+.btn-tab-regen:hover { background: #2980b9; color: #fff; }
+.btn-tab-regen:disabled { background: #ecf0f1; border-color: #bdc3c7; color: #bdc3c7; cursor: not-allowed; }
+.btn-tab-regen.loading::after {
+  content: ' ⟳'; display: inline-block;
+  animation: term-spin 1s linear infinite;
+}
+/* Scrollable content area inside tab panels (footer stays at bottom) */
+.term-tab-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.term-tab-scroll::-webkit-scrollbar { width: 4px; }
+.term-tab-scroll::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
 .term-eval-subscore { font-size: 11px; color: #888; padding-left: 12px; white-space: pre-wrap; }
 #parseTerminal .term-issues-item { padding: 4px 0; font-size: 12px; color: #e74c3c; border-bottom: 1px solid #f5f5f5; }
 #parseTerminal .term-footer {
@@ -1661,9 +1724,9 @@ function darkenColor(hex, factor) {
   font-size: 12px; color: #999;
 }
 #parseTerminal .btn-save {
-  padding: 5px 18px; border: 1px solid #27ae60; border-radius: 6px;
-  background: #27ae60; color: #fff; font-size: 13px;
-  cursor: pointer; font-weight: 500; transition: background 0.2s;
+  padding: 8px 24px; border: 1px solid #27ae60; border-radius: 6px;
+  background: #27ae60; color: #fff; font-size: 14px;
+  cursor: pointer; font-weight: 600; transition: background 0.2s;
 }
 #parseTerminal .btn-save:hover { background: #1e8449; }
 #parseTerminal .btn-save:disabled { background: #95a5a6; border-color: #95a5a6; cursor: not-allowed; }
@@ -1675,9 +1738,9 @@ function darkenColor(hex, factor) {
   background: #fafbfc; flex-shrink: 0;
 }
 #parseTerminal .btn-eval {
-  padding: 5px 16px; border: 1px solid #8e44ad; border-radius: 6px;
-  background: #8e44ad; color: #fff; font-size: 12px;
-  cursor: pointer; font-weight: 500; transition: background 0.2s;
+  padding: 8px 24px; border: 1px solid #8e44ad; border-radius: 6px;
+  background: #8e44ad; color: #fff; font-size: 14px;
+  cursor: pointer; font-weight: 600; transition: background 0.2s;
 }
 #parseTerminal .btn-eval:hover { background: #6c3483; }
 #parseTerminal .btn-eval:disabled { background: #a569bd; border-color: #a569bd; cursor: wait; }
@@ -1725,12 +1788,22 @@ function darkenColor(hex, factor) {
         <div class="term-vis-area" id="termVisArea">
           <div id="termVisContainer"></div>
           <div class="term-vis-placeholder" id="termVisPlaceholder">等待解析结果</div>
+          <div class="term-tab-footer">
+            <button class="btn-tab-regen" id="btnGraphRegen" onclick="regenGraph()" disabled style="display:none;">🔄 重新生成</button>
+          </div>
         </div>
-        <div class="term-issues-area" id="termIssuesArea" style="display:none;padding:10px;overflow:auto;flex:1;">
-          <div class="term-issues-placeholder" id="termIssuesPlaceholder">等待解析结果</div>
+        <div class="term-issues-area" id="termIssuesArea" style="display:none;">
+          <div class="term-tab-scroll" id="termIssuesScroll">
+            <div class="term-issues-placeholder" id="termIssuesPlaceholder">等待解析结果</div>
+          </div>
+          <div class="term-tab-footer">
+            <button class="btn-tab-regen" id="btnIssuesRegen" onclick="regenIssues()" disabled style="display:none;">🔄 重新生成</button>
+          </div>
         </div>
-        <div class="term-eval-area" id="termEvalArea" style="display:none;padding:0;overflow:auto;flex:1;">
-          <div class="term-eval-placeholder" id="termEvalPlaceholder">等待评估结果</div>
+        <div class="term-eval-area" id="termEvalArea" style="display:none;">
+          <div class="term-tab-scroll" id="termEvalScroll">
+            <div class="term-eval-placeholder" id="termEvalPlaceholder">等待评估结果</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1828,6 +1901,26 @@ function saveTestData(text, result) {
   }).catch(function(err) { console.warn('保存测试数据失败:', err); });
 }
 
+function regenGraph() {
+  if (!termLastResult) return;
+  var btn = document.getElementById('btnGraphRegen');
+  btn.disabled = true; btn.classList.add('loading');
+  setTimeout(function() {
+    renderTermVis(termLastResult.nodes, termLastResult.edges);
+    btn.disabled = false; btn.classList.remove('loading');
+  }, 100);
+}
+function regenIssues() {
+  if (!termLastResult) return;
+  var btn = document.getElementById('btnIssuesRegen');
+  btn.disabled = true; btn.classList.add('loading');
+  setTimeout(function() {
+    if (termLastResult.json_result) {
+      fetchParseQuality(termLastResult.json_result);
+    }
+    btn.disabled = false; btn.classList.remove('loading');
+  }, 100);
+}
 function loadTestData() {
   fetch(API_BASE + '/api/test-data')
   .then(function(r) { return r.json(); })
@@ -1886,17 +1979,17 @@ function displayResult(result) {
 }
 
 function fetchParseQuality(jsonResult) {
-  var issuesArea = document.getElementById('termIssuesArea');
+  var issuesScroll = document.getElementById('termIssuesScroll');
   // Recreate placeholder if it was destroyed by a previous call
   var issuesPlaceholder = document.getElementById('termIssuesPlaceholder');
   if (!issuesPlaceholder) {
     issuesPlaceholder = document.createElement('div');
     issuesPlaceholder.className = 'term-issues-placeholder';
     issuesPlaceholder.id = 'termIssuesPlaceholder';
-    issuesArea.appendChild(issuesPlaceholder);
+    issuesScroll.appendChild(issuesPlaceholder);
   }
   issuesPlaceholder.style.display = 'none';
-  issuesArea.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">分析中...</div>';
+  issuesScroll.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">分析中...</div>';
 
   fetch(API_BASE + '/api/parse-quality', {
     method: 'POST',
@@ -1906,7 +1999,7 @@ function fetchParseQuality(jsonResult) {
   .then(function(r) { return r.json(); })
   .then(function(qa) {
     if (qa.error) {
-      issuesArea.innerHTML = '<div style="color:#e74c3c;padding:10px;">分析失败: ' + qa.error + '</div>';
+      issuesScroll.innerHTML = '<div style="color:#e74c3c;padding:10px;">分析失败: ' + qa.error + '</div>';
       return;
     }
     renderQualityTab(qa);
@@ -1914,7 +2007,7 @@ function fetchParseQuality(jsonResult) {
     switchTermTab('issues');
   })
   .catch(function(err) {
-    issuesArea.innerHTML = '<div style="color:#e74c3c;padding:10px;">请求失败: ' + err.message + '</div>';
+    issuesScroll.innerHTML = '<div style="color:#e74c3c;padding:10px;">请求失败: ' + err.message + '</div>';
   });
 }
 
@@ -1935,18 +2028,20 @@ function renderTermVis(nodes, edges) {
     document.getElementById('termVisPlaceholder').textContent = '无节点可渲染';
     return;
   }
+  var shpMap = window.__TERM_SHAPES || {};
+  var colMap = window.__TERM_COLORS || {};
+  var sizeMap = window.__TERM_SIZES || {};
   var visNodes = new vis.DataSet(nodes.map(function(n) {
-    var shpMap = window.__TERM_SHAPES || {};
-    var colMap = window.__TERM_COLORS || {};
     var nc = colMap[n.nodeType] || colMap[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
+    var styleSize = sizeMap[n.nodeType] || 18;
     return {
       id: n.id,
       label: n.label,
       title: n.title || '',
-      shape: shpMap[n.nodeType] || 'ellipse',
-      size: n.size || 20,
+      shape: shpMap[n.nodeType] || n.shape || 'ellipse',
+      size: styleSize,
       color: { background: nc.bg, border: nc.border },
-      font: { color: '#fff', size: (n.font && n.font.size) || 12 },
+      font: { color: '#fff', size: 8 },
       borderWidth: 2, group: n.group,
     };
   }));
@@ -1979,6 +2074,10 @@ function renderTermVis(nodes, edges) {
     termVisNetwork.setOptions({ physics: { enabled: false } });
     termVisNetwork.fit({ animation: true });
   });
+  // Enable graph regen button
+  var regenBtn = document.getElementById('btnGraphRegen');
+  regenBtn.disabled = false;
+  regenBtn.style.display = 'inline-block';
 }
 
 function doSave() {
@@ -2054,7 +2153,7 @@ function doEval() {
 }
 
 function renderEvalTab(result) {
-  var area = document.getElementById('termEvalArea');
+  var scroll = document.getElementById('termEvalScroll');
   var ph = document.getElementById('termEvalPlaceholder');
   ph.style.display = 'none';
 
@@ -2136,7 +2235,7 @@ function renderEvalTab(result) {
   }
   html += '</div>';
 
-  area.innerHTML = html;
+  scroll.innerHTML = html;
 }
 
 function _escapeHtml(s) {
@@ -2149,11 +2248,8 @@ function _escapeHtml(s) {
 // ═══════════════════════════════════════════════════════════════
 
 function renderQualityTab(qa) {
-  var area = document.getElementById('termIssuesArea');
-  area.style.display = 'block';
-  area.style.padding = '0';
-  area.style.overflow = 'auto';
-  area.style.flex = '1';
+  var scroll = document.getElementById('termIssuesScroll');
+  scroll.style.padding = '0';
 
   var html = '';
 
@@ -2193,12 +2289,15 @@ function renderQualityTab(qa) {
       var catBg = cat.score >= 80 ? '#27ae60' : (cat.score >= 60 ? '#e67e22' : '#e74c3c');
 
       // ── 一级标题：实体大类 ──
+      var catId = 'cat_' + cat.category.replace(/[^a-zA-Z0-9]/g, '_');
       html += '<div style="margin-top:14px;">';
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f0f4f8;border-radius:6px;border-left:4px solid ' + catBg + ';">';
+      html += '<div class="qa-cat-header" data-target="' + catId + '" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f0f4f8;border-radius:6px;border-left:4px solid ' + catBg + ';cursor:pointer;user-select:none;">';
+      html += '<span class="qa-toggle" style="font-size:10px;color:#888;transition:transform 0.2s;">▼</span>';
       html += '<span style="font-weight:700;font-size:15px;color:#2c3e50;">' + cat.category_label + '</span>';
       html += '<span style="font-size:11px;color:#888;">(' + cat.category + ')</span>';
       html += '<span style="margin-left:auto;font-size:13px;font-weight:600;color:' + catBg + ';">' + cat.score + '/100</span>';
       html += '</div>';
+      html += '<div class="qa-cat-body" id="' + catId + '">';
 
       // Progress bar for category
       html += '<div class="term-eval-dim-bar" style="margin:4px 10px 8px;height:4px;">';
@@ -2212,7 +2311,9 @@ function renderQualityTab(qa) {
         var entIcon = entity.status === 'ok' ? '✅' : (entity.status === 'partial' ? '⚠️' : '❌');
 
         html += '<div style="margin-left:10px;margin-bottom:8px;">';
-        html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:#fafafa;border-radius:4px;">';
+        var entId = catId + '_' + entity.type.replace(/[^a-zA-Z0-9]/g, '_');
+        html += '<div class="qa-ent-header" data-target="' + entId + '" style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:#fafafa;border-radius:4px;cursor:pointer;user-select:none;">';
+        html += '<span class="qa-toggle" style="font-size:10px;color:#888;margin-right:2px;transition:transform 0.2s;">▼</span>';
         html += '<span>' + entIcon + '</span>';
         html += '<span style="font-weight:600;font-size:13px;color:#34495e;">' + entity.type_label + '</span>';
         html += '<span style="font-size:11px;color:#999;">(' + entity.type + ')</span>';
@@ -2221,6 +2322,7 @@ function renderQualityTab(qa) {
         }
         html += '<span style="margin-left:auto;font-size:12px;font-weight:600;color:' + entBg + ';">' + entity.score + '/100</span>';
         html += '</div>';
+        html += '<div class="qa-ent-body" id="' + entId + '">';
 
         // Entity progress bar
         html += '<div class="term-eval-dim-bar" style="margin:3px 8px 4px;height:3px;">';
@@ -2289,8 +2391,26 @@ function renderQualityTab(qa) {
   }
 
   html += '</div>'; // end padding container
-  area.innerHTML = html;
+  scroll.innerHTML = html;
+  // Enable issues regen button
+  var issuesBtn = document.getElementById('btnIssuesRegen');
+  issuesBtn.disabled = false;
+  issuesBtn.style.display = 'inline-block';
 }
+
+// ── Collapse/expand for quality tab ──
+document.addEventListener('click', function(e) {
+  var target = e.target.closest('.qa-cat-header, .qa-ent-header');
+  if (!target) return;
+  var bodyId = target.getAttribute('data-target');
+  var body = document.getElementById(bodyId);
+  var toggle = target.querySelector('.qa-toggle');
+  if (body && toggle) {
+    var isHidden = body.style.display === 'none';
+    body.style.display = isHidden ? 'block' : 'none';
+    toggle.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+  }
+});
 
 // ── Load test data on page init ──
 loadTestData();
