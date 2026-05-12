@@ -595,8 +595,33 @@ function updateSubtitle(totalCount, filteredCount) {
   if (filteredCount === totalCount) {
     subtitle.textContent = '共 ' + totalCount + ' 个案例 · 力导向图结构';
   } else {
-    subtitle.textContent = '共 ' + totalCount + ' 个案例 · 筛选后 ' + filteredCount + ' 个 · 力导向图结构';
+    subtitle.textContent = '共 ' + totalCount + ' 个案例 · 显示最近 ' + filteredCount + ' 个 · 力导向图结构';
   }
+}
+
+function getTopGraphsByYear(n) {
+  // Use graphMeta to find the n most recent cases by maximum CourtCase year
+  var scored = [];
+  for (var i = 0; i < ALL_GRAPHS.length; i++) {
+    var g = ALL_GRAPHS[i];
+    var meta = graphMeta.get(g.row_id);
+    if (!meta || !meta.years || meta.years.length === 0) continue;
+    // Take the highest year among all CourtCase nodes in this graph
+    var maxYear = Math.max.apply(null, meta.years.map(Number));
+    scored.push({ graph: g, maxYear: maxYear, rowId: g.row_id });
+  }
+  // Sort descending by year
+  scored.sort(function(a, b) { return b.maxYear - a.maxYear; });
+  // Take top n, dedup by row_id (keep first occurrence = highest year)
+  var seen = {};
+  var result = [];
+  for (var i = 0; i < scored.length && result.length < n; i++) {
+    if (!seen[scored[i].rowId]) {
+      seen[scored[i].rowId] = true;
+      result.push(scored[i].graph);
+    }
+  }
+  return result;
 }
 
 function onFilterChange() {
@@ -1300,8 +1325,11 @@ initLegendDrag();
 buildGraphMeta();
 buildFilterOptions();
 populateSelectors();
-initNetwork(null);
-updateSubtitle(ALL_GRAPHS.length, ALL_GRAPHS.length);
+
+// Default: show only the 5 most recent cases by latest CourtCase year
+var defaultGraphs = getTopGraphsByYear(5);
+initNetwork(null, defaultGraphs);
+updateSubtitle(ALL_GRAPHS.length, defaultGraphs.length);
 document.getElementById('filterCount').textContent = '';
 
 window.addEventListener('resize', function() { if (network) network.fit({ animation: false }); });
