@@ -7,15 +7,26 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: #f5f7fa; }
 #mynetwork { width: 100%; height: 100vh; }
+/* Legend — 树形继承图例，固定在左上角 */
 .legend {
-  position: fixed; bottom: 20px; left: 20px; z-index: 999;
+  position: fixed; top: 60px; left: 16px; z-index: 999;
   background: rgba(255,255,255,0.96); border-radius: 10px;
-  padding: 14px 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-  font-size: 13px; line-height: 1.6; border: 1px solid #e8e8e8;
+  padding: 12px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  font-size: 12px; line-height: 1.5; border: 1px solid #e8e8e8;
+  max-height: calc(100vh - 80px); overflow-y: auto;
 }
-.legend-item { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
-.legend-color { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
-.legend-label { font-size: 13px; color: #333; }
+.legend::-webkit-scrollbar { width: 4px; }
+.legend::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+.legend-title {
+  font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #333;
+  display: flex; align-items: center; gap: 6px;
+}
+.legend-root { font-weight: 600; font-size: 12px; margin: 5px 0 2px 0; display: flex; align-items: center; gap: 6px; }
+.legend-root .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+.legend-children { padding-left: 20px; }
+.legend-child { font-size: 11px; color: #555; padding: 1px 0; display: flex; align-items: center; gap: 6px; }
+.legend-child .child-dot { width: 8px; height: 8px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
+.legend-orphan { font-size: 11px; color: #7f8c8d; margin-left: 20px; }
 .title-bar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 999;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -135,13 +146,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 <div id="mynetwork"></div>
 
 <div class="legend">
-  <div style="font-weight:600;margin-bottom:6px;font-size:14px;color:#333;">图例</div>
-  <div class="legend-item"><div class="legend-color" style="background:#2980b9;"></div><span class="legend-label">LegalNorm 系 (规范层)</span></div>
-  <div class="legend-item"><div class="legend-color" style="background:#d35400;"></div><span class="legend-label">JudicialEntity 系 (司法实体层)</span></div>
-  <div class="legend-item"><div class="legend-color" style="background:#27ae60;"></div><span class="legend-label">LegalSubject 系 (主体层)</span></div>
-  <div class="legend-item"><div class="legend-color" style="background:#16a085;"></div><span class="legend-label">Person 系 (自然人层)</span></div>
-  <div class="legend-item"><div class="legend-color" style="background:#7f8c8d;"></div><span class="legend-label">无继承 / 抽象父类</span></div>
-  <div class="tooltip-hint">🖱 悬停/点击节点查看详细信息 · 点击空白关闭</div>
+  <div class="legend-title">📋 继承树</div>
 </div>
 
 <!-- ===== Detail Panel ===== -->
@@ -290,10 +295,10 @@ var EN_DESCRIPTIONS = {
 };
 
 // ============================================================
-// 2. 所有类型节点（包含 is_a 抽象顶层）
+// 2. 具体类型节点（排除4个抽象顶层类，继承关系在右侧面板展示）
 // ============================================================
-var TYPE_NAMES = ['LegalNorm', 'JudicialEntity', 'LegalSubject', 'Person',
-  'Law', 'LegalProvision', 'LegalProvisionVersion', 'CaseType', 'GuidingCase', 'SentencingStandard',
+var ABSTRACT_ROOTS = {'LegalNorm':1, 'JudicialEntity':1, 'LegalSubject':1, 'Person':1};
+var TYPE_NAMES = ['Law', 'LegalProvision', 'LegalProvisionVersion', 'CaseType', 'GuidingCase', 'SentencingStandard',
   'Organization', 'Court', 'Procuratorate', 'LawFirm', 'ExpertInstitution',
   'Judge', 'Attorney', 'Clerk', 'Prosecutor',
   'District', 'LegalRole',
@@ -306,13 +311,6 @@ var TYPE_NAMES = ['LegalNorm', 'JudicialEntity', 'LegalSubject', 'Person',
 // 3. is_a 继承边
 // ============================================================
 var IS_A_EDGES = [
-  ['Law', 'LegalNorm'],
-  ['LegalProvision', 'LegalNorm'],
-  ['LegalProvisionVersion', 'LegalNorm'],
-  ['CaseType', 'LegalNorm'],
-  ['GuidingCase', 'LegalNorm'],
-  ['SentencingStandard', 'LegalNorm'],
-  ['Organization', 'LegalSubject'],
   ['Court', 'Organization'],
   ['Procuratorate', 'Organization'],
   ['LawFirm', 'Organization'],
@@ -474,21 +472,17 @@ TYPE_NAMES.forEach(function(name) {
   var c = getRootColor(name);
   var en = EN_DESCRIPTIONS[name] || name;
   var shortLabel = cleanLabel(name);
-  // 顶层父类用更大尺寸和特殊形状
-  var isRoot = (name === 'LegalNorm' || name === 'JudicialEntity' || name === 'LegalSubject' || name === 'Person');
-  var shape = isRoot ? 'hexagon' : 'box';
-  var size = isRoot ? 28 : 18;
   nodes.push({
     id: name,
     label: shortLabel,
     title: '<b>' + name + '</b><br><i>' + (ZH_LABELS[name] || '') + '</i><hr style="margin:4px 0">' +
            '<span style="color:#555;font-size:12px;">' + (EN_DESCRIPTIONS[name] || '') + '</span>' +
            '<hr style="margin:4px 0"><span style="color:#888;font-size:11px;">' + c.group + ' | ' + name + '</span>',
-    shape: shape,
+    shape: 'box',
     color: { background: c.bg, border: c.border },
-    font: { color: '#fff', size: size, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
-    borderWidth: isRoot ? 3 : 2,
-    size: isRoot ? 35 : 24,
+    font: { color: '#fff', size: 18, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
+    borderWidth: 2,
+    size: 24,
     group: c.group,
     margin: { top: 8, bottom: 8, left: 10, right: 10 }
   });
@@ -600,6 +594,8 @@ network.on('stabilizationIterationsDone', function() {
   document.getElementById('edgeCount').textContent = '🔗 ' + edges.length;
   // 稳定后关闭物理引擎，防止持续浮动
   network.setOptions({ physics: { enabled: false } });
+  // 构建继承树图例
+  buildLegend();
   // 自适应视口
   network.fit({ animation: true, nodes: TYPE_NAMES });
 });
