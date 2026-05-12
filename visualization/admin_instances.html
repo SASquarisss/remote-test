@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>行政案件解析结果图结构可视化</title>
+<title>法律知识图谱可视化 · 案例检索与筛选</title>
 <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,14 +144,81 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
   display: flex; align-items: center; justify-content: center;
   height: 400px; font-size: 18px; color: #999;
 }
+/* Filter bar styles */
+.filter-bar {
+  width: 100%;
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filter-group label {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  color: #555;
+  min-width: 70px;
+}
+.filter-divider {
+  width: 1px;
+  height: 24px;
+  background: #ddd;
+}
+.filter-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid #ccc;
+  border-radius: 14px;
+  font-size: 12px;
+  cursor: pointer;
+  background: white;
+  color: #555;
+  transition: all 0.15s;
+  user-select: none;
+}
+.filter-tag:hover {
+  background: #f0f0f0;
+  border-color: #999;
+}
+.filter-tag.active {
+  background: #3f51b5;
+  color: white;
+  border-color: #3f51b5;
+}
+.filter-tag.active:hover {
+  background: #354499;
+}
+.filter-count {
+  font-size: 12px;
+  color: #999;
+  margin-left: auto;
+}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div>
-    <h1>&#x2696;&#xFE0F; 行政案件解析结果 &middot; 知识图谱可视化</h1>
-    <div class="subtitle">共 <span id="totalCases">0</span> 个行政案例 &middot; 力导向图结构</div>
+    <h1>⚖️ 法律知识图谱 · 案例检索</h1>
+    <div class="subtitle">共 <span id="totalCases">0</span> 个案例 · 力导向图结构</div>
   </div>
   <button class="btn" style="background:rgba(255,255,255,0.15);color:white;border-color:rgba(255,255,255,0.3);" onclick="toggleCaseList()">
     &#x1F4CB; 案件列表
@@ -163,6 +230,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
   <select id="caseSelect" onchange="filterByCase(this.value)">
     <option value="all">&#x1F4CC; 全部案例（默认同色系区分）</option>
   </select>
+  <!-- 多级筛选容器 -->
+  <div class="filter-bar">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>📡 数据来源：</label>
+        <div class="filter-tags" id="sourceFilter"></div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <label>⚖️ 案件类型：</label>
+        <div class="filter-tags" id="typeFilter"></div>
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>📅 年份：</label>
+        <div class="filter-tags" id="yearFilter"></div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <label>⚙️ 案件流程：</label>
+        <div class="filter-tags" id="procedureFilter"></div>
+      </div>
+      <button class="btn" id="resetFilters" title="重置所有筛选">↺ 重置</button>
+      <span class="filter-count" id="filterCount"></span>
+    </div>
+  </div>
   <div class="btn-group">
     <button class="btn active" onclick="setLayout(this,'force')">&#x26A1; 力导向</button>
     <button class="btn" onclick="setLayout(this,'hierarchical')">&#x1F4D0; 层级布局</button>
@@ -224,6 +318,294 @@ let currentFilter = 'all';
 let isPanelLocked = false;
 let currentSelection = null;
 
+// ===== Multi-filter state (Phase 1-3) =====
+const filterState = {
+  sources: new Set(),
+  types: new Set(),
+  years: new Set(),
+  procedures: new Set(),
+};
+
+const graphMeta = new Map();  // row_id → { source, types[], years[], procedures[] }
+
+const TYPE_ORDER = ['行政', '民事', '刑事'];
+const PROCEDURE_ORDER = ['一审', '二审', '再审', '再审审查'];
+
+function sortFilterValues(values, dimension) {
+  const arr = [...values];
+  if (dimension === 'types') {
+    arr.sort((a, b) => {
+      const ai = TYPE_ORDER.indexOf(a);
+      const bi = TYPE_ORDER.indexOf(b);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return a.localeCompare(b, 'zh-CN');
+    });
+  } else if (dimension === 'procedures') {
+    arr.sort((a, b) => PROCEDURE_ORDER.indexOf(a) - PROCEDURE_ORDER.indexOf(b));
+  } else if (dimension === 'years') {
+    arr.sort((a, b) => parseInt(b) - parseInt(a)); // descending
+  } else {
+    arr.sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  }
+  return arr;
+}
+
+function extractGraphMeta(g, rawJson) {
+  const meta = {
+    source: null,
+    types: new Set(),
+    years: new Set(),
+    procedures: new Set(),
+  };
+  // 1. Data source
+  if (rawJson) {
+    try {
+      const parsed = JSON.parse(rawJson);
+      meta.source = parsed.input?.web_name || '指导性案例';
+    } catch (e) {
+      meta.source = '指导性案例';
+    }
+  }
+  for (const n of g.nodes) {
+    if (!n.title) continue;
+    const titleHtml = n.title;
+    // 2. Case type (from CaseSummary node)
+    if (n.type === 'CaseSummary') {
+      const l1 = titleHtml.match(/层级1:\s*([^<]+)/);
+      if (l1) meta.types.add(l1[1].trim());
+      const l2 = titleHtml.match(/层级2:\s*([^<]+)/);
+      if (l2) meta.types.add(l2[1].trim());
+    }
+    // 3. Year (from CourtCase node)
+    if (n.type === 'CourtCase') {
+      const yearM = titleHtml.match(/裁判日期:\s*(\d{4})/);
+      if (yearM) meta.years.add(yearM[1]);
+      // 4. Procedure (from CourtCase node)
+      const procM = titleHtml.match(/程序:\s*([^<]+)/);
+      if (procM) meta.procedures.add(procM[1].trim());
+    }
+  }
+  return {
+    source: meta.source,
+    types: [...meta.types],
+    years: [...meta.years].sort(),
+    procedures: [...meta.procedures],
+  };
+}
+
+function buildGraphMeta() {
+  for (const g of ALL_GRAPHS) {
+    const rid = g.row_id;
+    const raw = RAW_DATA[rid];
+    const meta = extractGraphMeta(g, raw);
+    graphMeta.set(rid, meta);
+  }
+  console.log('[Filter] graphMeta built:', graphMeta.size, 'entries');
+  console.table([...graphMeta.entries()].map(([k, v]) => ({ row_id: k, ...v })));
+}
+
+function renderFilterTags(containerId, values, activeSet, onChange) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  for (const val of values) {
+    const tag = document.createElement('span');
+    tag.className = 'filter-tag' + (activeSet.has(val) ? ' active' : '');
+    tag.textContent = val;
+    tag.dataset.value = val;
+    tag.addEventListener('click', function() {
+      if (this.classList.contains('active')) {
+        this.classList.remove('active');
+        activeSet.delete(val);
+      } else {
+        this.classList.add('active');
+        activeSet.add(val);
+      }
+      if (onChange) onChange();
+    });
+    container.appendChild(tag);
+  }
+}
+
+function buildFilterOptions() {
+  const allSources = new Set();
+  const allTypes = new Set();
+  const allYears = new Set();
+  const allProcs = new Set();
+
+  for (const meta of graphMeta.values()) {
+    if (meta.source) allSources.add(meta.source);
+    meta.types.forEach(t => allTypes.add(t));
+    meta.years.forEach(y => allYears.add(y));
+    meta.procedures.forEach(p => allProcs.add(p));
+  }
+
+  const sortedSources = sortFilterValues([...allSources], 'sources');
+  const sortedTypes = sortFilterValues([...allTypes], 'types');
+  const sortedYears = sortFilterValues([...allYears], 'years');
+  const sortedProcs = sortFilterValues([...allProcs], 'procedures');
+
+  renderFilterTags('sourceFilter', sortedSources, filterState.sources, onFilterChange);
+  renderFilterTags('typeFilter', sortedTypes, filterState.types, onFilterChange);
+  renderFilterTags('yearFilter', sortedYears, filterState.years, onFilterChange);
+  renderFilterTags('procedureFilter', sortedProcs, filterState.procedures, onFilterChange);
+
+  // Reset button handler
+  document.getElementById('resetFilters').addEventListener('click', function() {
+    filterState.sources.clear();
+    filterState.types.clear();
+    filterState.years.clear();
+    filterState.procedures.clear();
+    // Reset UI
+    document.querySelectorAll('.filter-tag.active').forEach(t => t.classList.remove('active'));
+    onFilterChange();
+  });
+
+  console.log('[Filter] Options built:', {
+    sources: sortedSources,
+    types: sortedTypes,
+    years: sortedYears,
+    procedures: sortedProcs,
+  });
+}
+
+function applyFilters() {
+  return ALL_GRAPHS.filter(g => {
+    const meta = graphMeta.get(g.row_id);
+    if (!meta) return true;
+
+    // Source: within-dimension OR
+    if (filterState.sources.size > 0 && !filterState.sources.has(meta.source))
+      return false;
+
+    // Types: OR (match any of the graph's types)
+    if (filterState.types.size > 0 && !meta.types.some(t => filterState.types.has(t)))
+      return false;
+
+    // Years: OR (any CourtCase year matches)
+    if (filterState.years.size > 0 && !meta.years.some(y => filterState.years.has(y)))
+      return false;
+
+    // Procedures: OR (any CourtCase procedure matches)
+    if (filterState.procedures.size > 0 && !meta.procedures.some(p => filterState.procedures.has(p)))
+      return false;
+
+    return true;
+  });
+}
+
+function rebuildCaseSelect(visibleGraphs) {
+  const select = document.getElementById('caseSelect');
+  const currentVal = select.value;
+  select.innerHTML = '<option value="all">📌 全部案例（' + visibleGraphs.length + '个匹配）</option>';
+
+  const sorted = visibleGraphs.slice().sort(function(a, b) { return parseInt(a.row_id) - parseInt(b.row_id); });
+  for (let i = 0; i < sorted.length; i++) {
+    const g = sorted[i];
+    const valKey = g.version ? g.row_id + '__v' + g.version : g.row_id;
+    const displayName = g.version ? '[' + g.row_id + '] ' + g.case_name + ' (v' + g.version + ')' : '[' + g.row_id + '] ' + g.case_name;
+    const opt = document.createElement('option');
+    opt.value = valKey;
+    opt.textContent = displayName;
+    select.appendChild(opt);
+  }
+
+  // Preserve manual case options (they're always visible)
+  var manualOpts = select.querySelectorAll('option[data-source="manual"]');
+  // Re-fetch and add manual cases if any exist in the DOM already — but simpler:
+  // manual cases are added by populateSelectors which is called once on load.
+  // We'll re-add them from a cached list or re-fetch.
+  // For simplicity, re-query and re-add from the existing manual options backup
+  if (window._cachedManualOptions) {
+    for (var mi = 0; mi < window._cachedManualOptions.length; mi++) {
+      var mOpt = window._cachedManualOptions[mi];
+      select.appendChild(mOpt.cloneNode(true));
+    }
+  }
+
+  // If current value not in visible set, reset to 'all'
+  if (currentVal !== 'all') {
+    // Check also manual options
+    var inManual = false;
+    if (window._cachedManualOptions) {
+      for (var mi = 0; mi < window._cachedManualOptions.length; mi++) {
+        if (window._cachedManualOptions[mi].value === currentVal) {
+          inManual = true;
+          break;
+        }
+      }
+    }
+    if (!inManual) {
+      const stillVisible = visibleGraphs.some(g => {
+        const key = g.version ? g.row_id + '__v' + g.version : g.row_id;
+        return key === currentVal || g.row_id === currentVal;
+      });
+      if (!stillVisible) {
+        select.value = 'all';
+      } else {
+        select.value = currentVal;
+      }
+    }
+  }
+}
+
+function rebuildCaseList(visibleGraphs) {
+  const listScroll = document.getElementById('caseListScroll');
+  let listHtml = '<div class="case-list-item" data-row-id="all" onclick="selectFromList(\'all\')"><div class="case-name">📌 全部案例</div><div class="case-meta">显示所有匹配案例</div></div>';
+  var seen = {};
+  for (let i = 0; i < visibleGraphs.length; i++) {
+    const g = visibleGraphs[i];
+    if (!seen[g.row_id]) {
+      seen[g.row_id] = true;
+      listHtml += '<div class="case-list-item" data-row-id="' + g.row_id + '" onclick="selectFromList(\'' + g.row_id + '\')">' +
+        '<div class="case-name">' + g.case_name + '</div>' +
+        '<div class="case-meta">#' + g.row_id + ' · ' + (g.case_type || '') + '</div></div>';
+    }
+  }
+  // Preserve manual case items in the list
+  if (window._cachedManualListItems) {
+    for (var mi = 0; mi < window._cachedManualListItems.length; mi++) {
+      listHtml += window._cachedManualListItems[mi];
+    }
+  }
+  listScroll.innerHTML = listHtml;
+}
+
+function updateSubtitle(totalCount, filteredCount) {
+  const subtitle = document.querySelector('.header .subtitle');
+  if (filteredCount === totalCount) {
+    subtitle.textContent = '共 ' + totalCount + ' 个案例 · 力导向图结构';
+  } else {
+    subtitle.textContent = '共 ' + totalCount + ' 个案例 · 筛选后 ' + filteredCount + ' 个 · 力导向图结构';
+  }
+}
+
+function onFilterChange() {
+  const visibleGraphs = applyFilters();
+  const filteredCount = visibleGraphs.length;
+  const totalCount = ALL_GRAPHS.length;
+
+  // Update count display
+  document.getElementById('filterCount').textContent = '匹配 ' + filteredCount + '/' + totalCount + ' 个案例';
+
+  // Update subtitle
+  updateSubtitle(totalCount, filteredCount);
+
+  // Rebuild case select
+  rebuildCaseSelect(visibleGraphs);
+
+  // Rebuild case list
+  rebuildCaseList(visibleGraphs);
+
+  // Re-render network
+  const select = document.getElementById('caseSelect');
+  const val = select.value;
+  initNetwork(val === 'all' ? null : val, visibleGraphs);
+}
+
+// ===== End multi-filter state =====
+
 // ===== Color scheme from ontology (matched by entity type → root class) =====
 const ROOT_COLORS = {
   'LegalNorm':      { bg: '#2980b9', border: '#1a5276' },
@@ -247,11 +629,11 @@ const ADMIN_TYPE_ROOT = {
 const ADMIN_SHAPES = {
   'GuidingCase':    'hexagon',
   'CourtCase':      'box',
-  'CaseSummary':    'ellipse',
+  'CaseSummary':    'database',
   'JudgmentResult': 'diamond',
-  'Evidence':       'ellipse',
-  'LegalSubject':   'ellipse',
-  'LegalProvision': 'ellipse',
+  'Evidence':       'triangle',
+  'LegalSubject':   'star',
+  'LegalProvision': 'square',
 };
 
 function getAdminColor(typeName) {
@@ -270,15 +652,15 @@ function lightenColor(hex, percent) {
 }
 
 // Build vis data
-function buildVisData(filterCaseId) {
+function buildVisData(filterCaseId, customFiltered) {
   const visNodes = [];
   const visEdges = [];
   const nodeSet = new Set();
   const edgeSet = new Set();
 
-  let filtered = ALL_GRAPHS;
+  let filtered = customFiltered || ALL_GRAPHS;
   if (filterCaseId && filterCaseId !== 'all') {
-    filtered = ALL_GRAPHS.filter(g => {
+    filtered = filtered.filter(g => {
       const key = g.version ? g.row_id + '__v' + g.version : g.row_id;
       return key === filterCaseId || g.row_id === filterCaseId;
     });
@@ -321,11 +703,11 @@ function buildVisData(filterCaseId) {
   return { nodes: visNodes, edges: visEdges, filteredCount: filtered.length };
 }
 
-function initNetwork(filterCaseId) {
+function initNetwork(filterCaseId, customFiltered) {
   const container = document.getElementById('mynetwork');
   container.innerHTML = '';
 
-  const data = buildVisData(filterCaseId);
+  const data = buildVisData(filterCaseId, customFiltered);
   if (data.nodes.length === 0) {
     container.innerHTML = '<div class="loading">&#x274C; 无数据</div>';
     document.getElementById('stats').textContent = '0 nodes, 0 edges';
@@ -478,7 +860,9 @@ function filterByCase(value) {
   document.getElementById('caseSelect').value = value;
   // Extract row_id from compound key
   var rid = value.split('__')[0];
-  initNetwork(value === 'all' ? null : value);
+  // Pass current filter state to initNetwork
+  var visibleGraphs = applyFilters();
+  initNetwork(value === 'all' ? null : value, visibleGraphs);
 
   // Show/hide version selector
   var verWrapper = document.getElementById('versionWrapper');
@@ -536,7 +920,7 @@ function buildAdminLegend() {
     kids.forEach(function(k) {
       var kc = ROOT_COLORS[root] || {bg:'#7f8c8d'};
       var shape = ADMIN_SHAPES[k] || 'ellipse';
-      var shapeIcon = shape === 'hexagon' ? '⬡' : shape === 'box' ? '▢' : shape === 'diamond' ? '◇' : '○';
+      var shapeIcon = shape === 'hexagon' ? '⬡' : shape === 'box' ? '▢' : shape === 'diamond' ? '◇' : shape === 'database' ? '🗄' : shape === 'triangle' ? '△' : shape === 'star' ? '★' : shape === 'square' ? '□' : '○';
       html += '<div class="legend-child">';
       html += '<span class="cdot" style="background:' + kc.bg + ';"></span>';
       html += '<span>' + shapeIcon + ' ' + k + '</span>';
@@ -633,7 +1017,9 @@ async function populateSelectors() {
     }
   }
 
-  // Add manual cases to selector
+  // Add manual cases to selector — cache them for filter rebuilds
+  window._cachedManualOptions = [];
+  window._cachedManualListItems = [];
   for (let i = 0; i < manualCases.length; i++) {
     const c = manualCases[i];
     const valKey = c.row_id;
@@ -644,13 +1030,16 @@ async function populateSelectors() {
     opt.textContent = displayName;
     opt.setAttribute('data-source', 'manual');
     select.appendChild(opt);
+    window._cachedManualOptions.push({ value: valKey, text: displayName });
 
     // In case list
-    listHtml += '<div class="case-list-item manual-case" ' +
+    var itemHtml = '<div class="case-list-item manual-case" ' +
       'data-row-id="' + c.row_id + '" data-source="manual" ' +
       'onclick="selectFromList(\'' + c.row_id + '\')">' +
       '<div class="case-name">📝 ' + c.case_name + '</div>' +
       '<div class="case-meta">#' + c.row_id + ' · 手动解析</div></div>';
+    listHtml += itemHtml;
+    window._cachedManualListItems.push(itemHtml);
   }
 
   listScroll.innerHTML = listHtml;
@@ -812,8 +1201,12 @@ function buildVisDataFromEntry(g) {
 }
 
 buildAdminLegend();
+buildGraphMeta();
+buildFilterOptions();
 populateSelectors();
 initNetwork(null);
+updateSubtitle(ALL_GRAPHS.length, ALL_GRAPHS.length);
+document.getElementById('filterCount').textContent = '';
 
 window.addEventListener('resize', function() { if (network) network.fit({ animation: false }); });
 
