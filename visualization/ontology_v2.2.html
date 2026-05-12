@@ -1318,6 +1318,23 @@ function renderEdgePanel(edgeId) {
 #parseTerminal .term-tab:hover { color: #555; }
 #parseTerminal .term-tab.active { color: #2980b9; border-bottom-color: #2980b9; font-weight: 600; }
 #parseTerminal .term-issues-area { overflow-y: auto; }
+#parseTerminal .term-eval-area { overflow-y: auto; }
+#parseTerminal .term-eval-area::-webkit-scrollbar { width: 4px; }
+#parseTerminal .term-eval-area::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
+.term-eval-section { margin-bottom: 12px; border-bottom: 1px solid #e0e0e0; padding: 10px 12px; }
+.term-eval-section:last-child { border-bottom: none; }
+.term-eval-section-title { font-weight: 600; font-size: 13px; color: #8e44ad; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.term-eval-score-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.term-eval-dim { padding: 4px 0; font-size: 12px; line-height: 1.5; color: #444; }
+.term-eval-dim-bar { height: 4px; background: #e8e8e8; border-radius: 2px; margin: 3px 0; overflow: hidden; }
+.term-eval-dim-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+.term-eval-issue { padding: 5px 8px; margin: 3px 0; font-size: 12px; background: #fff8f0; border-left: 3px solid #e67e22; border-radius: 2px; }
+.term-eval-issue.critical { border-left-color: #e74c3c; background: #fff0f0; }
+.term-eval-issue.major { border-left-color: #e67e22; background: #fff8f0; }
+.term-eval-issue.minor { border-left-color: #f1c40f; background: #fffff0; }
+.term-eval-uncovered { padding: 6px 8px; margin: 3px 0; font-size: 12px; background: #f0f8ff; border-left: 3px solid #3498db; border-radius: 2px; }
+.term-eval-suggestion { padding: 4px 8px; font-size: 12px; color: #777; font-style: italic; }
+.term-eval-subscore { font-size: 11px; color: #888; padding-left: 12px; white-space: pre-wrap; }
 #parseTerminal .term-issues-item { padding: 4px 0; font-size: 12px; color: #e74c3c; border-bottom: 1px solid #f5f5f5; }
 #parseTerminal .term-footer {
   display: flex; align-items: center; gap: 12px;
@@ -1382,6 +1399,7 @@ function renderEdgePanel(edgeId) {
         <div class="term-col-header">
           <span class="term-tab active" id="tabGraph" onclick="switchTermTab('graph')">📊 图</span>
           <span class="term-tab" id="tabIssues" onclick="switchTermTab('issues')">⚠ 问题</span>
+          <span class="term-tab" id="tabEval" onclick="switchTermTab('eval')">📋 评估</span>
         </div>
         <div class="term-vis-area" id="termVisArea">
           <div id="termVisContainer"></div>
@@ -1389,6 +1407,9 @@ function renderEdgePanel(edgeId) {
         </div>
         <div class="term-issues-area" id="termIssuesArea" style="display:none;padding:10px;overflow:auto;flex:1;">
           <div class="term-issues-placeholder" id="termIssuesPlaceholder">等待解析结果</div>
+        </div>
+        <div class="term-eval-area" id="termEvalArea" style="display:none;padding:0;overflow:auto;flex:1;">
+          <div class="term-eval-placeholder" id="termEvalPlaceholder">等待评估结果</div>
         </div>
       </div>
     </div>
@@ -1503,8 +1524,10 @@ function displayResult(result) {
 function switchTermTab(tab) {
   document.getElementById('tabGraph').classList.toggle('active', tab === 'graph');
   document.getElementById('tabIssues').classList.toggle('active', tab === 'issues');
+  document.getElementById('tabEval').classList.toggle('active', tab === 'eval');
   document.getElementById('termVisArea').style.display = tab === 'graph' ? 'block' : 'none';
   document.getElementById('termIssuesArea').style.display = tab === 'issues' ? 'block' : 'none';
+  document.getElementById('termEvalArea').style.display = tab === 'eval' ? 'block' : 'none';
   if (tab === 'graph' && termVisNetwork) {
     setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 100);
   }
@@ -1605,36 +1628,21 @@ function doEval() {
   })
   .then(function(r) { return r.json(); })
   .then(function(result) {
-    if (result.error) { scoreEl.textContent = '评估失败: ' + result.error; return; }
-    var total = result.total_score || result.summary?.total_score || 0;
-    var confidence = result.confidence || result.summary?.confidence || '-';
-    scoreEl.textContent = '总分: ' + total + '/100 [' + confidence + ']';
-    // Show eval result JSON in the middle column
-    var pre = document.getElementById('termJsonPre');
-    pre.textContent = JSON.stringify(result, null, 2);
-    pre.style.display = 'block';
-    document.getElementById('termJsonPlaceholder').style.display = 'none';
-    // Also populate issues tab
-    var dims = result.dimension_scores || result.summary?.dimensions || [];
-    if (dims.length > 0) {
-      var issuesArea = document.getElementById('termIssuesArea');
-      var html = '<div style="font-weight:600;font-size:13px;color:#8e44ad;padding:6px 0;border-bottom:1px solid #eee;">📊 评估分项</div>';
-      dims.forEach(function(d) {
-        var code = d.code || d.dimension || '';
-        var name = d.name || '';
-        var sc = d.score != null ? d.score : (d.total_score ?? '');
-        html += '<div class="term-issues-item" style="color:#333;">' + code + ' ' + name + ': <b>' + sc + '</b></div>';
-      });
-      html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee;font-size:12px;color:#8e44ad;">总分: ' + total + '/100 [' + confidence + ']</div>';
-      if (result.issues) {
-        result.issues.forEach(function(iss) {
-          var msg = typeof iss === 'string' ? iss : (iss.msg || iss);
-          html += '<div class="term-issues-item">⚠ ' + msg + '</div>';
-        });
-      }
-      issuesArea.innerHTML = html;
+    if (result.error) {
+      scoreEl.textContent = '评估失败: ' + result.error;
+      setTermStatus('评估失败: ' + result.error, '#e74c3c');
+      return;
     }
+    // Render into eval tab (right column), NOT middle column
+    renderEvalTab(result);
+    // Update status
+    var pe = result.parsing_evaluation || {};
+    var total = pe.total_score || 0;
+    var conf = pe.confidence || '-';
+    scoreEl.textContent = '解析评估: ' + total + '/100 [' + conf + ']';
     setTermStatus('评估完成', '#8e44ad');
+    // Switch to eval tab
+    switchTermTab('eval');
   })
   .catch(function(err) {
     scoreEl.textContent = '评估请求失败';
@@ -1644,6 +1652,97 @@ function doEval() {
     btn.textContent = '🔍 本体论评估';
     btn.disabled = false;
   });
+}
+
+function renderEvalTab(result) {
+  var area = document.getElementById('termEvalArea');
+  var ph = document.getElementById('termEvalPlaceholder');
+  ph.style.display = 'none';
+
+  var pe = result.parsing_evaluation || {};
+  var oc = result.ontology_coverage || {};
+
+  var bg = function(score) { return score >= 80 ? '#27ae60' : (score >= 60 ? '#e67e22' : '#e74c3c'); };
+  var confClass = function(c) {
+    return c === '优' ? '优' : (c === '良' ? '良' : (c === '中' ? '中' : '差'));
+  };
+
+  var html = '';
+
+  // ── Section 1: Parsing Evaluation ──
+  html += '<div class="term-eval-section">';
+  html += '<div class="term-eval-section-title">🔍 解析结果评估';
+  html += ' <span class="term-eval-score-badge" style="background:' + bg(pe.total_score) + '20;color:' + bg(pe.total_score) + ';">' + pe.total_score + '/100</span>';
+  html += ' <span style="font-size:11px;color:#999;">' + pe.confidence + '</span>';
+  html += '</div>';
+
+  if (pe.dimensions && pe.dimensions.length > 0) {
+    pe.dimensions.forEach(function(d) {
+      var ds = d.score || 0;
+      html += '<div class="term-eval-dim">';
+      html += '<div style="display:flex;justify-content:space-between;"><span><b>' + d.code + '</b> ' + d.name + '</span><span style="color:' + bg(ds) + ';">' + ds + '</span></div>';
+      html += '<div class="term-eval-dim-bar"><div class="term-eval-dim-fill" style="width:' + ds + '%;background:' + bg(ds) + ';"></div></div>';
+      if (d.detail) html += '<div class="term-eval-subscore">' + _escapeHtml(d.detail) + '</div>';
+      html += '</div>';
+    });
+  }
+
+  if (pe.issues && pe.issues.length > 0) {
+    html += '<div style="font-size:12px;font-weight:600;color:#e74c3c;margin-top:8px;margin-bottom:4px;">问题列表</div>';
+    pe.issues.forEach(function(iss) {
+      var msg = typeof iss === 'string' ? iss : (iss.msg || iss.description || '');
+      var sev = iss.severity || 'minor';
+      html += '<div class="term-eval-issue ' + sev + '">' + (sev === 'critical' ? '🚨 ' : sev === 'major' ? '⚠ ' : '🔸 ') + _escapeHtml(msg) + '</div>';
+    });
+  }
+  if (pe.suggestions && pe.suggestions.length > 0) {
+    html += '<div style="font-size:12px;font-weight:600;color:#8e44ad;margin-top:8px;margin-bottom:4px;">改进建议</div>';
+    pe.suggestions.forEach(function(s) {
+      html += '<div class="term-eval-suggestion">💡 ' + _escapeHtml(s) + '</div>';
+    });
+  }
+  html += '</div>';
+
+  // ── Section 2: Ontology Coverage ──
+  html += '<div class="term-eval-section">';
+  var ocBg = oc.total_score >= 80 ? '#27ae60' : (oc.total_score >= 60 ? '#e67e22' : '#e74c3c');
+  html += '<div class="term-eval-section-title">🧩 本体论覆盖评估';
+  html += ' <span class="term-eval-score-badge" style="background:' + ocBg + '20;color:' + ocBg + ';">' + oc.total_score + '/100</span>';
+  html += '</div>';
+
+  if (oc.coverage_items && oc.coverage_items.length > 0) {
+    html += '<div style="font-size:12px;font-weight:600;color:#27ae60;margin-bottom:4px;">已覆盖</div>';
+    oc.coverage_items.forEach(function(c) {
+      html += '<div class="term-eval-dim" style="color:#27ae60;">✅ ' + (c.entity || '') + ' — ' + (c.relation || '') + '</div>';
+    });
+  }
+
+  if (oc.uncovered && oc.uncovered.length > 0) {
+    html += '<div style="font-size:12px;font-weight:600;color:#3498db;margin-top:6px;margin-bottom:4px;">未覆盖项</div>';
+    oc.uncovered.forEach(function(u) {
+      html += '<div class="term-eval-uncovered">📌 <b>' + _escapeHtml(u.entity || '') + '</b>';
+      if (u.relation) html += ' — ' + _escapeHtml(u.relation);
+      if (u.detail) html += '<div style="font-size:11px;color:#666;margin-top:2px;">' + _escapeHtml(u.detail) + '</div>';
+      html += '</div>';
+    });
+  } else {
+    html += '<div style="font-size:12px;color:#27ae60;padding:4px 0;">✅ 本体论覆盖充分，未发现未覆盖实体或关系</div>';
+  }
+
+  if (oc.suggestions && oc.suggestions.length > 0) {
+    html += '<div style="font-size:12px;font-weight:600;color:#8e44ad;margin-top:8px;margin-bottom:4px;">本体论扩展建议</div>';
+    oc.suggestions.forEach(function(s) {
+      html += '<div class="term-eval-suggestion">💡 ' + _escapeHtml(s) + '</div>';
+    });
+  }
+  html += '</div>';
+
+  area.innerHTML = html;
+}
+
+function _escapeHtml(s) {
+  if (typeof s !== 'string') return String(s || '');
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>
 
