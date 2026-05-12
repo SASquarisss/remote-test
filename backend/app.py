@@ -226,7 +226,7 @@ def api_ontology_evaluate():
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=9120)
+    parser.add_argument("--port", type=int, default=9119)
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--serve-files", action="store_true",

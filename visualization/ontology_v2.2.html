@@ -6,14 +6,16 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: #f5f7fa; }
-#mynetwork { width: 100%; height: 100vh; }
+#mynetwork { width: 100%; height: 100vh; display: none; }
+#ontologyContainer { width: 100%; height: 100vh; position: relative; display: block; }
 /* Legend — 树形继承图例，固定在左上角 */
 .legend {
   position: fixed; top: 60px; left: 16px; z-index: 999;
   background: rgba(255,255,255,0.96); border-radius: 10px;
   padding: 14px 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
   font-size: 14px; line-height: 1.7; border: 1px solid #e8e8e8;
-  max-height: calc(100vh - 80px); overflow-y: auto;
+  width: 360px; max-height: 500px; overflow-y: auto;
+  resize: both;
 }
 .legend::-webkit-scrollbar { width: 4px; }
 .legend::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
@@ -43,16 +45,50 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 .legend.collapsed { display: none; }
 .legend-show-trigger {
   display: none; position: fixed; top: 60px; left: 16px; z-index: 999;
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,255,255,0.96); box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  border: 1px solid #ddd; cursor: pointer; font-size: 16px; line-height: 36px;
-  text-align: center; color: #666; transition: all 0.2s;
+  align-items: center; gap: 6px; cursor: pointer;
+  font-size: 14px; transition: all 0.2s;
 }
-.legend-show-trigger:hover { background: #f0f0f0; color: #333; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
-.legend.collapsed ~ .legend-show-trigger { display: block; }
+.legend-show-trigger .trigger-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.96); box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border: 1px solid #ddd; font-size: 14px; line-height: 1; color: #666;
+  flex-shrink: 0;
+}
+.legend-show-trigger .trigger-icon:hover { background: #f0f0f0; color: #333; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+.legend-show-trigger .trigger-label {
+  font-size: 13px; color: #555; user-select: none;
+  background: rgba(255,255,255,0.9); padding: 4px 10px; border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;
+}
+.legend.collapsed ~ .legend-show-trigger { display: flex; }
 .tooltip-hint {
   font-size: 11px; color: #999; margin-top: 2px;
 }
+
+/* ── Ontology Mini Module (small draggable ontology view) ── */
+#ontologyContainer.mini-mode {
+  position: fixed; bottom: 12px; left: 12px; z-index: 1000;
+  width: 300px; height: 400px;
+  resize: both; overflow: hidden;
+  border-radius: 8px; box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+  background: #fff; border: 1px solid #ddd;
+  cursor: grab;
+}
+#ontologyContainer.mini-mode:active { cursor: grabbing; }
+#ontologyContainer.mini-mode .vis-network { width: 100% !important; height: 100% !important; }
+#ontologyContainer .ontology-mini-header {
+  display: none; position: absolute; top: 0; left: 0; right: 0;
+  background: rgba(255,255,255,0.95); padding: 4px 8px;
+  font-size: 11px; font-weight: 600; color: #333;
+  border-bottom: 1px solid #eee; z-index: 2;
+  align-items: center; justify-content: space-between;
+}
+#ontologyContainer.mini-mode .ontology-mini-header { display: flex; }
+#ontologyContainer .ontology-mini-close {
+  cursor: pointer; color: #999; font-size: 12px; padding: 0 4px;
+}
+#ontologyContainer .ontology-mini-close:hover { color: #333; }
 
 /* ===== 图结构配置弹窗 ===== */
 .btn-config-header {
@@ -248,12 +284,21 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   </div>
 </div>
 
+<div id="ontologyContainer">
+  <div class="ontology-mini-header">
+    <span>📋 本体论</span>
+    <span class="ontology-mini-close" onclick="restoreOntologyFromMini()">✕</span>
+  </div>
+</div>
 <div id="mynetwork"></div>
 
 <div class="legend">
   <div class="legend-title">📋 继承树</div>
 </div>
-<div class="legend-show-trigger" onclick="toggleLegend()" title="展开继承树">📋</div>
+<div class="legend-show-trigger" onclick="toggleLegend()" title="展开继承树">
+  <span class="trigger-icon">📋</span>
+  <span class="trigger-label">继承树</span>
+</div>
 
 <!-- ===== 样式配置弹窗 ===== -->
 <div id="styleConfigOverlay" class="config-overlay" onclick="closeStyleConfig(event)" style="display:none;">
@@ -692,7 +737,7 @@ RELATION_EDGES.forEach(function(e) {
 // ============================================================
 // 6. 渲染
 // ============================================================
-var container = document.getElementById('mynetwork');
+var container = document.getElementById('ontologyContainer');
 var data = {
   nodes: new vis.DataSet(nodes),
   edges: new vis.DataSet(edges)
@@ -751,6 +796,7 @@ var options = {
 };
 
 var network = new vis.Network(container, data, options);
+window.network = network;
 
 // 更新统计 + 自适应视口 + 稳定后冻结物理
 network.on('stabilizationIterationsDone', function() {
@@ -767,6 +813,10 @@ network.on('stabilizationIterationsDone', function() {
 // 窗口自适应
 window.addEventListener('resize', function() {
   network.fit({ animation: true });
+  // Also fit parse network if visible
+  if (termVisNetwork && document.getElementById('mynetwork').style.display !== 'none') {
+    termVisNetwork.fit({ animation: true });
+  }
 });
 
 // 适配 title-bar 高度
@@ -1068,7 +1118,7 @@ function buildLegend() {
   html += '<span>LegalProvisionElement</span></div>';
   html += '</div>';
   html += '<div style="margin-top:8px;font-size:10px;color:#aaa;">&#x1F5B2; 悬停/点击查看详情</div>';
-  document.querySelector('.legend').innerHTML = '<div class="legend-title"><span>📋 继承树</span><span class="legend-close" onclick="toggleLegend()">✕</span></div>' + html;
+  document.querySelector('.legend').innerHTML = '<div class="legend-title"><span>📋 继承树</span><span class="legend-close" onclick="toggleLegend()">⭕−</span></div>' + html;
 
   var btnSpan = document.querySelector('.legend-title .legend-close');
   if (localStorage.getItem('legendCollapsed') === 'true') {
@@ -1637,12 +1687,13 @@ function darkenColor(hex, factor) {
   flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden;
 }
 #parseTerminal .term-vis-area #termVisContainer {
-  width: 100%; height: 0; min-height: 0; flex: 1;
+  width: 100%; flex: 1; min-height: 100px; height: auto;
 }
 #parseTerminal .term-vis-placeholder {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   color: #bbb; font-size: 13px; text-align: center;
+  padding: 20px; width: 80%;
 }
 #parseTerminal .term-col-header {
   display: flex; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
@@ -1839,11 +1890,15 @@ function toggleParseTerminal() {
   termExpanded = !termExpanded;
   var panel = document.getElementById('parseTerminal');
   panel.classList.toggle('expanded', termExpanded);
-  var network = document.getElementById('mynetwork');
+  var mynetwork = document.getElementById('mynetwork');
+  var ontologyContainer = document.getElementById('ontologyContainer');
+  var isMini = ontologyContainer.classList.contains('mini-mode');
   if (termExpanded) {
-    network.style.height = 'calc(100vh - 44px - 55vh)';
+    mynetwork.style.height = 'calc(100vh - 44px - 55vh)';
+    if (!isMini) ontologyContainer.style.height = 'calc(100vh - 44px - 55vh)';
   } else {
-    network.style.height = 'calc(100vh - 44px)';
+    mynetwork.style.height = 'calc(100vh - 44px)';
+    if (!isMini) ontologyContainer.style.height = 'calc(100vh - 44px)';
   }
   if (termExpanded && termVisNetwork) {
     setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 350);
@@ -2025,9 +2080,24 @@ function switchTermTab(tab) {
 
 function renderTermVis(nodes, edges) {
   if (!nodes || nodes.length === 0) {
-    document.getElementById('termVisPlaceholder').textContent = '无节点可渲染';
     return;
   }
+  // Do NOT destroy the ontology network — shrink ontologyContainer to mini-mode instead
+  var ontologyContainer = document.getElementById('ontologyContainer');
+  var mynetwork = document.getElementById('mynetwork');
+  ontologyContainer.classList.add('mini-mode');
+  // Adjust ontology network to its new small container if it exists
+  if (window.network) {
+    setTimeout(function() {
+      window.network.fit({ animation: false });
+      window.network.setOptions({ physics: { enabled: false } });
+    }, 50);
+  }
+  // Show main graph area
+  mynetwork.style.display = 'block';
+  mynetwork.style.height = document.getElementById('parseTerminal').classList.contains('expanded')
+    ? 'calc(100vh - 44px - 55vh)' : 'calc(100vh - 44px)';
+
   var shpMap = window.__TERM_SHAPES || {};
   var colMap = window.__TERM_COLORS || {};
   var sizeMap = window.__TERM_SIZES || {};
@@ -2054,9 +2124,7 @@ function renderTermVis(nodes, edges) {
       arrows: { to: { enabled: true, scaleFactor: 0.6 } },
     };
   }));
-  var container = document.getElementById('termVisContainer');
-  container.innerHTML = '';
-  document.getElementById('termVisPlaceholder').style.display = 'none';
+  mynetwork.innerHTML = '';
   var data = { nodes: visNodes, edges: visEdges };
   var options = {
     physics: {
@@ -2069,7 +2137,7 @@ function renderTermVis(nodes, edges) {
     nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }, borderWidth: 2, shadow: { enabled: true, size: 3 } },
     layout: { improvedLayout: false, randomSeed: 42 },
   };
-  termVisNetwork = new vis.Network(container, data, options);
+  termVisNetwork = new vis.Network(mynetwork, data, options);
   termVisNetwork.on('stabilizationIterationsDone', function() {
     termVisNetwork.setOptions({ physics: { enabled: false } });
     termVisNetwork.fit({ animation: true });
@@ -2078,6 +2146,13 @@ function renderTermVis(nodes, edges) {
   var regenBtn = document.getElementById('btnGraphRegen');
   regenBtn.disabled = false;
   regenBtn.style.display = 'inline-block';
+
+  // Show placeholder message in right-side tab
+  var visArea = document.getElementById('termVisArea');
+  var container = document.getElementById('termVisContainer');
+  var placeholder = document.getElementById('termVisPlaceholder');
+  if (container) container.innerHTML = '';
+  if (placeholder) placeholder.textContent = '⚡ 解析后的知识图谱已渲染至页面中央，请查看主区域';
 }
 
 function doSave() {
@@ -2310,7 +2385,7 @@ function renderQualityTab(qa) {
         var entBg = entity.score >= 80 ? '#27ae60' : (entity.score >= 60 ? '#e67e22' : '#e74c3c');
         var entIcon = entity.status === 'ok' ? '✅' : (entity.status === 'partial' ? '⚠️' : '❌');
 
-        html += '<div style="margin-left:10px;margin-bottom:8px;">';
+        html += '<div style="margin-bottom:8px;">';
         var entId = catId + '_' + entity.type.replace(/[^a-zA-Z0-9]/g, '_');
         html += '<div class="qa-ent-header" data-target="' + entId + '" style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:#fafafa;border-radius:4px;cursor:pointer;user-select:none;">';
         html += '<span class="qa-toggle" style="font-size:10px;color:#888;margin-right:2px;transition:transform 0.2s;">▼</span>';
@@ -2411,6 +2486,56 @@ document.addEventListener('click', function(e) {
     toggle.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
   }
 });
+
+// ── Restore ontology from mini-mode ──
+function restoreOntologyFromMini() {
+  var container = document.getElementById('ontologyContainer');
+  container.classList.remove('mini-mode');
+  // Hide the parse network, show ontology full-screen
+  var mynetwork = document.getElementById('mynetwork');
+  mynetwork.style.display = 'none';
+  container.style.display = 'block';
+  container.style.height = 'calc(100vh - 44px)';
+  container.style.width = '100%';
+  container.style.position = 'relative';
+  container.style.bottom = ''; container.style.left = '';
+  container.style.zIndex = '';
+  container.style.resize = ''; container.style.cursor = '';
+  if (window.network) {
+    setTimeout(function() {
+      window.network.fit({ animation: true });
+    }, 100);
+  }
+}
+window.restoreOntologyFromMini = restoreOntologyFromMini;
+
+// ── Make mini-mode ontology draggable ──
+(function() {
+  var container = document.getElementById('ontologyContainer');
+  var isDragging = false, startX, startY, origX, origY;
+  container.addEventListener('mousedown', function(e) {
+    if (!container.classList.contains('mini-mode')) return;
+    if (e.target.closest('.ontology-mini-close')) return;
+    isDragging = true;
+    startX = e.clientX; startY = e.clientY;
+    var rect = container.getBoundingClientRect();
+    origX = rect.left; origY = rect.top;
+    container.style.cursor = 'grabbing';
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    var dx = e.clientX - startX, dy = e.clientY - startY;
+    container.style.left = (origX + dx) + 'px';
+    container.style.top = (origY + dy) + 'px';
+    container.style.bottom = 'auto';
+    container.style.right = 'auto';
+  });
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    container.style.cursor = 'grab';
+  });
+})();
 
 // ── Load test data on page init ──
 loadTestData();

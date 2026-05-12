@@ -294,6 +294,9 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         if cn:
             add_node("gc_num", cn, "GuidingCase", "LegalNorm", 1)
             add_edge("gc", "gc_num", "案号")
+        # Connect guiding case to main court case even without case number
+        if court_cases and not cn:
+            add_edge(court_cases[0].get('case_number', f'cc_0'), 'gc', '关联')
 
     # CaseType
     ct = output.get("case_type") or {}
