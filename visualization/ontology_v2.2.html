@@ -141,7 +141,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   <div class="legend-item"><div class="legend-color" style="background:#27ae60;"></div><span class="legend-label">LegalSubject 系 (主体层)</span></div>
   <div class="legend-item"><div class="legend-color" style="background:#16a085;"></div><span class="legend-label">Person 系 (自然人层)</span></div>
   <div class="legend-item"><div class="legend-color" style="background:#7f8c8d;"></div><span class="legend-label">无继承 / 抽象父类</span></div>
-  <div class="tooltip-hint">🖱 悬停节点查看详细信息</div>
+  <div class="tooltip-hint">🖱 悬停/点击节点查看详细信息 · 点击空白关闭</div>
 </div>
 
 <!-- ===== Detail Panel ===== -->
@@ -453,21 +453,34 @@ var RELATION_DESC = {
 // ============================================================
 // 5. 构建 vis-network 数据
 // ============================================================
+// 从label中提取纯名称（去掉括号内的版本信息，存到right-panel展示）
+function cleanLabel(name) {
+  var zh = ZH_LABELS[name] || name;
+  // 去掉括号及括号内的版本说明，如 "法律条文（当前生效版本）" → "法律条文"
+  return zh.replace(/\s*（.*?）\s*/g, '').replace(/\s*\(.*?\)\s*/g, '');
+}
+var VERSION_NOTES = {};
+TYPE_NAMES.forEach(function(name) {
+  var zh = ZH_LABELS[name] || name;
+  var match = zh.match(/（.+?）/);
+  VERSION_NOTES[name] = match ? match[0] : '';
+});
+
 var nodes = [];
 var edges = [];
 var addedNodes = {};
 
 TYPE_NAMES.forEach(function(name) {
   var c = getRootColor(name);
-  var zh = ZH_LABELS[name] || name;
   var en = EN_DESCRIPTIONS[name] || name;
+  var shortLabel = cleanLabel(name);
   // 顶层父类用更大尺寸和特殊形状
   var isRoot = (name === 'LegalNorm' || name === 'JudicialEntity' || name === 'LegalSubject' || name === 'Person');
   var shape = isRoot ? 'hexagon' : 'box';
   var size = isRoot ? 28 : 18;
   nodes.push({
     id: name,
-    label: zh,
+    label: shortLabel,
     title: '<b>' + name + '</b><br><i>' + (ZH_LABELS[name] || '') + '</i><hr style="margin:4px 0">' +
            '<span style="color:#555;font-size:12px;">' + (EN_DESCRIPTIONS[name] || '') + '</span>' +
            '<hr style="margin:4px 0"><span style="color:#888;font-size:11px;">' + c.group + ' | ' + name + '</span>',
@@ -581,11 +594,13 @@ var options = {
 
 var network = new vis.Network(container, data, options);
 
-// 更新统计 + 自适应视口
+// 更新统计 + 自适应视口 + 稳定后冻结物理
 network.on('stabilizationIterationsDone', function() {
   document.getElementById('nodeCount').textContent = '📦 ' + nodes.length;
   document.getElementById('edgeCount').textContent = '🔗 ' + edges.length;
-  // 稳定后自适应视口，确保充分利用屏幕空间
+  // 稳定后关闭物理引擎，防止持续浮动
+  network.setOptions({ physics: { enabled: false } });
+  // 自适应视口
   network.fit({ animation: true, nodes: TYPE_NAMES });
 });
 
@@ -607,7 +622,93 @@ var panelTitle = document.getElementById('panelTitle');
 var panelBody = document.getElementById('panelBody');
 var panelClose = document.getElementById('panelClose');
 var isPanelLocked = false;
-var panelTimeout = null;
+var currentSelection = null; // 'node:TypeName' or 'edge:EdgeId'
+
+// Close button
+panelClose.addEventListener('click', function(e) {
+  e.stopPropagation();
+  hidePanel();
+});
+
+// Click outside to close (only if locked)
+document.addEventListener('click', function(e) {
+  if (isPanelLocked && !detailPanel.contains(e.target) && e.target !== panelClose) {
+    hidePanel();
+  }
+});
+
+// Escape key to close
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && detailPanel.classList.contains('open')) {
+    hidePanel();
+  }
+});
+
+function showEntityDetail(typeName) {
+  detailPanel.classList.remove('edge-mode');
+  renderEntityPanel(typeName);
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  currentSelection = 'node:' + typeName;
+}
+
+function showEdgeDetail(edgeId) {
+  detailPanel.classList.add('edge-mode');
+  renderEdgePanel(edgeId);
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  currentSelection = 'edge:' + edgeId;
+}
+
+function hidePanel() {
+  detailPanel.classList.remove('open');
+  isPanelLocked = false;
+  currentSelection = null;
+}
+
+// Node hover → show detail panel immediately (no debounce for show/hide pair)
+network.on('hoverNode', function(params) {
+  // Only show on hover if not locked or if hovering a different node
+  var hoverKey = 'node:' + params.node;
+  if (hoverKey === currentSelection) return;
+  showEntityDetail(params.node);
+});
+
+network.on('blurNode', function(params) {
+  // Hover away never hides — only click on empty space or close button or another click hides
+});
+
+// Edge hover → show edge detail
+network.on('hoverEdge', function(params) {
+  var hoverKey = 'edge:' + params.edge;
+  if (hoverKey === currentSelection) return;
+  showEdgeDetail(params.edge);
+});
+
+network.on('blurEdge', function(params) {
+  // Hover away never hides
+});
+
+// Click node → lock detail panel (same as hover, just ensure lock stays)
+network.on('click', function(params) {
+  if (params.nodes.length > 0) {
+    var nodeId = params.nodes[0];
+    showEntityDetail(nodeId);
+  } else if (params.edges.length > 0) {
+    var edgeId = params.edges[0];
+    showEdgeDetail(edgeId);
+  } else {
+    // Click on empty space → unlock
+    if (isPanelLocked) {
+      hidePanel();
+    }
+  }
+});
+
+// Prevent panel events from propagating to network
+detailPanel.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+detailPanel.addEventListener('mouseup', function(e) { e.stopPropagation(); });
+detailPanel.addEventListener('click', function(e) { e.stopPropagation(); });
 
 // Field descriptions (extracted from YAML comments — kept concise)
 var FIELD_DESC = {
@@ -760,6 +861,13 @@ function renderEntityPanel(typeName) {
   html += '<div class="panel-section">';
   html += '<div class="panel-section-title">📌 描述</div>';
   html += '<div class="desc-text">' + (data.description || '无描述') + '</div>';
+  // 版本信息（如果有）
+  var verNote = VERSION_NOTES[typeName];
+  if (verNote) {
+    html += '<div style="margin-top:6px;padding:4px 8px;background:#f0f4ff;border-radius:4px;font-size:12px;color:#4a6cf7;">';
+    html += '📎 ' + verNote;
+    html += '</div>';
+  }
   html += '</div>';
 
   // Inheritance chain
@@ -1002,107 +1110,6 @@ function renderEdgePanel(edgeId) {
 
   panelBody.innerHTML = html;
 }
-
-function showEntityDetail(typeName) {
-  detailPanel.classList.remove('edge-mode');
-  renderEntityPanel(typeName);
-  detailPanel.classList.add('open');
-  isPanelLocked = true;
-  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
-}
-
-function showEdgeDetail(edgeId) {
-  detailPanel.classList.add('edge-mode');
-  renderEdgePanel(edgeId);
-  detailPanel.classList.add('open');
-  isPanelLocked = true;
-  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
-}
-
-function hidePanel() {
-  detailPanel.classList.remove('open');
-  isPanelLocked = false;
-  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
-}
-
-// Close button
-panelClose.addEventListener('click', function(e) {
-  e.stopPropagation();
-  hidePanel();
-});
-
-// Click outside to close
-document.addEventListener('click', function(e) {
-  if (isPanelLocked && !detailPanel.contains(e.target) && e.target !== panelClose) {
-    hidePanel();
-  }
-});
-
-// Escape key to close
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && detailPanel.classList.contains('open')) {
-    hidePanel();
-  }
-});
-
-// Node hover → show detail panel (with debounce)
-network.on('hoverNode', function(params) {
-  if (isPanelLocked) return;
-  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
-  panelTimeout = setTimeout(function() {
-    detailPanel.classList.remove('edge-mode');
-    renderEntityPanel(params.node);
-    detailPanel.classList.add('open');
-  }, 200);
-});
-
-network.on('blurNode', function(params) {
-  if (isPanelLocked) return;
-  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
-  panelTimeout = setTimeout(function() {
-    hidePanel();
-  }, 600);
-});
-
-// Edge hover → show edge detail
-network.on('hoverEdge', function(params) {
-  if (isPanelLocked) return;
-  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
-  panelTimeout = setTimeout(function() {
-    detailPanel.classList.add('edge-mode');
-    renderEdgePanel(params.edge);
-    detailPanel.classList.add('open');
-  }, 200);
-});
-
-network.on('blurEdge', function(params) {
-  if (isPanelLocked) return;
-  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
-  panelTimeout = setTimeout(function() {
-    hidePanel();
-  }, 600);
-});
-
-// Click node → lock detail panel
-network.on('click', function(params) {
-  if (params.nodes.length > 0) {
-    var nodeId = params.nodes[0];
-    showEntityDetail(nodeId);
-  } else if (params.edges.length > 0) {
-    var edgeId = params.edges[0];
-    showEdgeDetail(edgeId);
-  } else {
-    // Click on empty space → unlock
-    if (!isPanelLocked) {
-      hidePanel();
-    }
-  }
-});
-
-// Prevent panel events from propagating to network
-detailPanel.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-detailPanel.addEventListener('mouseup', function(e) { e.stopPropagation(); });
-detailPanel.addEventListener('click', function(e) { e.stopPropagation(); });
 
 })();
 </script>
