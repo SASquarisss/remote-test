@@ -662,37 +662,51 @@ function hidePanel() {
   currentSelection = null;
 }
 
-// Node hover → show detail panel immediately (no debounce for show/hide pair)
+// Node hover → 预览，不锁定
 network.on('hoverNode', function(params) {
-  // Only show on hover if not locked or if hovering a different node
+  if (isPanelLocked) return;
   var hoverKey = 'node:' + params.node;
   if (hoverKey === currentSelection) return;
-  showEntityDetail(params.node);
+  detailPanel.classList.remove('edge-mode');
+  renderEntityPanel(params.node);
+  detailPanel.classList.add('open');
+  currentSelection = 'node:' + params.node;
 });
 
 network.on('blurNode', function(params) {
-  // Hover away never hides — only click on empty space or close button or another click hides
+  // 不锁定时不隐藏（用户想看时不会因为移开而消失）
 });
 
-// Edge hover → show edge detail
+// Edge hover → 预览，不锁定
 network.on('hoverEdge', function(params) {
+  if (isPanelLocked) return;
   var hoverKey = 'edge:' + params.edge;
   if (hoverKey === currentSelection) return;
-  showEdgeDetail(params.edge);
+  detailPanel.classList.add('edge-mode');
+  renderEdgePanel(params.edge);
+  detailPanel.classList.add('open');
+  currentSelection = 'edge:' + params.edge;
 });
 
 network.on('blurEdge', function(params) {
-  // Hover away never hides
 });
 
-// Click node → lock detail panel (same as hover, just ensure lock stays)
+// Click node → 锁定面板，直到点击下一个实体或关系
 network.on('click', function(params) {
   if (params.nodes.length > 0) {
     var nodeId = params.nodes[0];
-    showEntityDetail(nodeId);
+    detailPanel.classList.remove('edge-mode');
+    renderEntityPanel(nodeId);
+    detailPanel.classList.add('open');
+    isPanelLocked = true;
+    currentSelection = 'node:' + nodeId;
   } else if (params.edges.length > 0) {
     var edgeId = params.edges[0];
-    showEdgeDetail(edgeId);
+    detailPanel.classList.add('edge-mode');
+    renderEdgePanel(edgeId);
+    detailPanel.classList.add('open');
+    isPanelLocked = true;
+    currentSelection = 'edge:' + edgeId;
   } else {
     // Click on empty space → unlock
     if (isPanelLocked) {
