@@ -54,6 +54,85 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   font-size: 11px; color: #999; margin-top: 2px;
 }
 
+/* ===== 图结构配置弹窗 ===== */
+.btn-config-header {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; padding: 4px 12px; border-radius: 4px;
+  cursor: pointer; font-size: 12px; transition: all 0.2s;
+  margin-left: 12px;
+}
+.btn-config-header:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
+.config-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45); z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+}
+.config-modal {
+  background: #fff; border-radius: 12px; width: 580px;
+  max-height: 80vh; display: flex; flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+.config-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 1px solid #eee;
+  font-size: 15px; font-weight: 600; color: #333;
+}
+.config-close { cursor: pointer; color: #999; font-size: 18px; padding: 0 4px; }
+.config-close:hover { color: #333; }
+.config-body {
+  flex: 1; overflow-y: auto; padding: 12px 20px;
+}
+.config-body::-webkit-scrollbar { width: 5px; }
+.config-body::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+.config-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 12px 20px; border-top: 1px solid #eee;
+}
+.btn-config-reset {
+  padding: 8px 18px; border: 1px solid #ddd; border-radius: 6px;
+  background: #fff; color: #666; cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.btn-config-reset:hover { background: #f5f5f5; border-color: #bbb; }
+.btn-config-apply {
+  padding: 8px 18px; border: none; border-radius: 6px;
+  background: #2980b9; color: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
+}
+.btn-config-apply:hover { background: #1a5276; }
+/* 配置项行 */
+.config-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+}
+.config-item:last-child { border-bottom: none; }
+.config-item-label {
+  flex: 0 0 120px; font-size: 13px; font-weight: 600; color: #333;
+}
+.config-item-type {
+  flex: 0 0 100px; font-size: 12px; color: #888;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+.config-item-shape {
+  flex: 0 0 110px;
+}
+.config-item-shape select {
+  padding: 3px 6px; border: 1px solid #ddd; border-radius: 4px;
+  font-size: 12px; outline: none; cursor: pointer;
+}
+.config-item-color {
+  flex: 0 0 80px;
+}
+.config-item-color input[type="color"] {
+  width: 32px; height: 28px; border: 1px solid #ddd; border-radius: 4px;
+  cursor: pointer; padding: 0; vertical-align: middle;
+}
+.config-item-note {
+  font-size: 11px; color: #aaa; flex: 1;
+}
+.config-preview {
+  display: inline-block; width: 20px; height: 20px; border-radius: 4px;
+  vertical-align: middle; margin-left: 4px;
+}
+
 /* ===== Detail Panel (右侧信息面板) ===== */
 #detailPanel {
   position: fixed; right: -420px; top: 44px; width: 400px;
@@ -154,6 +233,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   <div class="stats">
     <span id="nodeCount">-</span> 类型节点
     <span id="edgeCount">-</span> 关系边
+    <button class="btn-config-header" onclick="openStyleConfig()" title="图结构配置">⚙ 样式</button>
   </div>
 </div>
 
@@ -163,6 +243,23 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   <div class="legend-title">📋 继承树</div>
 </div>
 <div class="legend-show-trigger" onclick="toggleLegend()" title="展开继承树">📋</div>
+
+<!-- ===== 样式配置弹窗 ===== -->
+<div id="styleConfigOverlay" class="config-overlay" onclick="closeStyleConfig(event)" style="display:none;">
+  <div class="config-modal" onclick="event.stopPropagation()">
+    <div class="config-header">
+      <span>⚙ 图结构样式配置</span>
+      <span class="config-close" onclick="closeStyleConfig()">✕</span>
+    </div>
+    <div class="config-body" id="styleConfigBody">
+      <p style="color:#999;font-size:13px;padding:10px;">加载中...</p>
+    </div>
+    <div class="config-footer">
+      <button class="btn-config-reset" onclick="resetEntityStyles()">重置为默认</button>
+      <button class="btn-config-apply" onclick="applyEntityStyles()">✓ 应用配置</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== Detail Panel ===== -->
 <div id="detailPanel">
@@ -191,6 +288,44 @@ var ROOT_COLORS = {
   Person:         { bg: '#16a085', border: '#0e6655', group: 'Person系' }
 };
 var DEFAULT_COLOR = { bg: '#7f8c8d', border: '#5d6d7e', group: '其他' };
+
+// ── 实体样式配置（形状 + 颜色），用户可通过配置面板修改 ──
+// 在 getEntityStyle(typeName) 中生效，支持业务细分（如案件审级、原被告）
+var ENTITY_STYLES = {
+  // 案件类 — 圆角矩形（胶囊状）
+  CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A', note: '一审案件' },
+  // 二审/再审用浅蓝色
+  // 最高法用深蓝色
+  // 法律主体类 — 正方形
+  Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B', note: '原告/申请人' },
+  // 被告/被申请人用红色
+  // 法院/审理机构用深蓝色
+  // 代理律师用紫色
+  // 法条/法律依据 — 正六边形
+  LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', note: '法条/法律依据' },
+  Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', note: '法律' },
+  // 证据/争议标的 — 圆柱体
+  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', note: '证据' },
+  // 诉讼角色/关系 — 菱形
+  LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', note: '诉讼角色' },
+  // 案件核心争议/焦点 — 五角星
+  CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428', note: '争议焦点' },
+  // 其他辅助 — 三角形
+  LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', note: '辅助主体' },
+  LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', note: '辅助规范' },
+  GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C', note: '指导性案例' },
+};
+
+// 终端面板的 vis-network 使用此映射
+var TERM_SHAPES = {};
+var TERM_COLORS = {};
+Object.keys(ENTITY_STYLES).forEach(function(k) {
+  TERM_SHAPES[k] = ENTITY_STYLES[k].shape;
+  TERM_COLORS[k] = { bg: ENTITY_STYLES[k].color, border: ENTITY_STYLES[k].border };
+});
+// Expose to window for terminal panel
+window.__TERM_SHAPES = TERM_SHAPES;
+window.__TERM_COLORS = TERM_COLORS;
 
 // 完整继承链：type -> 根父类
 var INHERITANCE_CHAIN = {
@@ -1206,6 +1341,113 @@ function renderEdgePanel(edgeId) {
   panelBody.innerHTML = html;
 }
 
+// ── 样式配置弹窗 ──────────────────────────────────────────────
+// 将内部函数暴露到 window 供 onclick 调用
+window.openStyleConfig = function() {
+  buildStyleConfigTable();
+  document.getElementById('styleConfigOverlay').style.display = 'flex';
+};
+window.closeStyleConfig = function(ev) {
+  if (ev && ev.target !== ev.currentTarget) return; // only close on overlay click
+  document.getElementById('styleConfigOverlay').style.display = 'none';
+};
+window.resetEntityStyles = function() {
+  // Rebuild from the initial entity_types.js default
+  var defaultStyles = {
+    CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A', note: '一审案件' },
+    Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B', note: '原告/申请人' },
+    LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', note: '法条/法律依据' },
+    Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', note: '法律' },
+    Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', note: '证据' },
+    LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', note: '诉讼角色' },
+    CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428', note: '争议焦点' },
+    LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', note: '辅助主体' },
+    LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', note: '辅助规范' },
+    GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C', note: '指导性案例' },
+  };
+  Object.keys(ENTITY_STYLES).forEach(function(k) {
+    if (defaultStyles[k]) {
+      ENTITY_STYLES[k].shape = defaultStyles[k].shape;
+      ENTITY_STYLES[k].color = defaultStyles[k].color;
+      ENTITY_STYLES[k].border = defaultStyles[k].border;
+    }
+  });
+  syncTermMaps();
+  buildStyleConfigTable();
+};
+window.applyEntityStyles = function() {
+  // Read all config items from the DOM
+  var items = document.querySelectorAll('.config-item');
+  items.forEach(function(item) {
+    var typeName = item.getAttribute('data-typename');
+    if (!typeName || !ENTITY_STYLES[typeName]) return;
+    var shapeSelect = item.querySelector('.config-shape-select');
+    var colorInput = item.querySelector('.config-color-input');
+    if (shapeSelect) ENTITY_STYLES[typeName].shape = shapeSelect.value;
+    if (colorInput) {
+      ENTITY_STYLES[typeName].color = colorInput.value;
+      // Compute a slightly darker border
+      ENTITY_STYLES[typeName].border = darkenColor(colorInput.value, 0.2);
+    }
+  });
+  syncTermMaps();
+  // Update main vis-network node colors
+  updateMainVisStyles();
+  document.getElementById('styleConfigOverlay').style.display = 'none';
+};
+
+function buildStyleConfigTable() {
+  var body = document.getElementById('styleConfigBody');
+  var html = '';
+  var shapeOptions = ['box','ellipse','circle','database','diamond','dot','hexagon','square','star','triangle','triangleDown'];
+  Object.keys(ENTITY_STYLES).sort().forEach(function(k) {
+    var s = ENTITY_STYLES[k];
+    var opts = shapeOptions.map(function(sh) {
+      return '<option value="' + sh + '"' + (sh === s.shape ? ' selected' : '') + '>' + sh + '</option>';
+    }).join('');
+    html += '<div class="config-item" data-typename="' + k + '">';
+    html += '  <span class="config-item-label">' + (ZH_LABELS[k] || k) + '</span>';
+    html += '  <span class="config-item-type">' + k + '</span>';
+    html += '  <span class="config-item-shape"><select class="config-shape-select">' + opts + '</select></span>';
+    html += '  <span class="config-item-color"><input type="color" class="config-color-input" value="' + s.color + '"></span>';
+    html += '  <span class="config-item-note">' + (s.note || '') + ' <span class="config-preview" style="background:' + s.color + '"></span></span>';
+    html += '</div>';
+  });
+  body.innerHTML = html;
+}
+
+function syncTermMaps() {
+  Object.keys(ENTITY_STYLES).forEach(function(k) {
+    TERM_SHAPES[k] = ENTITY_STYLES[k].shape;
+    TERM_COLORS[k] = { bg: ENTITY_STYLES[k].color, border: ENTITY_STYLES[k].border };
+  });
+  // Also expose globally for the terminal panel's renderTermVis
+  window.__TERM_SHAPES = TERM_SHAPES;
+  window.__TERM_COLORS = TERM_COLORS;
+}
+
+function updateMainVisStyles() {
+  // Update node colors/shapes in the main vis-network
+  var ds = network.body.data.nodes;
+  ds.forEach(function(n) {
+    var es = ENTITY_STYLES[n.id];
+    if (es) {
+      ds.update({ id: n.id, color: { background: es.color, border: es.border }, shape: es.shape });
+    }
+  });
+  network.redraw();
+}
+
+function darkenColor(hex, factor) {
+  var r = parseInt(hex.slice(1,3), 16);
+  var g = parseInt(hex.slice(3,5), 16);
+  var b = parseInt(hex.slice(5,7), 16);
+  r = Math.max(0, Math.round(r * (1 - factor)));
+  g = Math.max(0, Math.round(g * (1 - factor)));
+  b = Math.max(0, Math.round(b * (1 - factor)));
+  return '#' + [r,g,b].map(function(v) { return v.toString(16).padStart(2, '0'); }).join('');
+}
+
 })();
 </script>
 
@@ -1279,15 +1521,15 @@ function renderEdgePanel(edgeId) {
 #parseTerminal .btn-parse:hover { background: #1a5276; }
 #parseTerminal .btn-parse:disabled { background: #95a5a6; cursor: not-allowed; }
 #parseTerminal .btn-parse.loading::after {
-#parseTerminal .btn-clear {
-  padding: 5px 14px; border: 1px solid #e74c3c; border-radius: 6px;
-  background: #fff; color: #e74c3c; font-size: 12px;
-  cursor: pointer; font-weight: 500; transition: all 0.2s;
-}
-#parseTerminal .btn-clear:hover { background: #e74c3c; color: #fff; }
   content: ' ⟳'; display: inline-block;
   animation: term-spin 1s linear infinite;
 }
+#parseTerminal .btn-clear {
+  padding: 8px 24px; border: 1px solid #e74c3c; border-radius: 6px;
+  background: #fff; color: #e74c3c; font-size: 14px;
+  cursor: pointer; font-weight: 600; transition: all 0.2s;
+}
+#parseTerminal .btn-clear:hover { background: #e74c3c; color: #fff; }
 @keyframes term-spin { to { transform: rotate(360deg); } }
 #parseTerminal .term-status { font-size: 12px; color: #999; margin-left: 8px; }
 #parseTerminal .term-json-area {
@@ -1595,12 +1837,14 @@ function renderTermVis(nodes, edges) {
     return;
   }
   var visNodes = new vis.DataSet(nodes.map(function(n) {
-    var nc = TERM_COLORS[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
+    var shpMap = window.__TERM_SHAPES || {};
+    var colMap = window.__TERM_COLORS || {};
+    var nc = colMap[n.nodeType] || colMap[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
     return {
       id: n.id,
       label: n.label,
       title: n.title || '',
-      shape: TERM_SHAPES[n.nodeType] || 'ellipse',
+      shape: shpMap[n.nodeType] || 'ellipse',
       size: n.size || 20,
       color: { background: nc.bg, border: nc.border },
       font: { color: '#fff', size: (n.font && n.font.size) || 12 },
