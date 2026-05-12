@@ -28,6 +28,95 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 .tooltip-hint {
   font-size: 11px; color: #999; margin-top: 2px;
 }
+
+/* ===== Detail Panel (右侧信息面板) ===== */
+#detailPanel {
+  position: fixed; right: -420px; top: 44px; width: 400px;
+  height: calc(100vh - 44px); z-index: 998;
+  background: rgba(255,255,255,0.98); box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  transition: right 0.3s ease; overflow-y: auto; overflow-x: hidden;
+  font-size: 13px; color: #333; border-left: 1px solid #e0e0e0;
+  display: flex; flex-direction: column;
+}
+#detailPanel.open { right: 0; }
+#detailPanel .panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%);
+  color: #fff; position: sticky; top: 0; z-index: 1;
+}
+#detailPanel .panel-header h2 { font-size: 15px; font-weight: 600; }
+#detailPanel .panel-close {
+  background: none; border: none; color: #fff; font-size: 20px;
+  cursor: pointer; padding: 0 4px; opacity: 0.7; line-height: 1;
+}
+#detailPanel .panel-close:hover { opacity: 1; }
+#detailPanel .panel-body { padding: 14px 18px 80px; flex: 1; }
+#detailPanel .panel-section { margin-bottom: 16px; }
+#detailPanel .panel-section-title {
+  font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+}
+#detailPanel .field-row {
+  display: flex; align-items: baseline; gap: 6px; padding: 3px 0;
+  font-size: 13px; line-height: 1.5;
+}
+#detailPanel .field-row .field-name {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: #2c3e50; font-weight: 500;
+}
+#detailPanel .field-row .field-desc { color: #888; font-size: 12px; }
+#detailPanel .field-required .field-name { color: #27ae60; }
+#detailPanel .field-required::before { content: '✅ '; font-size: 12px; }
+#detailPanel .field-optional .field-name { color: #7f8c8d; }
+#detailPanel .field-optional::before { content: '⬜ '; font-size: 11px; }
+#detailPanel .enum-badge {
+  display: inline-block; background: #eef2ff; color: #4a6cf7;
+  font-size: 11px; padding: 2px 8px; border-radius: 10px; margin: 1px 2px;
+}
+#detailPanel .constraint-item {
+  background: #fff8e1; border-left: 3px solid #f9a825;
+  padding: 6px 10px; margin: 4px 0; font-size: 12px; border-radius: 0 4px 4px 0;
+  color: #555;
+}
+#detailPanel .rel-item {
+  display: flex; align-items: baseline; gap: 4px; padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0; font-size: 13px;
+  cursor: pointer; color: #2980b9; transition: background 0.15s;
+  border-radius: 3px; padding: 4px 6px;
+}
+#detailPanel .rel-item:hover { background: #eaf4ff; }
+#detailPanel .rel-item .rel-arrow { color: #888; font-weight: bold; margin: 0 4px; }
+#detailPanel .rel-item .rel-meta { color: #999; font-size: 11px; margin-left: auto; }
+#detailPanel .rel-item .rel-source { color: #2c3e50; }
+#detailPanel .inherit-chain {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  font-size: 12px; padding: 6px 0;
+}
+#detailPanel .inherit-chain .chain-item {
+  background: #ecf0f1; padding: 2px 8px; border-radius: 4px; color: #555;
+}
+#detailPanel .inherit-chain .chain-arrow { color: #bdc3c7; }
+#detailPanel .desc-text { font-size: 13px; color: #555; line-height: 1.6; padding: 6px 0; }
+#detailPanel .empty-hint { color: #bbb; font-style: italic; font-size: 12px; padding: 4px 0; }
+
+/* Edge detail panel mode */
+#detailPanel.edge-mode .panel-header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%); }
+#detailPanel .attr-item {
+  font-size: 12px; color: #666; padding: 2px 0; display: flex; gap: 6px;
+}
+#detailPanel .attr-name { font-family: monospace; color: #8e44ad; }
+#detailPanel .badge {
+  display: inline-block; padding: 1px 8px; border-radius: 8px; font-size: 11px; margin: 0 2px;
+}
+#detailPanel .badge-cardinality { background: #e8f5e9; color: #2e7d32; }
+#detailPanel .badge-acyclic { background: #fff3e0; color: #e65100; }
+
+/* Scrollbar styling */
+#detailPanel::-webkit-scrollbar { width: 6px; }
+#detailPanel::-webkit-scrollbar-track { background: transparent; }
+#detailPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+#detailPanel::-webkit-scrollbar-thumb:hover { background: #999; }
 </style>
 </head>
 <body>
@@ -55,7 +144,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   <div class="tooltip-hint">🖱 悬停节点查看详细信息</div>
 </div>
 
+<!-- ===== Detail Panel ===== -->
+<div id="detailPanel">
+  <div class="panel-header">
+    <h2 id="panelTitle">📋 详细信息</h2>
+    <button class="panel-close" id="panelClose" title="关闭">✕</button>
+  </div>
+  <div class="panel-body" id="panelBody">
+    <div class="empty-hint">悬停或点击节点/边查看详细信息</div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js"></script>
+<script src="ontology_data.js"></script>
 <script>
 (function() {
 // ============================================================
@@ -496,6 +597,512 @@ window.addEventListener('resize', function() {
 // 适配 title-bar 高度
 container.style.marginTop = '44px';
 container.style.height = 'calc(100vh - 44px)';
+
+// ============================================================
+// 7. Detail Panel Logic
+// ============================================================
+
+var detailPanel = document.getElementById('detailPanel');
+var panelTitle = document.getElementById('panelTitle');
+var panelBody = document.getElementById('panelBody');
+var panelClose = document.getElementById('panelClose');
+var isPanelLocked = false;
+var panelTimeout = null;
+
+// Field descriptions (extracted from YAML comments — kept concise)
+var FIELD_DESC = {
+  id: '唯一标识', name: '名称', source: '来源',
+  desensitize: '脱敏标记', create_time: '创建时间', update_time: '更新时间',
+  law_level: '法律位阶', document_number: '文号', status: '状态',
+  enactment_date: '颁布日期', effective_date: '生效日期',
+  legislative_purpose: '立法目的', repealed_date: '废止日期',
+  article: '条号', law_id: '法律标识', paragraph: '款号', item: '项号',
+  content: '内容', related_provisions: '关联条文', provision_id: '条文标识',
+  version_date: '版本日期', superseded_by_version_id: '被替代版本标识',
+  amendment_reason: '修正原因', code: '编码', category: '大类',
+  level1: '一级分类', level2: '二级分类', typical_provision_ids: '典型适用条文',
+  guiding_case_number: '指导案例编号', issuing_court_id: '发布法院标识',
+  publication_date: '发布日期', guiding_points: '指导要点',
+  binding_force: '约束力', guiding_points_vector: '指导要点向量',
+  related_case_type_ids: '关联案由', case_type_id: '案由标识',
+  applicable_provision_id: '适用条文标识', standard_type: '标准类型',
+  sentence_range_min: '量刑下限', sentence_range_max: '量刑上限',
+  sentence_unit: '量刑单位', circumstance_levels: '情节等级',
+  measurement_formula: '计算公式', region_id: '地区标识',
+  valid_from: '有效期起', valid_to: '有效期止',
+  court_id: '法院标识', position: '职位', judge_level: '法官等级',
+  appointment_date: '任命日期', license_number: '执业证号',
+  law_firm_id: '律所标识', specialization: '专业领域', bar_association: '律协',
+  procuratorate_id: '检察院标识', org_type: '机构类型',
+  credit_code: '统一社会信用代码', legal_representative: '法定代表人',
+  registered_capital: '注册资本', business_scope: '经营范围',
+  legal_name_alias: '曾用名/别名', court_level: '法院级别',
+  district_id: '辖区标识', chambers: '审判庭', jurisdiction_area: '管辖区域',
+  procuratorate_level: '检察院级别', departments: '内设部门',
+  firm_type: '律所类型', partners: '合伙人', practice_areas: '执业领域',
+  expertise_fields: '专业领域', accreditation_number: '资质编号',
+  accreditation_authority: '资质认定机关', validity_period: '有效期',
+  administrative_level: '行政级别', parent_district_id: '上级辖区标识',
+  permissions: '权限', case_type_id: '案由标识', filing_date: '立案日期',
+  case_number: '案号', claim_amount: '诉讼标的额', cause_of_action: '案由/诉讼请求',
+  summary: '摘要', related_cases: '关联案件', first_instance_case_number: '一审案号',
+  source_text_hash: '原文哈希', source_text_path: '原文路径',
+  dispute_resolution_type: '争议解决方式', case_id: '案件标识',
+  key_facts: '关键事实', disputed_issues: '争议焦点', conclusion: '结论',
+  fact_vector: '事实向量', issue_tags: '争议标签', amount_involved: '涉案金额',
+  sentencing_referral_id: '量刑参照标识', organization_type: '组织类型',
+  judge_ids: '法官标识列表', presiding_judge_id: '审判长标识', clerk_id: '书记员标识',
+  result_type: '结果类型', judgment_date: '裁判日期', sentence_term: '刑期',
+  compensation_amount: '赔偿金额', reasoning: '裁判理由',
+  sentencing_standard_id: '量刑标准标识', execution_status: '执行状态',
+  execution_court_id: '执行法院标识', execution_amount: '执行标的额',
+  execution_measures: '执行措施', completion_date: '完成日期',
+  document_type: '文书类型', creation_date: '制作日期',
+  signed_by_judge_id: '签署法官标识', content_hash: '内容哈希',
+  file_path: '文件路径', evidence_type: '证据类型', submitter_id: '提交人标识',
+  submission_date: '提交日期', examination_status: '质证状态',
+  admission_status: '采信状态', chain_of_custody: '保管链',
+  focus_category_id: '焦点分类标识', canonical_template_id: '规范模板标识',
+  fact_type: '事实类型', proven_by_evidence_ids: '证明证据标识',
+  role_code: '角色编码', subject_id: '主体标识', trial_level: '审级',
+  is_primary: '是否主要当事人', role_name: '角色名称'
+};
+
+// Enum value labels (Chinese translations from YAML comments)
+var ENUM_VALUE_LABELS = {
+  constitution: '宪法', basic_law: '基本法律', ordinary_law: '普通法律',
+  administrative_regulation: '行政法规', local_regulation: '地方性法规',
+  self_governing_regulation: '自治条例', military_regulation: '军事法规',
+  judicial_interpretation: '司法解释', department_rule: '部门规章',
+  normative_document: '规范性文件',
+  effective: '有效/生效', amended: '已修正', repealed: '已废止',
+  civil: '民事', criminal: '刑事', administrative: '行政', ip: '知识产权',
+  execution: '执行', state_compensation: '国家赔偿',
+  mandatory: '强制参照', persuasive: '具有说服力', reference: '仅供参考',
+  criminal_sentence: '刑事处罚', civil_compensation: '民事赔偿',
+  administrative_penalty: '行政处罚',
+  month: '月', year: '年', yuan: '元', percent: '百分比',
+  first_instance: '一审', second_instance: '二审', retrial: '再审',
+  filing: '立案', trial: '审理中', judged: '已裁判', appealed: '已上诉',
+  retried: '已再审', executing: '执行中', terminated: '已终结',
+  litigation: '诉讼', mediation: '调解', arbitration: '仲裁',
+  judicial_aid: '司法救助', administrative_review: '行政复议',
+  supreme: '最高', high: '高级', intermediate: '中级', basic: '基层',
+  special: '专门', provincial: '省级', municipal: '市级', district: '区级',
+  partnership: '合伙企业', limited_liability: '有限责任',
+  sole_practitioner: '个人执业',
+  company: '公司', government_agency: '政府机构', ngo: '非政府组织',
+  individual_business: '个体工商户', partnership_org: '合伙企业',
+  sole_proprietorship: '个人独资企业',
+  plaintiff: '原告', defendant: '被告', third_party: '第三人', witness: '证人',
+  agent: '代理人', expert_witness: '鉴定人', interpreter: '翻译',
+  prosecutor_role: '检察官', applicant: '申请人', respondent: '被申请人',
+  relator: '利害关系人', appellant: '上诉人', appellee: '被上诉人',
+  retrial_applicant: '再审申请人', retrial_respondent: '再审被申请人',
+  mediator: '调解员', arbitrator: '仲裁员', beneficiary: '受益人',
+  guilty: '有罪', not_guilty: '无罪', liable: '责任成立', not_liable: '责任不成立',
+  dismissed: '驳回起诉', withdrawn: '撤诉', mediation_agreement: '调解协议',
+  arbitration_award: '仲裁裁决', administrative_decision: '行政决定',
+  pending: '待执行', in_progress: '执行中', completed: '已完成',
+  judgment: '判决书', ruling: '裁定书', order: '命令/令', notice: '通知书',
+  indictment: '起诉书', petition: '诉状/申请书',
+  document: '书证', physical: '物证', digital: '电子证据', testimony: '证言',
+  expert_opinion: '鉴定意见',
+  not_examined: '未质证', examined: '已质证', admitted: '已采信',
+  not_admitted: '未采信', valid: '有效', invalid: '无效',
+  undisputed: '无争议', disputed: '有争议', to_be_proven: '待证明',
+  sole_judge: '独任审判', collegiate_bench: '合议庭', judicial_committee: '审判委员会'
+};
+
+function getFieldDesc(fieldName) {
+  return FIELD_DESC[fieldName] || '';
+}
+
+function getEnumLabel(val) {
+  return ENUM_VALUE_LABELS[val] || val;
+}
+
+function buildInheritanceChain(typeName) {
+  var chain = [];
+  var current = typeName;
+  while (current) {
+    chain.push(current);
+    var data = ENTITY_DATA[current];
+    current = data && data.is_a ? data.is_a : null;
+  }
+  return chain;
+}
+
+function renderInheritanceChain(chain) {
+  if (chain.length <= 1) return '';
+  var html = '<div class="inherit-chain">';
+  for (var i = 0; i < chain.length; i++) {
+    if (i > 0) html += '<span class="chain-arrow">→</span>';
+    html += '<span class="chain-item">' + chain[i] + '</span>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderEntityPanel(typeName) {
+  var data = ENTITY_DATA[typeName];
+  if (!data) {
+    panelBody.innerHTML = '<div class="empty-hint">未找到实体数据: ' + typeName + '</div>';
+    return;
+  }
+
+  var zh = ZH_LABELS[typeName] || typeName;
+  panelTitle.textContent = '📋 ' + typeName + ' — ' + zh;
+
+  var html = '';
+
+  // Description
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">📌 描述</div>';
+  html += '<div class="desc-text">' + (data.description || '无描述') + '</div>';
+  html += '</div>';
+
+  // Inheritance chain
+  var chain = buildInheritanceChain(typeName);
+  if (chain.length > 1) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">🔗 继承链</div>';
+    html += renderInheritanceChain(chain);
+    html += '</div>';
+  }
+
+  // Required fields
+  var reqFields = data.required || [];
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">✅ 必填字段 (' + reqFields.length + ')</div>';
+  if (reqFields.length === 0) {
+    html += '<div class="empty-hint">无必填字段</div>';
+  } else {
+    reqFields.forEach(function(f) {
+      html += '<div class="field-row field-required">';
+      html += '<span class="field-name">' + f + '</span>';
+      var desc = getFieldDesc(f);
+      if (desc) html += '<span class="field-desc">— ' + desc + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Optional fields
+  var optFields = data.optional || [];
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">⬜ 可选字段 (' + optFields.length + ')</div>';
+  if (optFields.length === 0) {
+    html += '<div class="empty-hint">无可选字段</div>';
+  } else {
+    optFields.forEach(function(f) {
+      html += '<div class="field-row field-optional">';
+      html += '<span class="field-name">' + f + '</span>';
+      var desc = getFieldDesc(f);
+      if (desc) html += '<span class="field-desc">— ' + desc + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Enums
+  var enums = data.enums || {};
+  var enumKeys = Object.keys(enums);
+  if (enumKeys.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">🔘 枚举约束 (' + enumKeys.length + ')</div>';
+    enumKeys.forEach(function(fieldName) {
+      var vals = enums[fieldName];
+      html += '<div style="margin: 4px 0;">';
+      html += '<span class="field-name" style="font-family:monospace;font-weight:500;">' + fieldName + '</span>';
+      html += ' ∈ {';
+      var badges = [];
+      vals.forEach(function(v) {
+        var label = getEnumLabel(v);
+        badges.push('<span class="enum-badge">' + (label !== v ? label : v) + '</span>');
+      });
+      html += badges.join(' ');
+      html += '}</div>';
+    });
+    html += '</div>';
+  }
+
+  // Constraints
+  var constraints = data.constraints || [];
+  if (constraints.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">⚠️ 约束 (' + constraints.length + ')</div>';
+    constraints.forEach(function(c) {
+      var desc = typeof c === 'string' ? c : (c.description || c.rule || '');
+      html += '<div class="constraint-item">' + desc + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Relations
+  var rels = RELATIONS_BY_ENTITY[typeName];
+  if (rels) {
+    // Outgoing
+    var outgoing = rels.outgoing || [];
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">→ 出边关系 (' + outgoing.length + ')</div>';
+    if (outgoing.length === 0) {
+      html += '<div class="empty-hint">无出边关系</div>';
+    } else {
+      outgoing.forEach(function(r) {
+        html += '<div class="rel-item" data-target="' + r.target + '">';
+        html += '<span class="rel-arrow">→</span> ';
+        html += '<span class="rel-source">' + r.target + '</span>';
+        html += '<span style="color:#666;font-size:12px;"> ' + (RELATION_LABELS[r.relation] || r.relation) + '</span>';
+        html += '<span class="rel-meta">' + r.cardinality + '</span>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    // Incoming
+    var incoming = rels.incoming || [];
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">← 入边关系 (' + incoming.length + ')</div>';
+    if (incoming.length === 0) {
+      html += '<div class="empty-hint">无入边关系</div>';
+    } else {
+      incoming.forEach(function(r) {
+        html += '<div class="rel-item" data-target="' + r.source + '">';
+        html += '<span class="rel-arrow">←</span> ';
+        html += '<span class="rel-source">' + r.source + '</span>';
+        html += '<span style="color:#666;font-size:12px;"> ' + (RELATION_LABELS[r.relation] || r.relation) + '</span>';
+        html += '<span class="rel-meta">' + r.cardinality + '</span>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  }
+
+  panelBody.innerHTML = html;
+
+  // Attach click handlers to relation items
+  panelBody.querySelectorAll('.rel-item').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var targetId = this.getAttribute('data-target');
+      if (targetId && network.getNode(targetId)) {
+        network.focus(targetId, { scale: 1.2, animation: true });
+        // Also show that entity's detail
+        showEntityDetail(targetId);
+      }
+    });
+  });
+}
+
+function renderEdgePanel(edgeId) {
+  var allEdges = data.edges.get(edgeId);
+  if (!allEdges) return;
+
+  var edge = allEdges;
+  var isInheritance = edge.dashes;
+
+  if (isInheritance) {
+    panelTitle.textContent = '🔗 继承关系';
+    var html = '';
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">📌 类型</div>';
+    html += '<div class="desc-text">is_a 继承关系（虚线）</div>';
+    html += '</div>';
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">📌 方向</div>';
+    html += '<div class="field-row"><span style="font-weight:500;">' + edge.from + '</span> <span style="color:#888;">→</span> <span style="font-weight:500;">' + edge.to + '</span></div>';
+    html += '<div class="desc-text" style="font-size:12px;color:#888;">' + edge.from + ' 继承自 ' + edge.to + '</div>';
+    html += '</div>';
+    panelBody.innerHTML = html;
+    return;
+  }
+
+  // Find relation from RELATION_EDGES
+  var relName = null;
+  for (var i = 0; i < RELATION_EDGES.length; i++) {
+    if (RELATION_EDGES[i][1] === edge.from && RELATION_EDGES[i][2] === edge.to) {
+      relName = RELATION_EDGES[i][0];
+      break;
+    }
+  }
+
+  if (!relName) {
+    panelTitle.textContent = '🔗 关系边';
+    panelBody.innerHTML = '<div class="empty-hint">无法识别关系类型</div>';
+    return;
+  }
+
+  // Try to find in RELATION_DETAILS or construct from RELATION_LABELS/DESC
+  var cn = RELATION_LABELS[relName] || relName;
+  var desc = RELATION_DESC[relName] || '';
+  var detail = null;
+
+  // Search RELATION_DETAILS
+  var detailKeys = Object.keys(RELATION_DETAILS);
+  for (var j = 0; j < detailKeys.length; j++) {
+    var key = detailKeys[j];
+    var parts = key.split('___');
+    if (parts[0] === relName && (parts.length < 2 || parts[1] === edge.to)) {
+      detail = RELATION_DETAILS[key];
+      break;
+    }
+  }
+
+  panelTitle.textContent = '🔗 ' + relName + ' — ' + cn;
+
+  var html = '';
+
+  // Description
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">📌 描述</div>';
+  html += '<div class="desc-text">' + (detail ? (detail.description || '') : desc) + '</div>';
+  html += '</div>';
+
+  // From → To
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">📌 方向</div>';
+  html += '<div class="field-row"><span style="font-weight:500;">' + edge.from + '</span> <span style="color:#888;font-size:18px;">→</span> <span style="font-weight:500;">' + edge.to + '</span></div>';
+  html += '</div>';
+
+  // Cardinality
+  if (detail && detail.cardinality) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">📌 基数</div>';
+    html += '<div><span class="badge badge-cardinality">' + detail.cardinality + '</span></div>';
+    html += '</div>';
+  }
+
+  // Attributes
+  var attrs = detail ? (detail.attributes || []) : [];
+  var optAttrs = detail ? (detail.optional_attributes || []) : [];
+  if (attrs.length > 0 || optAttrs.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">📋 属性</div>';
+    attrs.forEach(function(a) {
+      if (typeof a === 'string') {
+        html += '<div class="attr-item"><span class="attr-name">' + a + '</span> <span style="color:#999;font-size:11px;">(必填)</span></div>';
+      }
+    });
+    optAttrs.forEach(function(a) {
+      if (typeof a === 'string') {
+        html += '<div class="attr-item"><span class="attr-name">' + a + '</span> <span style="color:#999;font-size:11px;">(可选)</span></div>';
+      }
+    });
+    html += '</div>';
+  }
+
+  // Acyclic flag
+  if (detail && detail.acyclic) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">📌 额外约束</div>';
+    html += '<div><span class="badge badge-acyclic">🔄 无环 (acyclic)</span></div>';
+    html += '</div>';
+  }
+
+  panelBody.innerHTML = html;
+}
+
+function showEntityDetail(typeName) {
+  detailPanel.classList.remove('edge-mode');
+  renderEntityPanel(typeName);
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
+}
+
+function showEdgeDetail(edgeId) {
+  detailPanel.classList.add('edge-mode');
+  renderEdgePanel(edgeId);
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
+}
+
+function hidePanel() {
+  detailPanel.classList.remove('open');
+  isPanelLocked = false;
+  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
+}
+
+// Close button
+panelClose.addEventListener('click', function(e) {
+  e.stopPropagation();
+  hidePanel();
+});
+
+// Click outside to close
+document.addEventListener('click', function(e) {
+  if (isPanelLocked && !detailPanel.contains(e.target) && e.target !== panelClose) {
+    hidePanel();
+  }
+});
+
+// Escape key to close
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && detailPanel.classList.contains('open')) {
+    hidePanel();
+  }
+});
+
+// Node hover → show detail panel (with debounce)
+network.on('hoverNode', function(params) {
+  if (isPanelLocked) return;
+  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
+  panelTimeout = setTimeout(function() {
+    detailPanel.classList.remove('edge-mode');
+    renderEntityPanel(params.node);
+    detailPanel.classList.add('open');
+  }, 200);
+});
+
+network.on('blurNode', function(params) {
+  if (isPanelLocked) return;
+  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
+  panelTimeout = setTimeout(function() {
+    hidePanel();
+  }, 600);
+});
+
+// Edge hover → show edge detail
+network.on('hoverEdge', function(params) {
+  if (isPanelLocked) return;
+  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
+  panelTimeout = setTimeout(function() {
+    detailPanel.classList.add('edge-mode');
+    renderEdgePanel(params.edge);
+    detailPanel.classList.add('open');
+  }, 200);
+});
+
+network.on('blurEdge', function(params) {
+  if (isPanelLocked) return;
+  if (panelTimeout) { clearTimeout(panelTimeout); panelTimeout = null; }
+  panelTimeout = setTimeout(function() {
+    hidePanel();
+  }, 600);
+});
+
+// Click node → lock detail panel
+network.on('click', function(params) {
+  if (params.nodes.length > 0) {
+    var nodeId = params.nodes[0];
+    showEntityDetail(nodeId);
+  } else if (params.edges.length > 0) {
+    var edgeId = params.edges[0];
+    showEdgeDetail(edgeId);
+  } else {
+    // Click on empty space → unlock
+    if (!isPanelLocked) {
+      hidePanel();
+    }
+  }
+});
+
+// Prevent panel events from propagating to network
+detailPanel.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+detailPanel.addEventListener('mouseup', function(e) { e.stopPropagation(); });
+detailPanel.addEventListener('click', function(e) { e.stopPropagation(); });
 
 })();
 </script>
