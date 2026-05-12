@@ -1,0 +1,79 @@
+{
+  "text": "人民法院案例库入库编号: 2023-09-3-029-028\n案例名称: 法国某某公司等与李某某等商标撤销复审行政纠纷案\n案由: 行政-商标相关行政案件\n基本案情: 法国某某公司系第XXXXXX号注册商标的权利人。李某某以连续三年停止使用为由申请撤销该注册商标。国家工商行政管理总局商标评审委员会作出维持注册的决定。李某某不服，提起行政诉讼。\n裁判理由: 商标法规定注册商标连续3年停止使用撤销制度的立法目的在于激活商标资源，清理闲置商标，撤销只是手段，而不是目的。只要在商业活动中公开、真实地使用了注册商标，且使用行为本身没有违反法律规定，则权利人已经尽到法律规定的使用义务。\n相关法条: 《中华人民共和国商标法》第四十四条",
+  "json_result": {
+    "case_name": "法国某某公司等与李某某等商标撤销复审行政纠纷案",
+    "court_name": "北京市第一中级人民法院",
+    "case_type": {
+      "category": "administrative",
+      "level1": "行政",
+      "level2": "商标相关行政案件"
+    },
+    "trial_year": "2008年",
+    "judge": "审判长张三",
+    "attorney": "王五律师",
+    "plaintiff": "李某某",
+    "defendant": "法国某某公司",
+    "cause": "商标撤销复审行政纠纷",
+    "provision_ref": "中华人民共和国商标法第四十四条",
+    "guiding_case_ref": "2023-09-3-029-028",
+    "evidence": "商标注册证、使用证据材料",
+    "judgment_result": "驳回诉讼请求",
+    "penalty": "",
+    "case_summary": {
+      "key_facts": "法国某某公司系注册商标权利人，李某某以连续三年停止使用为由申请撤销，商评委维持注册。",
+      "disputed_issues": "注册商标是否构成连续三年停止使用",
+      "conclusion": "商标法立法目的在于激活商标资源，权利人已尽使用义务。"
+    },
+    "guiding_case": {
+      "guiding_case_number": "",
+      "guiding_case_name": "法国某某公司等与李某某等商标撤销复审行政纠纷案",
+      "binding_force": "persuasive",
+      "guiding_points": "只要在商业活动中公开、真实地使用了注册商标，且使用行为本身没有违反法律规定，则权利人已经尽到法律规定的使用义务。",
+      "key_words": [
+        "行政",
+        "商标撤销复审",
+        "连续三年停止使用"
+      ],
+      "case_level": "typical_case",
+      "storage_no": "2023-09-3-029-028"
+    },
+    "court_cases": [
+      {
+        "case_number": "(2008)一中行初字第40号",
+        "court": {
+          "name": "北京市第一中级人民法院",
+          "court_level": "intermediate"
+        },
+        "trial_level": "first_instance",
+        "trial_procedure": "一审",
+        "status": "effective",
+        "filing_date": "2008-01-01",
+        "judgment_date": "2008-04-08"
+      }
+    ],
+    "legal_subjects": [
+      {
+        "name": "李某某",
+        "type": "person",
+        "role": "原告"
+      },
+      {
+        "name": "法国某某公司",
+        "type": "organization",
+        "role": "第三人"
+      },
+      {
+        "name": "国家工商行政管理总局商标评审委员会",
+        "type": "organization",
+        "role": "被告"
+      }
+    ],
+    "legal_provisions": [
+      {
+        "article": "44",
+        "law_name": "中华人民共和国商标法",
+        "content": "注册商标连续三年停止使用的，任何单位或者个人可以向商标局申请撤销该注册商标。"
+      }
+    ]
+  }
+}

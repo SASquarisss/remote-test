@@ -1279,6 +1279,12 @@ function renderEdgePanel(edgeId) {
 #parseTerminal .btn-parse:hover { background: #1a5276; }
 #parseTerminal .btn-parse:disabled { background: #95a5a6; cursor: not-allowed; }
 #parseTerminal .btn-parse.loading::after {
+#parseTerminal .btn-clear {
+  padding: 5px 14px; border: 1px solid #e74c3c; border-radius: 6px;
+  background: #fff; color: #e74c3c; font-size: 12px;
+  cursor: pointer; font-weight: 500; transition: all 0.2s;
+}
+#parseTerminal .btn-clear:hover { background: #e74c3c; color: #fff; }
   content: ' ⟳'; display: inline-block;
   animation: term-spin 1s linear infinite;
 }
@@ -1382,8 +1388,11 @@ function renderEdgePanel(edgeId) {
         <div class="term-input-area">
           <textarea id="termInput" placeholder="在此粘贴法律文本（原始案件信息、裁判文书等任意文本）&#10;&#10;例如：&#10;人民法院案例库入库编号: 2023-09-3-029-028&#10;案例名称: 某某公司诉某某局行政纠纷案&#10;案由: 行政-商标相关行政案件&#10;基本案情: ……&#10;裁判理由: ……&#10;相关法条: 《中华人民共和国商标法》第四十四条"></textarea>
           <div class="term-btn-row">
+          <div class="term-input-row" style="display:flex;gap:8px;align-items:center;">
             <button class="btn-parse" id="btnParse" onclick="doParse()">⚡ 一键解析</button>
+            <button class="btn-clear" id="btnClear" onclick="doClear()" title="清空原文">🗑 清空</button>
             <span class="term-status" id="termStatus">就绪</span>
+          </div>
           </div>
         </div>
       </div>
@@ -1479,9 +1488,43 @@ function doParse() {
     setTermStatus('解析完成', '#27ae60');
     document.getElementById('btnSave').disabled = false;
     document.getElementById('btnEval').disabled = false;
+    // Auto-save as test data
+    var inputText = document.getElementById('termInput').value;
+    saveTestData(inputText, result);
   })
   .catch(function(err) { setTermStatus('请求失败: ' + err.message, '#e74c3c'); })
   .finally(function() { btn.disabled = false; btn.classList.remove('loading'); });
+}
+
+function doClear() {
+  document.getElementById('termInput').value = '';
+  setTermStatus('已清空', '#999');
+}
+
+function saveTestData(text, result) {
+  fetch(API_BASE + '/api/test-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: text,
+      json_result: result.json_result || result,
+    }),
+  }).catch(function(err) { console.warn('保存测试数据失败:', err); });
+}
+
+function loadTestData() {
+  fetch(API_BASE + '/api/test-data')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.text && data.json_result && Object.keys(data.json_result).length > 0) {
+      document.getElementById('termInput').value = data.text;
+      // If the terminal is expanded and we have a result, display it
+      // But we don't auto-trigger re-parse — user clicks parse themselves
+      document.getElementById('btnParse').textContent = '⚡ 重新解析';
+      setTermStatus('测试数据已加载，点击解析', '#2980b9');
+    }
+  })
+  .catch(function(err) { console.warn('加载测试数据失败:', err); });
 }
 
 function setTermStatus(msg, color) {
@@ -1905,6 +1948,9 @@ function renderQualityTab(qa) {
   html += '</div>'; // end padding container
   area.innerHTML = html;
 }
+
+// ── Load test data on page init ──
+loadTestData();
 </script>
 
 </body>

@@ -64,8 +64,41 @@ def append_to_jsonl(record: dict):
 
 # ── Routes ──────────────────────────────────────────────────────────────────
 
+TEST_DATA_PATH = REPO_ROOT / "visualization" / "data" / "test_data.json"
+
+def _load_test_data() -> dict:
+    if TEST_DATA_PATH.exists():
+        try:
+            with open(TEST_DATA_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"text": "", "json_result": {}}
+
+def _save_test_data(text: str, json_result: dict):
+    TEST_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(TEST_DATA_PATH, "w", encoding="utf-8") as f:
+        json.dump({"text": text, "json_result": json_result}, f, ensure_ascii=False, indent=2)
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
+    return jsonify({"status": "ok"})
+
+
+@app.route("/api/test-data", methods=["GET"])
+def api_get_test_data():
+    """Return the last saved test data (text + parse result)."""
+    return jsonify(_load_test_data())
+
+
+@app.route("/api/test-data", methods=["POST"])
+def api_save_test_data():
+    """Save the current text and parse result as test data."""
+    data = request.get_json(silent=True) or {}
+    text = data.get("text", "")
+    json_result = data.get("json_result", {})
+    _save_test_data(text, json_result)
     return jsonify({"status": "ok"})
 
 
