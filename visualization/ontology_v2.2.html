@@ -938,6 +938,7 @@ function toggleLegend() {
     localStorage.setItem('legendCollapsed', 'true');
   }
 }
+window.toggleLegend = toggleLegend;
 
 function renderEntityPanel(typeName) {
   var data = ENTITY_DATA[typeName];
