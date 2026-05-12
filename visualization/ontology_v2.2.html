@@ -841,6 +841,56 @@ function renderInheritanceChain(chain) {
   return html;
 }
 
+// 构建继承树图例
+function buildLegend() {
+  var roots = ['LegalNorm', 'JudicialEntity', 'LegalSubject', 'Person'];
+  var rootNames = {'LegalNorm':'规范层', 'JudicialEntity':'司法实体层', 'LegalSubject':'主体层', 'Person':'自然人层'};
+  var rootColors = {'LegalNorm':'#2980b9', 'JudicialEntity':'#d35400', 'LegalSubject':'#27ae60', 'Person':'#16a085'};
+  var children = {};
+  roots.forEach(function(r) { children[r] = []; });
+  IS_A_EDGES.forEach(function(e) {
+    var child = e[0], parent = e[1];
+    if (children[parent]) children[parent].push(child);
+  });
+  // 补全二级子类
+  roots.forEach(function(r) {
+    var direct = children[r] || [];
+    direct.forEach(function(p) {
+      IS_A_EDGES.forEach(function(e) {
+        if (e[1] === p && children[r].indexOf(e[0]) === -1) children[r].push(e[0]);
+      });
+    });
+  });
+  var html = '';
+  roots.forEach(function(root) {
+    var c = rootColors[root] || '#7f8c8d';
+    var label = root + ' (' + (rootNames[root] || '') + ')';
+    html += '<div class="legend-root">';
+    html += '<span class="dot" style="background:' + c + ';"></span>';
+    html += '<span>' + label + '</span>';
+    html += '</div>';
+    html += '<div class="legend-children">';
+    var kids = children[root] || [];
+    kids.sort();
+    kids.forEach(function(k) {
+      var kc = getRootColor(k);
+      html += '<div class="legend-child">';
+      html += '<span class="child-dot" style="background:' + kc.bg + ';"></span>';
+      html += '<span>' + k + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  // 无继承的孤立节点
+  html += '<div class="legend-root" style="color:#999;font-size:11px;font-weight:normal;margin-top:6px;">孤立节点</div>';
+  html += '<div class="legend-children">';
+  html += '<div class="legend-child"><span class="child-dot" style="background:#7f8c8d;"></span>';
+  html += '<span>LegalProvisionElement</span></div>';
+  html += '</div>';
+  html += '<div style="margin-top:8px;font-size:10px;color:#aaa;">&#x1F5B2; 悬停/点击查看详情</div>';
+  document.querySelector('.legend').innerHTML = '<div class="legend-title">&#x1F4CB; 继承树</div>' + html;
+}
+
 function renderEntityPanel(typeName) {
   var data = ENTITY_DATA[typeName];
   if (!data) {
