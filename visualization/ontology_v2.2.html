@@ -1,1179 +1,364 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>法律本体论 v2.2 知识图谱</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: #f5f7fa; }
-#mynetwork { width: 100%; height: 100vh; }
-/* Legend — 树形继承图例，固定在左上角 */
-.legend {
-  position: fixed; top: 60px; left: 16px; z-index: 999;
-  background: rgba(255,255,255,0.96); border-radius: 10px;
-  padding: 14px 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-  font-size: 14px; line-height: 1.7; border: 1px solid #e8e8e8;
-  max-height: calc(100vh - 80px); overflow-y: auto;
-}
-.legend::-webkit-scrollbar { width: 4px; }
-.legend::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
-.legend-title {
-  font-weight: 600; margin-bottom: 8px; font-size: 15px; color: #333;
-  display: flex; align-items: center; gap: 6px;
-}
-.legend-root { font-weight: 600; font-size: 14px; margin: 6px 0 3px 0; display: flex; align-items: center; gap: 8px; }
-.legend-root .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
-.legend-children { padding-left: 24px; }
-.legend-child { font-size: 13px; color: #555; padding: 2px 0; display: flex; align-items: center; gap: 8px; }
-.legend-child .child-dot { width: 10px; height: 10px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
-.legend-orphan { font-size: 13px; color: #7f8c8d; margin-left: 24px; }
-.title-bar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  color: #fff; padding: 10px 24px; display: flex; align-items: center;
-  justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-.title-bar h1 { font-size: 17px; font-weight: 600; letter-spacing: 1px; }
-.title-bar .subtitle { font-size: 12px; opacity: 0.7; }
-.title-bar .stats { font-size: 12px; opacity: 0.8; display: flex; gap: 16px; }
-.tooltip-hint {
-  font-size: 11px; color: #999; margin-top: 2px;
-}
-
-/* ===== Detail Panel (右侧信息面板) ===== */
-#detailPanel {
-  position: fixed; right: -420px; top: 44px; width: 400px;
-  height: calc(100vh - 44px); z-index: 998;
-  background: rgba(255,255,255,0.98); box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-  transition: right 0.3s ease; overflow-y: auto; overflow-x: hidden;
-  font-size: 13px; color: #333; border-left: 1px solid #e0e0e0;
-  display: flex; flex-direction: column;
-}
-#detailPanel.open { right: 0; }
-#detailPanel .panel-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%);
-  color: #fff; position: sticky; top: 0; z-index: 1;
-}
-#detailPanel .panel-header h2 { font-size: 15px; font-weight: 600; }
-#detailPanel .panel-close {
-  background: none; border: none; color: #fff; font-size: 20px;
-  cursor: pointer; padding: 0 4px; opacity: 0.7; line-height: 1;
-}
-#detailPanel .panel-close:hover { opacity: 1; }
-#detailPanel .panel-body { padding: 14px 18px 80px; flex: 1; }
-#detailPanel .panel-section { margin-bottom: 16px; }
-#detailPanel .panel-section-title {
-  font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase;
-  letter-spacing: 0.5px; margin-bottom: 8px; padding-bottom: 4px;
-  border-bottom: 1px solid #eee;
-}
-#detailPanel .field-row {
-  display: flex; align-items: baseline; gap: 6px; padding: 3px 0;
-  font-size: 13px; line-height: 1.5;
-}
-#detailPanel .field-row .field-name {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  color: #2c3e50; font-weight: 500;
-}
-#detailPanel .field-row .field-desc { color: #888; font-size: 12px; }
-#detailPanel .field-required .field-name { color: #27ae60; }
-#detailPanel .field-required::before { content: '✅ '; font-size: 12px; }
-#detailPanel .field-optional .field-name { color: #7f8c8d; }
-#detailPanel .field-optional::before { content: '⬜ '; font-size: 11px; }
-#detailPanel .enum-badge {
-  display: inline-block; background: #eef2ff; color: #4a6cf7;
-  font-size: 11px; padding: 2px 8px; border-radius: 10px; margin: 1px 2px;
-}
-#detailPanel .constraint-item {
-  background: #fff8e1; border-left: 3px solid #f9a825;
-  padding: 6px 10px; margin: 4px 0; font-size: 12px; border-radius: 0 4px 4px 0;
-  color: #555;
-}
-#detailPanel .rel-item {
-  display: flex; align-items: baseline; gap: 4px; padding: 4px 0;
-  border-bottom: 1px solid #f0f0f0; font-size: 13px;
-  cursor: pointer; color: #2980b9; transition: background 0.15s;
-  border-radius: 3px; padding: 4px 6px;
-}
-#detailPanel .rel-item:hover { background: #eaf4ff; }
-#detailPanel .rel-item .rel-arrow { color: #888; font-weight: bold; margin: 0 4px; }
-#detailPanel .rel-item .rel-meta { color: #999; font-size: 11px; margin-left: auto; }
-#detailPanel .rel-item .rel-source { color: #2c3e50; }
-#detailPanel .inherit-chain {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
-  font-size: 12px; padding: 6px 0;
-}
-#detailPanel .inherit-chain .chain-item {
-  background: #ecf0f1; padding: 2px 8px; border-radius: 4px; color: #555;
-}
-#detailPanel .inherit-chain .chain-arrow { color: #bdc3c7; }
-#detailPanel .desc-text { font-size: 13px; color: #555; line-height: 1.6; padding: 6px 0; }
-#detailPanel .empty-hint { color: #bbb; font-style: italic; font-size: 12px; padding: 4px 0; }
-
-/* Edge detail panel mode */
-#detailPanel.edge-mode .panel-header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%); }
-#detailPanel .attr-item {
-  font-size: 12px; color: #666; padding: 2px 0; display: flex; gap: 6px;
-}
-#detailPanel .attr-name { font-family: monospace; color: #8e44ad; }
-#detailPanel .badge {
-  display: inline-block; padding: 1px 8px; border-radius: 8px; font-size: 11px; margin: 0 2px;
-}
-#detailPanel .badge-cardinality { background: #e8f5e9; color: #2e7d32; }
-#detailPanel .badge-acyclic { background: #fff3e0; color: #e65100; }
-
-/* Scrollbar styling */
-#detailPanel::-webkit-scrollbar { width: 6px; }
-#detailPanel::-webkit-scrollbar-track { background: transparent; }
-#detailPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-#detailPanel::-webkit-scrollbar-thumb:hover { background: #999; }
-</style>
-</head>
-<body>
-
-<div class="title-bar">
-  <div>
-    <h1>📜 法律本体论 v2.2</h1>
-    <div class="subtitle">Legal Ontology Knowledge Graph</div>
-  </div>
-  <div class="stats">
-    <span id="nodeCount">-</span> 类型节点
-    <span id="edgeCount">-</span> 关系边
-  </div>
-</div>
-
-<div id="mynetwork"></div>
-
-<div class="legend">
-  <div class="legend-title">📋 继承树</div>
-</div>
-
-<!-- ===== Detail Panel ===== -->
-<div id="detailPanel">
-  <div class="panel-header">
-    <h2 id="panelTitle">📋 详细信息</h2>
-    <button class="panel-close" id="panelClose" title="关闭">✕</button>
-  </div>
-  <div class="panel-body" id="panelBody">
-    <div class="empty-hint">悬停或点击节点/边查看详细信息</div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js"></script>
-<script src="ontology_data.js"></script>
-<script>
-(function() {
-// ============================================================
-// 1. 类型定义 — is_a 继承关系 + 颜色分组 + 中文标注
-// ============================================================
-
-// 分组颜色表（基于根父类）
-var ROOT_COLORS = {
-  LegalNorm:      { bg: '#2980b9', border: '#1a5276', group: 'LegalNorm系' },
-  JudicialEntity: { bg: '#d35400', border: '#a04000', group: 'JudicialEntity系' },
-  LegalSubject:   { bg: '#27ae60', border: '#1e8449', group: 'LegalSubject系' },
-  Person:         { bg: '#16a085', border: '#0e6655', group: 'Person系' }
-};
-var DEFAULT_COLOR = { bg: '#7f8c8d', border: '#5d6d7e', group: '其他' };
-
-// 完整继承链：type -> 根父类
-var INHERITANCE_CHAIN = {
-  LegalNorm:    ['LegalNorm'],
-  JudicialEntity: ['JudicialEntity'],
-  LegalSubject: ['LegalSubject'],
-  Person:       ['Person'],
-  Law:          ['Law', 'LegalNorm'],
-  LegalProvision: ['LegalProvision', 'LegalNorm'],
-  LegalProvisionVersion: ['LegalProvisionVersion', 'LegalNorm'],
-  CaseType:     ['CaseType', 'LegalNorm'],
-  GuidingCase:  ['GuidingCase', 'LegalNorm'],
-  SentencingStandard: ['SentencingStandard', 'LegalNorm'],
-  Organization: ['Organization', 'LegalSubject'],
-  Court:        ['Court', 'Organization', 'LegalSubject'],
-  Procuratorate: ['Procuratorate', 'Organization', 'LegalSubject'],
-  LawFirm:      ['LawFirm', 'Organization', 'LegalSubject'],
-  ExpertInstitution: ['ExpertInstitution', 'Organization', 'LegalSubject'],
-  Judge:        ['Judge', 'Person'],
-  Attorney:     ['Attorney', 'Person'],
-  Clerk:        ['Clerk', 'Person'],
-  Prosecutor:   ['Prosecutor', 'Person'],
-  District:     ['District', 'JudicialEntity'],
-  LegalRole:    ['LegalRole', 'JudicialEntity'],
-  CourtCase:    ['CourtCase', 'JudicialEntity'],
-  CaseSummary:  ['CaseSummary', 'JudicialEntity'],
-  TrialOrganization: ['TrialOrganization', 'JudicialEntity'],
-  JudgmentResult: ['JudgmentResult', 'JudicialEntity'],
-  ExecutionInfo: ['ExecutionInfo', 'JudicialEntity'],
-  LegalDocument: ['LegalDocument', 'JudicialEntity'],
-  Evidence:     ['Evidence', 'JudicialEntity'],
-  DisputeFocus: ['DisputeFocus', 'JudicialEntity'],
-  Fact:         ['Fact', 'JudicialEntity'],
-  CaseParticipant: ['CaseParticipant', 'JudicialEntity'],
-  LegalProvisionElement: ['LegalProvisionElement']
-};
-
-function getRootColor(typeName) {
-  var chain = INHERITANCE_CHAIN[typeName];
-  if (!chain) return DEFAULT_COLOR;
-  for (var i = 0; i < chain.length; i++) {
-    if (ROOT_COLORS[chain[i]]) return ROOT_COLORS[chain[i]];
-  }
-  return DEFAULT_COLOR;
-}
-
-// 中文标注（从 legal_ontology_v2.zh.yaml 提取 description）
-var ZH_LABELS = {
-  LegalNorm: '法律规范顶层类',
-  JudicialEntity: '司法实体顶层类',
-  LegalSubject: '法律主体顶层类',
-  Law: '法律',
-  LegalProvision: '法律条文（当前生效版本）',
-  LegalProvisionVersion: '法律条文历史版本',
-  CaseType: '案由类型',
-  GuidingCase: '指导性案例',
-  SentencingStandard: '量刑/赔偿标准',
-  Person: '自然人（跨案件不消歧，每个案件独立节点）',
-  Judge: '法官',
-  Attorney: '律师',
-  Clerk: '书记员',
-  Prosecutor: '检察官',
-  Organization: '组织机构（企业用credit_code跨案件全局关联）',
-  Court: '法院',
-  Procuratorate: '检察院',
-  LawFirm: '律师事务所',
-  ExpertInstitution: '鉴定机构',
-  District: '辖区',
-  LegalRole: '法律角色（2026.05.v2.2新增insurer）',
-  CourtCase: '法院案件（精简节点，全文存ES）',
-  CaseSummary: '案件结构化摘要（用于热层类案相似度计算）',
-  TrialOrganization: '审判组织',
-  JudgmentResult: '裁判结果（v2.2新增cost_allocation）',
-  ExecutionInfo: '执行信息',
-  LegalDocument: '法律文书',
-  Evidence: '证据（v2.2新增expert_institution/expert_conclusion）',
-  DisputeFocus: '案件争议焦点',
-  Fact: '案件事实',
-  CaseParticipant: '案件参与人（含审级角色变更）',
-  LegalProvisionElement: '法条构成要件要素'
-};
-
-// 英文描述（从 legal_ontology_v2.yaml 提取）
-var EN_DESCRIPTIONS = {
-  LegalNorm: 'Top-level class for legal norms',
-  JudicialEntity: 'Top-level class for judicial entities',
-  LegalSubject: 'Top-level class for legal subjects',
-  Law: 'Law / Statute',
-  LegalProvision: 'Legal provision (current effective version)',
-  LegalProvisionVersion: 'Historical version of legal provision',
-  CaseType: 'Case type / Cause of action',
-  GuidingCase: 'Guiding case',
-  SentencingStandard: 'Sentencing/Compensation standard',
-  Person: 'Natural person (no cross-case disambiguation, independent per case)',
-  Judge: 'Judge',
-  Attorney: 'Attorney / Lawyer',
-  Clerk: 'Clerk',
-  Prosecutor: 'Prosecutor',
-  Organization: 'Organization (cross-case global correlation via credit_code)',
-  Court: 'Court',
-  Procuratorate: 'Procuratorate',
-  LawFirm: 'Law firm',
-  ExpertInstitution: 'Expert institution / Forensics body',
-  District: 'District / Jurisdiction area',
-  LegalRole: 'Legal role (v2.2 added insurer)',
-  CourtCase: 'Court case (lightweight node, full text in ES)',
-  CaseSummary: 'Case structured summary (for hot-layer similarity)',
-  TrialOrganization: 'Trial organization',
-  JudgmentResult: 'Judgment result',
-  ExecutionInfo: 'Execution information',
-  LegalDocument: 'Legal document',
-  Evidence: 'Evidence',
-  DisputeFocus: 'Dispute focus',
-  Fact: 'Case fact',
-  CaseParticipant: 'Case participant (with trial-level role changes)',
-  LegalProvisionElement: 'Legal provision constitutive element'
-};
-
-// ============================================================
-// 2. 具体类型节点（排除4个抽象顶层类，继承关系在右侧面板展示）
-// ============================================================
-var ABSTRACT_ROOTS = {'LegalNorm':1, 'JudicialEntity':1, 'LegalSubject':1, 'Person':1};
-var TYPE_NAMES = ['Law', 'LegalProvision', 'LegalProvisionVersion', 'CaseType', 'GuidingCase', 'SentencingStandard',
-  'Organization', 'Court', 'Procuratorate', 'LawFirm', 'ExpertInstitution',
-  'Judge', 'Attorney', 'Clerk', 'Prosecutor',
-  'District', 'LegalRole',
-  'CourtCase', 'CaseSummary', 'TrialOrganization', 'JudgmentResult', 'ExecutionInfo',
-  'LegalDocument', 'Evidence', 'DisputeFocus', 'Fact', 'CaseParticipant',
-  'LegalProvisionElement'
-];
-
-// ============================================================
-// 3. is_a 继承边
-// ============================================================
-var IS_A_EDGES = [
-  ['Court', 'Organization'],
-  ['Procuratorate', 'Organization'],
-  ['LawFirm', 'Organization'],
-  ['ExpertInstitution', 'Organization'],
-  ['Judge', 'Person'],
-  ['Attorney', 'Person'],
-  ['Clerk', 'Person'],
-  ['Prosecutor', 'Person'],
-  ['District', 'JudicialEntity'],
-  ['LegalRole', 'JudicialEntity'],
-  ['CourtCase', 'JudicialEntity'],
-  ['CaseSummary', 'JudicialEntity'],
-  ['TrialOrganization', 'JudicialEntity'],
-  ['JudgmentResult', 'JudicialEntity'],
-  ['ExecutionInfo', 'JudicialEntity'],
-  ['LegalDocument', 'JudicialEntity'],
-  ['Evidence', 'JudicialEntity'],
-  ['DisputeFocus', 'JudicialEntity'],
-  ['Fact', 'JudicialEntity'],
-  ['CaseParticipant', 'JudicialEntity']
-];
-
-// ============================================================
-// 4. 关系边
-// ============================================================
-var RELATION_EDGES = [
-  ['typically_applies', 'CaseType', 'LegalProvision'],
-  ['belongs_to', 'LegalProvision', 'Law'],
-  ['has_version', 'LegalProvision', 'LegalProvisionVersion'],
-  ['superseded_by', 'LegalProvisionVersion', 'LegalProvisionVersion'],
-  ['guides_case_type', 'GuidingCase', 'CaseType'],
-  ['cites_guiding_case', 'CourtCase', 'GuidingCase'],
-  ['applies_standard', 'CourtCase', 'SentencingStandard'],
-  ['has_summary', 'CourtCase', 'CaseSummary'],
-  ['tried_by', 'CourtCase', 'TrialOrganization'],
-  ['undertakes', 'Judge', 'CourtCase'],
-  ['plays_role', 'LegalSubject', 'LegalRole'],
-  ['has_jurisdiction_over', 'Court', 'District'],
-  ['prosecutes', 'Procuratorate', 'CourtCase'],
-  ['based_on', 'ExecutionInfo', 'JudgmentResult'],
-  ['signed_by', 'LegalDocument', 'Judge'],
-  ['has_case_type', 'CourtCase', 'CaseType'],
-  ['cites', 'CourtCase', 'LegalProvision'],
-  ['judgment_cites', 'JudgmentResult', 'LegalProvision'],
-  ['represents', 'Attorney', 'LegalSubject'],
-  ['employs', 'Procuratorate', 'Prosecutor'],
-  ['employs_attorney', 'LawFirm', 'Attorney'],
-  ['submitted_for', 'Evidence', 'CourtCase'],
-  ['proves_fact', 'Evidence', 'Fact'],
-  ['proves_focus', 'Evidence', 'DisputeFocus'],
-  ['includes', 'TrialOrganization', 'Judge'],
-  ['includes_clerk', 'TrialOrganization', 'Clerk'],
-  ['appeals_to', 'CourtCase', 'CourtCase'],
-  ['retries_from', 'CourtCase', 'CourtCase'],
-  ['has_dispute_focus', 'CourtCase', 'DisputeFocus'],
-  ['has_fact', 'CourtCase', 'Fact'],
-  ['matches_element', 'Fact', 'LegalProvisionElement'],
-  ['resolved_by', 'DisputeFocus', 'LegalProvision'],
-  ['leads_to_fact', 'Fact', 'JudgmentResult'],
-  ['leads_to_focus', 'DisputeFocus', 'JudgmentResult']
-];
-
-// 关系中文名
-var RELATION_LABELS = {
-  typically_applies: '典型适用',
-  belongs_to: '归属于',
-  has_version: '具有版本',
-  superseded_by: '被替代',
-  guides_case_type: '指导案由',
-  cites_guiding_case: '引用指导案例',
-  applies_standard: '适用标准',
-  has_summary: '具有摘要',
-  tried_by: '由…审理',
-  undertakes: '承办',
-  plays_role: '担任角色',
-  has_jurisdiction_over: '管辖',
-  prosecutes: '公诉',
-  based_on: '基于',
-  signed_by: '由…签署',
-  has_case_type: '具有案由',
-  cites: '引用法条',
-  judgment_cites: '裁判依据',
-  represents: '代理',
-  employs: '雇佣',
-  employs_attorney: '雇佣律师',
-  submitted_for: '提交给',
-  proves_fact: '证明事实',
-  proves_focus: '证明争议',
-  includes: '包含法官',
-  includes_clerk: '配备书记员',
-  appeals_to: '上诉至',
-  retries_from: '再审源自',
-  has_dispute_focus: '具有争议焦点',
-  has_fact: '具有事实',
-  matches_element: '匹配要件',
-  resolved_by: '由法条解决',
-  leads_to_fact: '推导出',
-  leads_to_focus: '推导出'
-};
-
-var RELATION_DESC = {
-  typically_applies: 'CaseType → LegalProvision (many_to_many)',
-  belongs_to: 'LegalProvision → Law (many_to_one)',
-  has_version: 'LegalProvision → LegalProvisionVersion (one_to_many)',
-  superseded_by: 'LegalProvisionVersion → LegalProvisionVersion (one_to_one)',
-  guides_case_type: 'GuidingCase → CaseType (one_to_many)',
-  cites_guiding_case: 'CourtCase → GuidingCase (many_to_many)',
-  applies_standard: 'CourtCase → SentencingStandard (many_to_many)',
-  has_summary: 'CourtCase → CaseSummary (one_to_one)',
-  tried_by: 'CourtCase → TrialOrganization (one_to_one)',
-  undertakes: 'Judge → CourtCase (one_to_many)',
-  plays_role: 'LegalSubject → LegalRole (many_to_many)',
-  has_jurisdiction_over: 'Court → District (one_to_one)',
-  prosecutes: 'Procuratorate → CourtCase (one_to_many)',
-  based_on: 'ExecutionInfo → JudgmentResult (one_to_one)',
-  signed_by: 'LegalDocument → Judge (many_to_one)',
-  has_case_type: 'CourtCase → CaseType (one_to_many)',
-  cites: 'CourtCase → LegalProvision (many_to_many)',
-  judgment_cites: 'JudgmentResult → LegalProvision (many_to_many)',
-  represents: 'Attorney → LegalSubject (many_to_many)',
-  employs: 'Procuratorate → Prosecutor (one_to_many)',
-  employs_attorney: 'LawFirm → Attorney (one_to_many)',
-  submitted_for: 'Evidence → CourtCase (many_to_one)',
-  proves_fact: 'Evidence → Fact (many_to_many)',
-  proves_focus: 'Evidence → DisputeFocus (many_to_many)',
-  includes: 'TrialOrganization → Judge (one_to_many)',
-  includes_clerk: 'TrialOrganization → Clerk (one_to_one)',
-  appeals_to: 'CourtCase → CourtCase (one_to_one)',
-  retries_from: 'CourtCase → CourtCase (one_to_one)',
-  has_dispute_focus: 'CourtCase → DisputeFocus (one_to_many)',
-  has_fact: 'CourtCase → Fact (one_to_many)',
-  matches_element: 'Fact → LegalProvisionElement (many_to_many)',
-  resolved_by: 'DisputeFocus → LegalProvision (many_to_many)',
-  leads_to_fact: 'Fact → JudgmentResult (many_to_many)',
-  leads_to_focus: 'DisputeFocus → JudgmentResult (many_to_many)'
-};
-
-// ============================================================
-// 5. 构建 vis-network 数据
-// ============================================================
-// 从label中提取纯名称（去掉括号内的版本信息，存到right-panel展示）
-function cleanLabel(name) {
-  var zh = ZH_LABELS[name] || name;
-  // 去掉括号及括号内的版本说明，如 "法律条文（当前生效版本）" → "法律条文"
-  return zh.replace(/\s*（.*?）\s*/g, '').replace(/\s*\(.*?\)\s*/g, '');
-}
-var VERSION_NOTES = {};
-TYPE_NAMES.forEach(function(name) {
-  var zh = ZH_LABELS[name] || name;
-  var match = zh.match(/（.+?）/);
-  VERSION_NOTES[name] = match ? match[0] : '';
-});
-
-var nodes = [];
-var edges = [];
-var addedNodes = {};
-
-TYPE_NAMES.forEach(function(name) {
-  var c = getRootColor(name);
-  var en = EN_DESCRIPTIONS[name] || name;
-  var shortLabel = cleanLabel(name);
-  nodes.push({
-    id: name,
-    label: shortLabel,
-    title: '<b>' + name + '</b><br><i>' + (ZH_LABELS[name] || '') + '</i><hr style="margin:4px 0">' +
-           '<span style="color:#555;font-size:12px;">' + (EN_DESCRIPTIONS[name] || '') + '</span>' +
-           '<hr style="margin:4px 0"><span style="color:#888;font-size:11px;">' + c.group + ' | ' + name + '</span>',
-    shape: 'box',
-    color: { background: c.bg, border: c.border },
-    font: { color: '#fff', size: 18, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
-    borderWidth: 2,
-    size: 24,
-    group: c.group,
-    margin: { top: 8, bottom: 8, left: 10, right: 10 }
-  });
-  addedNodes[name] = true;
-});
-
-// is_a 继承边 (虚线)
-IS_A_EDGES.forEach(function(e) {
-  edges.push({
-    from: e[0],
-    to: e[1],
-    label: 'is_a',
-    font: { size: 10, color: '#7f8c8d', align: 'middle' },
-    dashes: true,
-    color: { color: '#95a5a6', highlight: '#7f8c8d', opacity: 0.6 },
-    width: 1.5,
-    arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-    title: '继承关系: ' + e[0] + ' → ' + e[1]
-  });
-});
-
-// 关系边 (实线)
-RELATION_EDGES.forEach(function(e) {
-  var relName = e[0];
-  var fromNode = e[1];
-  var toNode = e[2];
-  var cn = RELATION_LABELS[relName] || relName;
-  var desc = RELATION_DESC[relName] || '';
-  edges.push({
-    from: fromNode,
-    to: toNode,
-    label: cn,
-    font: { size: 11, color: '#2c3e50', align: 'middle', strokeWidth: 2, strokeColor: '#ffffff' },
-    color: { color: '#7f8c8d', highlight: '#2c3e50' },
-    width: 1.8,
-    arrows: { to: { enabled: true, scaleFactor: 0.7 } },
-    smooth: { type: 'curvedCW', roundness: 0.12 },
-    title: '<b>' + relName + '</b><br>' + desc + '<br>' + (e[3] ? '→ ' + e[3] : ''),
-    dashes: false
-  });
-});
-
-// ============================================================
-// 6. 渲染
-// ============================================================
-var container = document.getElementById('mynetwork');
-var data = {
-  nodes: new vis.DataSet(nodes),
-  edges: new vis.DataSet(edges)
-};
-
-var options = {
-  layout: {
-    // 使用随机初始位置，physics 会通过力导向算法均匀分布节点
-    randomSeed: 42,
-    improvedLayout: true
-  },
-  physics: {
-    solver: 'barnesHut',
-    barnesHut: {
-      gravitationalConstant: -3000,
-      centralGravity: 0.3,
-      springLength: 120,
-      springConstant: 0.04,
-      damping: 0.5,
-      avoidOverlap: 0.5
-    },
-    stabilization: {
-      iterations: 400,
-      updateInterval: 25,
-      fit: true
-    },
-    maxVelocity: 50,
-    minVelocity: 0.5
-  },
-  edges: {
-    smooth: { type: 'curvedCW', roundness: 0.12 },
-    font: { size: 11, color: '#2c3e50', face: 'Microsoft YaHei' }
-  },
-  nodes: {
-    font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' },
-    borderWidth: 2,
-    shadow: { enabled: true, size: 4, x: 0, y: 0 },
-    mass: 1,
-    scaling: { min: 16, max: 32 }
-  },
-  interaction: {
-    hover: true,
-    tooltipDelay: 100,
-    navigationButtons: true,
-    keyboard: true,
-    zoomView: true,
-    dragView: true
-  },
-  groups: {
-    'LegalNorm系': { color: { background: '#2980b9', border: '#1a5276' } },
-    'JudicialEntity系': { color: { background: '#d35400', border: '#a04000' } },
-    'LegalSubject系': { color: { background: '#27ae60', border: '#1e8449' } },
-    'Person系': { color: { background: '#16a085', border: '#0e6655' } },
-    '其他': { color: { background: '#7f8c8d', border: '#5d6d7e' } }
-  }
-};
-
-var network = new vis.Network(container, data, options);
-
-// 更新统计 + 自适应视口 + 稳定后冻结物理
-network.on('stabilizationIterationsDone', function() {
-  document.getElementById('nodeCount').textContent = '📦 ' + nodes.length;
-  document.getElementById('edgeCount').textContent = '🔗 ' + edges.length;
-  // 稳定后关闭物理引擎，防止持续浮动
-  network.setOptions({ physics: { enabled: false } });
-  // 构建继承树图例
-  buildLegend();
-  // 自适应视口
-  network.fit({ animation: true, nodes: TYPE_NAMES });
-});
-
-// 窗口自适应
-window.addEventListener('resize', function() {
-  network.fit({ animation: true });
-});
-
-// 适配 title-bar 高度
-container.style.marginTop = '44px';
-container.style.height = 'calc(100vh - 44px)';
-
-// ============================================================
-// 7. Detail Panel Logic
-// ============================================================
-
-var detailPanel = document.getElementById('detailPanel');
-var panelTitle = document.getElementById('panelTitle');
-var panelBody = document.getElementById('panelBody');
-var panelClose = document.getElementById('panelClose');
-var isPanelLocked = false;
-var currentSelection = null; // 'node:TypeName' or 'edge:EdgeId'
-
-// Close button
-panelClose.addEventListener('click', function(e) {
-  e.stopPropagation();
-  hidePanel();
-});
-
-// Click outside to close (only if locked)
-document.addEventListener('click', function(e) {
-  // Don't close if click is on the network canvas
-  if (e.target.closest && e.target.closest('#mynetwork')) return;
-  if (isPanelLocked && !detailPanel.contains(e.target) && e.target !== panelClose) {
-    hidePanel();
-  }
-});
-
-// Escape key to close
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && detailPanel.classList.contains('open')) {
-    hidePanel();
-  }
-});
-
-function showEntityDetail(typeName) {
-  detailPanel.classList.remove('edge-mode');
-  renderEntityPanel(typeName);
-  detailPanel.classList.add('open');
-  isPanelLocked = true;
-  currentSelection = 'node:' + typeName;
-}
-
-function showEdgeDetail(edgeId) {
-  detailPanel.classList.add('edge-mode');
-  renderEdgePanel(edgeId);
-  detailPanel.classList.add('open');
-  isPanelLocked = true;
-  currentSelection = 'edge:' + edgeId;
-}
-
-function hidePanel() {
-  detailPanel.classList.remove('open');
-  isPanelLocked = false;
-  currentSelection = null;
-}
-
-// Node hover → 预览，不锁定
-network.on('hoverNode', function(params) {
-  if (isPanelLocked) return;
-  var hoverKey = 'node:' + params.node;
-  if (hoverKey === currentSelection) return;
-  detailPanel.classList.remove('edge-mode');
-  renderEntityPanel(params.node);
-  detailPanel.classList.add('open');
-  currentSelection = 'node:' + params.node;
-});
-
-network.on('blurNode', function(params) {
-  // 不锁定时不隐藏（用户想看时不会因为移开而消失）
-});
-
-// Edge hover → 预览，不锁定
-network.on('hoverEdge', function(params) {
-  if (isPanelLocked) return;
-  var hoverKey = 'edge:' + params.edge;
-  if (hoverKey === currentSelection) return;
-  detailPanel.classList.add('edge-mode');
-  renderEdgePanel(params.edge);
-  detailPanel.classList.add('open');
-  currentSelection = 'edge:' + params.edge;
-});
-
-network.on('blurEdge', function(params) {
-});
-
-// Click node → 锁定面板，直到点击下一个实体或关系
-network.on('click', function(params) {
-  if (params.nodes.length > 0) {
-    var nodeId = params.nodes[0];
-    detailPanel.classList.remove('edge-mode');
-    renderEntityPanel(nodeId);
-    detailPanel.classList.add('open');
-    isPanelLocked = true;
-    currentSelection = 'node:' + nodeId;
-  } else if (params.edges.length > 0) {
-    var edgeId = params.edges[0];
-    detailPanel.classList.add('edge-mode');
-    renderEdgePanel(edgeId);
-    detailPanel.classList.add('open');
-    isPanelLocked = true;
-    currentSelection = 'edge:' + edgeId;
-  } else {
-    // Click on empty space → unlock
-    if (isPanelLocked) {
-      hidePanel();
-    }
-  }
-});
-
-// Prevent panel events from propagating to network
-detailPanel.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-detailPanel.addEventListener('mouseup', function(e) { e.stopPropagation(); });
-detailPanel.addEventListener('click', function(e) { e.stopPropagation(); });
-
-// Field descriptions (extracted from YAML comments — kept concise)
-var FIELD_DESC = {
-  id: '唯一标识', name: '名称', source: '来源',
-  desensitize: '脱敏标记', create_time: '创建时间', update_time: '更新时间',
-  law_level: '法律位阶', document_number: '文号', status: '状态',
-  enactment_date: '颁布日期', effective_date: '生效日期',
-  legislative_purpose: '立法目的', repealed_date: '废止日期',
-  article: '条号', law_id: '法律标识', paragraph: '款号', item: '项号',
-  content: '内容', related_provisions: '关联条文', provision_id: '条文标识',
-  version_date: '版本日期', superseded_by_version_id: '被替代版本标识',
-  amendment_reason: '修正原因', code: '编码', category: '大类',
-  level1: '一级分类', level2: '二级分类', typical_provision_ids: '典型适用条文',
-  guiding_case_number: '指导案例编号', issuing_court_id: '发布法院标识',
-  publication_date: '发布日期', guiding_points: '指导要点',
-  binding_force: '约束力', guiding_points_vector: '指导要点向量',
-  related_case_type_ids: '关联案由', case_type_id: '案由标识',
-  applicable_provision_id: '适用条文标识', standard_type: '标准类型',
-  sentence_range_min: '量刑下限', sentence_range_max: '量刑上限',
-  sentence_unit: '量刑单位', circumstance_levels: '情节等级',
-  measurement_formula: '计算公式', region_id: '地区标识',
-  valid_from: '有效期起', valid_to: '有效期止',
-  court_id: '法院标识', position: '职位', judge_level: '法官等级',
-  appointment_date: '任命日期', license_number: '执业证号',
-  law_firm_id: '律所标识', specialization: '专业领域', bar_association: '律协',
-  procuratorate_id: '检察院标识', org_type: '机构类型',
-  credit_code: '统一社会信用代码', legal_representative: '法定代表人',
-  registered_capital: '注册资本', business_scope: '经营范围',
-  legal_name_alias: '曾用名/别名', court_level: '法院级别',
-  district_id: '辖区标识', chambers: '审判庭', jurisdiction_area: '管辖区域',
-  procuratorate_level: '检察院级别', departments: '内设部门',
-  firm_type: '律所类型', partners: '合伙人', practice_areas: '执业领域',
-  expertise_fields: '专业领域', accreditation_number: '资质编号',
-  accreditation_authority: '资质认定机关', validity_period: '有效期',
-  administrative_level: '行政级别', parent_district_id: '上级辖区标识',
-  permissions: '权限', case_type_id: '案由标识', filing_date: '立案日期',
-  case_number: '案号', claim_amount: '诉讼标的额', cause_of_action: '案由/诉讼请求',
-  summary: '摘要', related_cases: '关联案件', first_instance_case_number: '一审案号',
-  source_text_hash: '原文哈希', source_text_path: '原文路径',
-  dispute_resolution_type: '争议解决方式', case_id: '案件标识',
-  key_facts: '关键事实', disputed_issues: '争议焦点', conclusion: '结论',
-  fact_vector: '事实向量', issue_tags: '争议标签', amount_involved: '涉案金额',
-  sentencing_referral_id: '量刑参照标识', organization_type: '组织类型',
-  judge_ids: '法官标识列表', presiding_judge_id: '审判长标识', clerk_id: '书记员标识',
-  result_type: '结果类型', judgment_date: '裁判日期', sentence_term: '刑期',
-  compensation_amount: '赔偿金额', reasoning: '裁判理由',
-  sentencing_standard_id: '量刑标准标识', execution_status: '执行状态',
-  execution_court_id: '执行法院标识', execution_amount: '执行标的额',
-  execution_measures: '执行措施', completion_date: '完成日期',
-  document_type: '文书类型', creation_date: '制作日期',
-  signed_by_judge_id: '签署法官标识', content_hash: '内容哈希',
-  file_path: '文件路径', evidence_type: '证据类型', submitter_id: '提交人标识',
-  submission_date: '提交日期', examination_status: '质证状态',
-  admission_status: '采信状态', chain_of_custody: '保管链',
-  focus_category_id: '焦点分类标识', canonical_template_id: '规范模板标识',
-  fact_type: '事实类型', proven_by_evidence_ids: '证明证据标识',
-  role_code: '角色编码', subject_id: '主体标识', trial_level: '审级',
-  is_primary: '是否主要当事人', role_name: '角色名称'
-};
-
-// Enum value labels (Chinese translations from YAML comments)
-var ENUM_VALUE_LABELS = {
-  constitution: '宪法', basic_law: '基本法律', ordinary_law: '普通法律',
-  administrative_regulation: '行政法规', local_regulation: '地方性法规',
-  self_governing_regulation: '自治条例', military_regulation: '军事法规',
-  judicial_interpretation: '司法解释', department_rule: '部门规章',
-  normative_document: '规范性文件',
-  effective: '有效/生效', amended: '已修正', repealed: '已废止',
-  civil: '民事', criminal: '刑事', administrative: '行政', ip: '知识产权',
-  execution: '执行', state_compensation: '国家赔偿',
-  mandatory: '强制参照', persuasive: '具有说服力', reference: '仅供参考',
-  criminal_sentence: '刑事处罚', civil_compensation: '民事赔偿',
-  administrative_penalty: '行政处罚',
-  month: '月', year: '年', yuan: '元', percent: '百分比',
-  first_instance: '一审', second_instance: '二审', retrial: '再审',
-  filing: '立案', trial: '审理中', judged: '已裁判', appealed: '已上诉',
-  retried: '已再审', executing: '执行中', terminated: '已终结',
-  litigation: '诉讼', mediation: '调解', arbitration: '仲裁',
-  judicial_aid: '司法救助', administrative_review: '行政复议',
-  supreme: '最高', high: '高级', intermediate: '中级', basic: '基层',
-  special: '专门', provincial: '省级', municipal: '市级', district: '区级',
-  partnership: '合伙企业', limited_liability: '有限责任',
-  sole_practitioner: '个人执业',
-  company: '公司', government_agency: '政府机构', ngo: '非政府组织',
-  individual_business: '个体工商户', partnership_org: '合伙企业',
-  sole_proprietorship: '个人独资企业',
-  plaintiff: '原告', defendant: '被告', third_party: '第三人', witness: '证人',
-  agent: '代理人', expert_witness: '鉴定人', interpreter: '翻译',
-  prosecutor_role: '检察官', applicant: '申请人', respondent: '被申请人',
-  relator: '利害关系人', appellant: '上诉人', appellee: '被上诉人',
-  retrial_applicant: '再审申请人', retrial_respondent: '再审被申请人',
-  mediator: '调解员', arbitrator: '仲裁员', beneficiary: '受益人',
-  guilty: '有罪', not_guilty: '无罪', liable: '责任成立', not_liable: '责任不成立',
-  dismissed: '驳回起诉', withdrawn: '撤诉', mediation_agreement: '调解协议',
-  arbitration_award: '仲裁裁决', administrative_decision: '行政决定',
-  pending: '待执行', in_progress: '执行中', completed: '已完成',
-  judgment: '判决书', ruling: '裁定书', order: '命令/令', notice: '通知书',
-  indictment: '起诉书', petition: '诉状/申请书',
-  document: '书证', physical: '物证', digital: '电子证据', testimony: '证言',
-  expert_opinion: '鉴定意见',
-  not_examined: '未质证', examined: '已质证', admitted: '已采信',
-  not_admitted: '未采信', valid: '有效', invalid: '无效',
-  undisputed: '无争议', disputed: '有争议', to_be_proven: '待证明',
-  sole_judge: '独任审判', collegiate_bench: '合议庭', judicial_committee: '审判委员会'
-};
-
-function getFieldDesc(fieldName) {
-  return FIELD_DESC[fieldName] || '';
-}
-
-function getEnumLabel(val) {
-  return ENUM_VALUE_LABELS[val] || val;
-}
-
-function buildInheritanceChain(typeName) {
-  var chain = [];
-  var current = typeName;
-  while (current) {
-    chain.push(current);
-    var data = ENTITY_DATA[current];
-    current = data && data.is_a ? data.is_a : null;
-  }
-  return chain;
-}
-
-function renderInheritanceChain(chain) {
-  if (chain.length <= 1) return '';
-  var html = '<div class="inherit-chain">';
-  for (var i = 0; i < chain.length; i++) {
-    if (i > 0) html += '<span class="chain-arrow">→</span>';
-    html += '<span class="chain-item">' + chain[i] + '</span>';
-  }
-  html += '</div>';
-  return html;
-}
-
-// 构建继承树图例
-function buildLegend() {
-  var roots = ['LegalNorm', 'JudicialEntity', 'LegalSubject', 'Person'];
-  var rootNames = {'LegalNorm':'规范层', 'JudicialEntity':'司法实体层', 'LegalSubject':'主体层', 'Person':'自然人层'};
-  var rootColors = {'LegalNorm':'#2980b9', 'JudicialEntity':'#d35400', 'LegalSubject':'#27ae60', 'Person':'#16a085'};
-  var children = {};
-  roots.forEach(function(r) { children[r] = []; });
-  IS_A_EDGES.forEach(function(e) {
-    var child = e[0], parent = e[1];
-    if (children[parent]) children[parent].push(child);
-  });
-  // 补全二级子类
-  roots.forEach(function(r) {
-    var direct = children[r] || [];
-    direct.forEach(function(p) {
-      IS_A_EDGES.forEach(function(e) {
-        if (e[1] === p && children[r].indexOf(e[0]) === -1) children[r].push(e[0]);
-      });
-    });
-  });
-  var html = '';
-  roots.forEach(function(root) {
-    var c = rootColors[root] || '#7f8c8d';
-    var label = root + ' (' + (rootNames[root] || '') + ')';
-    html += '<div class="legend-root">';
-    html += '<span class="dot" style="background:' + c + ';"></span>';
-    html += '<span>' + label + '</span>';
-    html += '</div>';
-    html += '<div class="legend-children">';
-    var kids = children[root] || [];
-    kids.sort();
-    kids.forEach(function(k) {
-      var kc = getRootColor(k);
-      html += '<div class="legend-child">';
-      html += '<span class="child-dot" style="background:' + kc.bg + ';"></span>';
-      html += '<span>' + k + '</span>';
-      html += '</div>';
-    });
-    html += '</div>';
-  });
-  // 无继承的孤立节点
-  html += '<div class="legend-root" style="color:#999;font-size:11px;font-weight:normal;margin-top:6px;">孤立节点</div>';
-  html += '<div class="legend-children">';
-  html += '<div class="legend-child"><span class="child-dot" style="background:#7f8c8d;"></span>';
-  html += '<span>LegalProvisionElement</span></div>';
-  html += '</div>';
-  html += '<div style="margin-top:8px;font-size:10px;color:#aaa;">&#x1F5B2; 悬停/点击查看详情</div>';
-  document.querySelector('.legend').innerHTML = '<div class="legend-title">&#x1F4CB; 继承树</div>' + html;
-}
-
-function renderEntityPanel(typeName) {
-  var data = ENTITY_DATA[typeName];
-  if (!data) {
-    panelBody.innerHTML = '<div class="empty-hint">未找到实体数据: ' + typeName + '</div>';
-    return;
-  }
-
-  var zh = ZH_LABELS[typeName] || typeName;
-  panelTitle.textContent = '📋 ' + typeName + ' — ' + zh;
-
-  var html = '';
-
-  // Description
-  html += '<div class="panel-section">';
-  html += '<div class="panel-section-title">📌 描述</div>';
-  html += '<div class="desc-text">' + (data.description || '无描述') + '</div>';
-  // 版本信息（如果有）
-  var verNote = VERSION_NOTES[typeName];
-  if (verNote) {
-    html += '<div style="margin-top:6px;padding:4px 8px;background:#f0f4ff;border-radius:4px;font-size:12px;color:#4a6cf7;">';
-    html += '📎 ' + verNote;
-    html += '</div>';
-  }
-  html += '</div>';
-
-  // Inheritance chain
-  var chain = buildInheritanceChain(typeName);
-  if (chain.length > 1) {
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">🔗 继承链</div>';
-    html += renderInheritanceChain(chain);
-    html += '</div>';
-  }
-
-  // Required fields
-  var reqFields = data.required || [];
-  html += '<div class="panel-section">';
-  html += '<div class="panel-section-title">✅ 必填字段 (' + reqFields.length + ')</div>';
-  if (reqFields.length === 0) {
-    html += '<div class="empty-hint">无必填字段</div>';
-  } else {
-    reqFields.forEach(function(f) {
-      html += '<div class="field-row field-required">';
-      html += '<span class="field-name">' + f + '</span>';
-      var desc = getFieldDesc(f);
-      if (desc) html += '<span class="field-desc">— ' + desc + '</span>';
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-
-  // Optional fields
-  var optFields = data.optional || [];
-  html += '<div class="panel-section">';
-  html += '<div class="panel-section-title">⬜ 可选字段 (' + optFields.length + ')</div>';
-  if (optFields.length === 0) {
-    html += '<div class="empty-hint">无可选字段</div>';
-  } else {
-    optFields.forEach(function(f) {
-      html += '<div class="field-row field-optional">';
-      html += '<span class="field-name">' + f + '</span>';
-      var desc = getFieldDesc(f);
-      if (desc) html += '<span class="field-desc">— ' + desc + '</span>';
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-
-  // Enums
-  var enums = data.enums || {};
-  var enumKeys = Object.keys(enums);
-  if (enumKeys.length > 0) {
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">🔘 枚举约束 (' + enumKeys.length + ')</div>';
-    enumKeys.forEach(function(fieldName) {
-      var vals = enums[fieldName];
-      html += '<div style="margin: 4px 0;">';
-      html += '<span class="field-name" style="font-family:monospace;font-weight:500;">' + fieldName + '</span>';
-      html += ' ∈ {';
-      var badges = [];
-      vals.forEach(function(v) {
-        var label = getEnumLabel(v);
-        badges.push('<span class="enum-badge">' + (label !== v ? label : v) + '</span>');
-      });
-      html += badges.join(' ');
-      html += '}</div>';
-    });
-    html += '</div>';
-  }
-
-  // Constraints
-  var constraints = data.constraints || [];
-  if (constraints.length > 0) {
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">⚠️ 约束 (' + constraints.length + ')</div>';
-    constraints.forEach(function(c) {
-      var desc = typeof c === 'string' ? c : (c.description || c.rule || '');
-      html += '<div class="constraint-item">' + desc + '</div>';
-    });
-    html += '</div>';
-  }
-
-  // Relations
-  var rels = RELATIONS_BY_ENTITY[typeName];
-  if (rels) {
-    // Outgoing
-    var outgoing = rels.outgoing || [];
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">→ 出边关系 (' + outgoing.length + ')</div>';
-    if (outgoing.length === 0) {
-      html += '<div class="empty-hint">无出边关系</div>';
-    } else {
-      outgoing.forEach(function(r) {
-        html += '<div class="rel-item" data-target="' + r.target + '">';
-        html += '<span class="rel-arrow">→</span> ';
-        html += '<span class="rel-source">' + r.target + '</span>';
-        html += '<span style="color:#666;font-size:12px;"> ' + (RELATION_LABELS[r.relation] || r.relation) + '</span>';
-        html += '<span class="rel-meta">' + r.cardinality + '</span>';
-        html += '</div>';
-      });
-    }
-    html += '</div>';
-
-    // Incoming
-    var incoming = rels.incoming || [];
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">← 入边关系 (' + incoming.length + ')</div>';
-    if (incoming.length === 0) {
-      html += '<div class="empty-hint">无入边关系</div>';
-    } else {
-      incoming.forEach(function(r) {
-        html += '<div class="rel-item" data-target="' + r.source + '">';
-        html += '<span class="rel-arrow">←</span> ';
-        html += '<span class="rel-source">' + r.source + '</span>';
-        html += '<span style="color:#666;font-size:12px;"> ' + (RELATION_LABELS[r.relation] || r.relation) + '</span>';
-        html += '<span class="rel-meta">' + r.cardinality + '</span>';
-        html += '</div>';
-      });
-    }
-    html += '</div>';
-  }
-
-  panelBody.innerHTML = html;
-
-  // Attach click handlers to relation items
-  panelBody.querySelectorAll('.rel-item').forEach(function(el) {
-    el.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var targetId = this.getAttribute('data-target');
-      if (targetId && network.getNode(targetId)) {
-        network.focus(targetId, { scale: 1.2, animation: true });
-        // Also show that entity's detail
-        showEntityDetail(targetId);
-      }
-    });
-  });
-}
-
-function renderEdgePanel(edgeId) {
-  var allEdges = data.edges.get(edgeId);
-  if (!allEdges) return;
-
-  var edge = allEdges;
-  var isInheritance = edge.dashes;
-
-  if (isInheritance) {
-    panelTitle.textContent = '🔗 继承关系';
-    var html = '';
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">📌 类型</div>';
-    html += '<div class="desc-text">is_a 继承关系（虚线）</div>';
-    html += '</div>';
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">📌 方向</div>';
-    html += '<div class="field-row"><span style="font-weight:500;">' + edge.from + '</span> <span style="color:#888;">→</span> <span style="font-weight:500;">' + edge.to + '</span></div>';
-    html += '<div class="desc-text" style="font-size:12px;color:#888;">' + edge.from + ' 继承自 ' + edge.to + '</div>';
-    html += '</div>';
-    panelBody.innerHTML = html;
-    return;
-  }
-
-  // Find relation from RELATION_EDGES
-  var relName = null;
-  for (var i = 0; i < RELATION_EDGES.length; i++) {
-    if (RELATION_EDGES[i][1] === edge.from && RELATION_EDGES[i][2] === edge.to) {
-      relName = RELATION_EDGES[i][0];
-      break;
-    }
-  }
-
-  if (!relName) {
-    panelTitle.textContent = '🔗 关系边';
-    panelBody.innerHTML = '<div class="empty-hint">无法识别关系类型</div>';
-    return;
-  }
-
-  // Try to find in RELATION_DETAILS or construct from RELATION_LABELS/DESC
-  var cn = RELATION_LABELS[relName] || relName;
-  var desc = RELATION_DESC[relName] || '';
-  var detail = null;
-
-  // Search RELATION_DETAILS
-  var detailKeys = Object.keys(RELATION_DETAILS);
-  for (var j = 0; j < detailKeys.length; j++) {
-    var key = detailKeys[j];
-    var parts = key.split('___');
-    if (parts[0] === relName && (parts.length < 2 || parts[1] === edge.to)) {
-      detail = RELATION_DETAILS[key];
-      break;
-    }
-  }
-
-  panelTitle.textContent = '🔗 ' + relName + ' — ' + cn;
-
-  var html = '';
-
-  // Description
-  html += '<div class="panel-section">';
-  html += '<div class="panel-section-title">📌 描述</div>';
-  html += '<div class="desc-text">' + (detail ? (detail.description || '') : desc) + '</div>';
-  html += '</div>';
-
-  // From → To
-  html += '<div class="panel-section">';
-  html += '<div class="panel-section-title">📌 方向</div>';
-  html += '<div class="field-row"><span style="font-weight:500;">' + edge.from + '</span> <span style="color:#888;font-size:18px;">→</span> <span style="font-weight:500;">' + edge.to + '</span></div>';
-  html += '</div>';
-
-  // Cardinality
-  if (detail && detail.cardinality) {
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">📌 基数</div>';
-    html += '<div><span class="badge badge-cardinality">' + detail.cardinality + '</span></div>';
-    html += '</div>';
-  }
-
-  // Attributes
-  var attrs = detail ? (detail.attributes || []) : [];
-  var optAttrs = detail ? (detail.optional_attributes || []) : [];
-  if (attrs.length > 0 || optAttrs.length > 0) {
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">📋 属性</div>';
-    attrs.forEach(function(a) {
-      if (typeof a === 'string') {
-        html += '<div class="attr-item"><span class="attr-name">' + a + '</span> <span style="color:#999;font-size:11px;">(必填)</span></div>';
-      }
-    });
-    optAttrs.forEach(function(a) {
-      if (typeof a === 'string') {
-        html += '<div class="attr-item"><span class="attr-name">' + a + '</span> <span style="color:#999;font-size:11px;">(可选)</span></div>';
-      }
-    });
-    html += '</div>';
-  }
-
-  // Acyclic flag
-  if (detail && detail.acyclic) {
-    html += '<div class="panel-section">';
-    html += '<div class="panel-section-title">📌 额外约束</div>';
-    html += '<div><span class="badge badge-acyclic">🔄 无环 (acyclic)</span></div>';
-    html += '</div>';
-  }
-
   panelBody.innerHTML = html;
 }
 
 })();
 </script>
+
+<!-- ============================================================
+     8. Parse Terminal Panel (added by backend service)
+     ============================================================ -->
+<style>
+/* ── Terminal Panel ───────────────────────────────────────────── */
+#parseTerminal {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 997;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  color: #333; font-size: 13px;
+}
+/* Collapsed bar */
+#parseTerminal .collapsed-bar {
+  height: 32px; line-height: 32px;
+  background: #2c3e50; color: #bdc3c7;
+  text-align: center; cursor: pointer;
+  font-size: 12px; letter-spacing: 1px;
+  user-select: none; transition: background 0.2s;
+  border-top: 1px solid #34495e;
+}
+#parseTerminal .collapsed-bar:hover { background: #34495e; color: #fff; }
+/* Expanded panel */
+#parseTerminal .terminal-panel {
+  height: 55vh; display: none; flex-direction: column;
+  background: #fff; box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+  border-top: 1px solid #ddd;
+}
+#parseTerminal.expanded .terminal-panel { display: flex; }
+#parseTerminal.expanded .collapsed-bar { display: none; }
+/* Title bar */
+#parseTerminal .term-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%);
+  color: #fff; font-size: 14px; font-weight: 600;
+  flex-shrink: 0;
+}
+#parseTerminal .term-header .term-close {
+  background: none; border: none; color: #bbb;
+  font-size: 16px; cursor: pointer; padding: 2px 8px;
+}
+#parseTerminal .term-header .term-close:hover { color: #fff; }
+/* Three-column body */
+#parseTerminal .term-body {
+  flex: 1; display: flex; overflow: hidden;
+  min-height: 0;
+}
+#parseTerminal .term-col {
+  display: flex; flex-direction: column;
+  border-right: 1px solid #eee;
+  overflow: hidden;
+}
+#parseTerminal .term-col:last-child { border-right: none; }
+#parseTerminal .term-col-left   { flex: 0 0 30%; }
+#parseTerminal .term-col-middle { flex: 0 0 35%; }
+#parseTerminal .term-col-right  { flex: 1; }
+/* Left column */
+#parseTerminal .term-input-area {
+  flex: 1; display: flex; flex-direction: column; padding: 10px;
+}
+#parseTerminal .term-input-area textarea {
+  flex: 1; resize: none; border: 1px solid #ddd;
+  border-radius: 6px; padding: 10px; font-size: 13px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  line-height: 1.5; outline: none;
+}
+#parseTerminal .term-input-area textarea:focus { border-color: #2980b9; }
+#parseTerminal .term-btn-row {
+  display: flex; gap: 8px; margin-top: 8px; align-items: center;
+}
+#parseTerminal .btn-parse {
+  padding: 8px 24px; border: none; border-radius: 6px;
+  background: #2980b9; color: #fff; font-size: 14px;
+  cursor: pointer; font-weight: 600; transition: background 0.2s;
+}
+#parseTerminal .btn-parse:hover { background: #1a5276; }
+#parseTerminal .btn-parse:disabled { background: #95a5a6; cursor: not-allowed; }
+#parseTerminal .btn-parse.loading::after {
+  content: ' ⟳'; display: inline-block;
+  animation: term-spin 1s linear infinite;
+}
+@keyframes term-spin { to { transform: rotate(360deg); } }
+#parseTerminal .term-status { font-size: 12px; color: #999; margin-left: 8px; }
+/* Middle column */
+#parseTerminal .term-json-area {
+  flex: 1; padding: 10px; overflow: auto;
+}
+#parseTerminal .term-json-area pre {
+  margin: 0; font-size: 12px; line-height: 1.5;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  white-space: pre-wrap; word-break: break-all;
+  color: #333;
+}
+#parseTerminal .term-json-placeholder {
+  color: #bbb; font-size: 13px; text-align: center; margin-top: 40%;
+}
+/* Right column */
+#parseTerminal .term-vis-area {
+  flex: 1; position: relative; overflow: hidden;
+}
+#parseTerminal .term-vis-area #termVisContainer {
+  width: 100%; height: 100%;
+}
+#parseTerminal .term-vis-placeholder {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #bbb; font-size: 13px; text-align: center;
+}
+/* Bottom bar */
+#parseTerminal .term-footer {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 18px; background: #f5f6fa;
+  border-top: 1px solid #e0e0e0; flex-shrink: 0;
+  font-size: 12px; color: #999;
+}
+#parseTerminal .btn-save {
+  padding: 5px 18px; border: 1px solid #27ae60; border-radius: 6px;
+  background: #27ae60; color: #fff; font-size: 13px;
+  cursor: pointer; font-weight: 500; transition: background 0.2s;
+}
+#parseTerminal .btn-save:hover { background: #1e8449; }
+#parseTerminal .btn-save:disabled { background: #95a5a6; border-color: #95a5a6; cursor: not-allowed; }
+#parseTerminal .term-footer-score { font-weight: 600; color: #2980b9; }
+#parseTerminal .term-footer-issues { color: #e74c3c; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+
+<div id="parseTerminal">
+  <!-- Collapsed bar -->
+  <div class="collapsed-bar" onclick="toggleParseTerminal()" title="点击展开解析终端">
+    📋 法律文本解析终端 | 点击展开
+  </div>
+  <!-- Expanded panel -->
+  <div class="terminal-panel">
+    <div class="term-header">
+      <span>📋 法律文本解析终端</span>
+      <button class="term-close" onclick="toggleParseTerminal()" title="收起终端">▼ 收起</button>
+    </div>
+    <div class="term-body">
+      <!-- Left: Input -->
+      <div class="term-col term-col-left">
+        <div class="term-input-area">
+          <textarea id="termInput" placeholder="在此粘贴法律文本（原始案件信息、裁判文书等任意文本）&#10;&#10;例如：&#10;人民法院案例库入库编号: 2023-09-3-029-028&#10;案例名称: 某某公司诉某某局行政纠纷案&#10;案由: 行政-商标相关行政案件&#10;基本案情: ……&#10;裁判理由: ……&#10;相关法条: 《中华人民共和国商标法》第四十四条"></textarea>
+          <div class="term-btn-row">
+            <button class="btn-parse" id="btnParse" onclick="doParse()">⚡ 一键解析</button>
+            <span class="term-status" id="termStatus">就绪</span>
+          </div>
+        </div>
+      </div>
+      <!-- Middle: JSON Result -->
+      <div class="term-col term-col-middle">
+        <div class="term-json-area" id="termJsonArea">
+          <div class="term-json-placeholder" id="termJsonPlaceholder">等待解析结果...</div>
+          <pre id="termJsonPre" style="display:none;"></pre>
+        </div>
+      </div>
+      <!-- Right: vis-network -->
+      <div class="term-col term-col-right">
+        <div class="term-vis-area" id="termVisArea">
+          <div id="termVisContainer"></div>
+          <div class="term-vis-placeholder" id="termVisPlaceholder">等待解析结果</div>
+        </div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="term-footer" id="termFooter">
+      <button class="btn-save" id="btnSave" onclick="doSave()" disabled>💾 保存</button>
+      <span id="termScore"></span>
+      <span id="termIssues"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Terminal State ─────────────────────────────────────────────────────────
+var termExpanded = false;
+var termLastResult = null;  // last parse result
+var termVisNetwork = null;
+
+function toggleParseTerminal() {
+  termExpanded = !termExpanded;
+  var panel = document.getElementById('parseTerminal');
+  panel.classList.toggle('expanded', termExpanded);
+
+  // Adjust #mynetwork height when terminal opens/closes
+  var network = document.getElementById('mynetwork');
+  if (termExpanded) {
+    network.style.height = 'calc(100vh - 44px - 55vh - 32px)';
+  } else {
+    network.style.height = 'calc(100vh - 44px)';
+  }
+
+  // If expanding and we have a previous network, fit it
+  if (termExpanded && termVisNetwork) {
+    setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 350);
+  }
+}
+
+// ── Parse ──────────────────────────────────────────────────────────────────
+function doParse() {
+  var textarea = document.getElementById('termInput');
+  var text = textarea.value.trim();
+  if (!text) {
+    setTermStatus('请先输入文本', '#e74c3c');
+    return;
+  }
+
+  var btn = document.getElementById('btnParse');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  setTermStatus('正在解析...', '#2980b9');
+
+  fetch('/api/parse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(result) {
+    if (result.error) {
+      setTermStatus('解析失败: ' + result.error, '#e74c3c');
+      return;
+    }
+    termLastResult = result;
+    displayResult(result);
+    setTermStatus('解析完成', '#27ae60');
+    document.getElementById('btnSave').disabled = false;
+  })
+  .catch(function(err) {
+    setTermStatus('请求失败: ' + err.message, '#e74c3c');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  });
+}
+
+function setTermStatus(msg, color) {
+  var el = document.getElementById('termStatus');
+  el.textContent = msg;
+  el.style.color = color || '#999';
+}
+
+// ── Display Result ─────────────────────────────────────────────────────────
+function displayResult(result) {
+  // Middle: formatted JSON
+  var jsonStr = JSON.stringify(result.json_result, null, 2);
+  var pre = document.getElementById('termJsonPre');
+  pre.textContent = jsonStr;
+  pre.style.display = 'block';
+  document.getElementById('termJsonPlaceholder').style.display = 'none';
+
+  // Footer: score + issues
+  var scoreEl = document.getElementById('termScore');
+  var issuesEl = document.getElementById('termIssues');
+  scoreEl.textContent = '得分: ' + result.score + '/100';
+  scoreEl.className = 'term-footer-score';
+  if (result.issues && result.issues.length > 0) {
+    issuesEl.className = 'term-footer-issues';
+    issuesEl.textContent = '⚠ ' + result.issues.slice(0, 3).join('; ');
+  }
+
+  // Right: vis-network
+  renderTermVis(result.nodes, result.edges);
+}
+
+// ── vis-network (Right) ────────────────────────────────────────────────────
+function renderTermVis(nodes, edges) {
+  if (!nodes || nodes.length === 0) {
+    document.getElementById('termVisPlaceholder').textContent = '无节点可渲染';
+    return;
+  }
+
+  // Prepare vis data
+  var visNodes = new vis.DataSet(nodes.map(function(n) {
+    var nc = ROOT_COLORS[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
+    return {
+      id: n.id,
+      label: n.label,
+      title: n.title || '',
+      shape: ADMIN_SHAPES[n.nodeType] || 'ellipse',
+      size: n.size || 20,
+      color: { background: nc.bg, border: nc.border },
+      font: { color: n.font && n.font.color ? n.font.color : '#fff', size: (n.font && n.font.size) || 12 },
+      borderWidth: 2,
+      group: n.group,
+    };
+  }));
+  var visEdges = new vis.DataSet(edges.map(function(e) {
+    return {
+      from: e.from, to: e.to, label: e.label,
+      color: { color: '#7f8c8d', highlight: '#333', opacity: 0.7 },
+      font: { size: 10, color: '#555', strokeWidth: 2, strokeColor: '#fff' },
+      width: 1.5, smooth: { type: 'continuous' },
+      arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+    };
+  }));
+
+  var container = document.getElementById('termVisContainer');
+  container.innerHTML = '';  // clear any previous
+  document.getElementById('termVisPlaceholder').style.display = 'none';
+
+  var data = { nodes: visNodes, edges: visEdges };
+  var options = {
+    physics: {
+      enabled: true, solver: 'forceAtlas2Based',
+      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.005, springLength: 180, springConstant: 0.08, damping: 0.4 },
+      stabilization: { iterations: 150, fit: true },
+      minVelocity: 0.5,
+    },
+    interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
+    edges: { smooth: { type: 'continuous' }, font: { size: 10, color: '#555' } },
+    nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }, borderWidth: 2, shadow: { enabled: true, size: 3 } },
+    layout: { improvedLayout: false, randomSeed: 42 },
+  };
+
+  termVisNetwork = new vis.Network(container, data, options);
+  termVisNetwork.on('stabilizationIterationsDone', function() {
+    termVisNetwork.setOptions({ physics: { enabled: false } });
+    termVisNetwork.fit({ animation: true });
+  });
+}
+
+// ── Save ───────────────────────────────────────────────────────────────────
+function doSave() {
+  if (!termLastResult) return;
+  var btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  fetch('/api/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      row_id: termLastResult.row_id,
+      json_result: termLastResult.json_result,
+      case_name: termLastResult.case_name,
+      score: termLastResult.score,
+      issues: termLastResult.issues,
+    }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(result) {
+    if (result.status === 'ok') {
+      btn.textContent = '✅ 已保存';
+      setTermStatus('保存成功 (' + result.row_id + ')', '#27ae60');
+    } else {
+      btn.textContent = '💾 保存';
+      setTermStatus('保存失败', '#e74c3c');
+    }
+  })
+  .catch(function(err) {
+    btn.textContent = '💾 保存';
+    setTermStatus('保存失败: ' + err.message, '#e74c3c');
+  });
+}
+</script>
+
 </body>
 </html>

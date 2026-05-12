@@ -595,10 +595,20 @@ function updateCaseListHighlight(filterCaseId) {
 function selectFromList(rowId) { filterByCase(rowId); if (rowId !== 'all') document.getElementById('caseListPanel').classList.remove('open'); }
 
 // Populate
-function populateSelectors() {
+async function populateSelectors() {
   const select = document.getElementById('caseSelect');
   const listScroll = document.getElementById('caseListScroll');
-  let listHtml = '<div class="case-list-item" data-row-id="all" onclick="selectFromList(\'all\')"><div class="case-name">&#x1F4CC; 全部案例</div><div class="case-meta">显示所有行政案例</div></div>';
+  let listHtml = '<div class="case-list-item" data-row-id="all" onclick="selectFromList(\'all\')"><div class="case-name">📌 全部案例</div><div class="case-meta">显示所有行政案例</div></div>';
+
+  // Merge with manual cases from backend API
+  var manualCases = [];
+  try {
+    const res = await fetch('/api/cases');
+    if (res.ok) {
+      const all = await res.json();
+      manualCases = all.filter(function(c) { return c.source === 'manual'; });
+    }
+  } catch(e) { console.warn('Failed to load manual cases:', e); }
 
   const sorted = ALL_GRAPHS.slice().sort(function(a, b) { return parseInt(a.row_id) - parseInt(b.row_id); });
 
@@ -619,10 +629,186 @@ function populateSelectors() {
       seen[g.row_id] = true;
       listHtml += '<div class="case-list-item" data-row-id="' + g.row_id + '" onclick="selectFromList(\'' + g.row_id + '\')">' +
         '<div class="case-name">' + g.case_name + '</div>' +
-        '<div class="case-meta">#' + g.row_id + ' &middot; ' + (g.case_type || '') + '</div></div>';
+        '<div class="case-meta">#' + g.row_id + ' · ' + (g.case_type || '') + '</div></div>';
     }
   }
+
+  // Add manual cases to selector
+  for (let i = 0; i < manualCases.length; i++) {
+    const c = manualCases[i];
+    const valKey = c.row_id;
+    const displayName = '📝 [' + c.row_id + '] ' + c.case_name + ' (手动)';
+    
+    const opt = document.createElement('option');
+    opt.value = valKey;
+    opt.textContent = displayName;
+    opt.setAttribute('data-source', 'manual');
+    select.appendChild(opt);
+
+    // In case list
+    listHtml += '<div class="case-list-item manual-case" ' +
+      'data-row-id="' + c.row_id + '" data-source="manual" ' +
+      'onclick="selectFromList(\'' + c.row_id + '\')">' +
+      '<div class="case-name">📝 ' + c.case_name + '</div>' +
+      '<div class="case-meta">#' + c.row_id + ' · 手动解析</div></div>';
+  }
+
   listScroll.innerHTML = listHtml;
+}
+
+// Override filterByCase to handle manual cases (lazy-load graph data)
+var originalFilterByCase = filterByCase;
+filterByCase = async function(value) {
+  if (!value || value === 'all') {
+    originalFilterByCase(value);
+    return;
+  }
+  // Check if it's a manual case (not in ALL_GRAPHS)
+  var isManual = true;
+  for (var i = 0; i < ALL_GRAPHS.length; i++) {
+    if (ALL_GRAPHS[i].row_id === value || (ALL_GRAPHS[i].version && ALL_GRAPHS[i].row_id + '__v' + ALL_GRAPHS[i].version === value)) {
+      isManual = false;
+      break;
+    }
+  }
+  if (isManual) {
+    // Lazy-load from backend
+    try {
+      var container = document.getElementById('mynetwork');
+      container.innerHTML = '<div class="loading">⏳ 正在加载手动解析案例...</div>';
+      const res = await fetch('/api/saved-case/' + encodeURIComponent(value));
+      if (!res.ok) {
+        container.innerHTML = '<div class="loading">❌ 案例未找到</div>';
+        return;
+      }
+      const data = await res.json();
+      // Build temporary ALL_GRAPHS-like entry
+      var manualEntry = {
+        row_id: data.row_id,
+        case_name: data.case_name,
+        case_type: 'manual',
+        version: 1,
+        nodes: data.nodes,
+        edges: data.edges,
+      };
+      // Re-render with this single entry
+      var savedFiltered = ALL_GRAPHS;  // backup
+      renderManualCaseGraph(manualEntry, data.json_result);
+    } catch(e) {
+      document.getElementById('mynetwork').innerHTML = '<div class="loading">❌ 加载失败: ' + e.message + '</div>';
+    }
+    return;
+  }
+  originalFilterByCase(value);
+};
+
+// Render a single manual case's graph without modifying ALL_GRAPHS
+function renderManualCaseGraph(entry, jsonResult) {
+  const filtered = [entry];
+  const container = document.getElementById('mynetwork');
+  container.innerHTML = '';
+
+  const data = buildVisDataFromEntry(entry);
+  if (data.nodes.length === 0) {
+    container.innerHTML = '<div class="loading">❌ 无数据</div>';
+    document.getElementById('stats').textContent = '0 nodes, 0 edges';
+    return;
+  }
+  nodesDataset = new vis.DataSet(data.nodes);
+  edgesDataset = new vis.DataSet(data.edges);
+  const networkData = { nodes: nodesDataset, edges: edgesDataset };
+
+  const options = {
+    physics: {
+      enabled: true, solver: 'forceAtlas2Based',
+      forceAtlas2Base: { gravitationalConstant: -40, centralGravity: 0.005, springLength: 180, springConstant: 0.08, damping: 0.4 },
+      stabilization: { iterations: 150, fit: true },
+      minVelocity: 0.5,
+    },
+    interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
+    edges: { smooth: { type: 'continuous' }, font: { size: 10, color: '#555', face: 'Microsoft YaHei' } },
+    nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }, borderWidth: 2, shadow: { enabled: true, size: 3, x: 0, y: 0 } },
+    layout: { improvedLayout: false, randomSeed: 42 },
+  };
+
+  network = new vis.Network(container, networkData, options);
+
+  network.on('stabilizationIterationsDone', function() {
+    network.setOptions({ physics: { enabled: false } });
+    network.fit({ animation: true });
+  });
+
+  // Register event handlers
+  network.on('hoverNode', function(params) {
+    if (isPanelLocked) return;
+    if (currentSelection === 'node:' + params.node) return;
+    showAdminEntityDetail(params.node, params.pointer.DOM);
+  });
+  network.on('hoverEdge', function(params) {
+    if (isPanelLocked) return;
+    if (currentSelection === 'edge:' + params.edge) return;
+    showAdminEdgeDetail(params.edge);
+  });
+  network.on('click', function(params) {
+    if (params.nodes.length > 0) {
+      showAdminEntityDetail(params.nodes[0], null);
+    } else if (params.edges.length > 0) {
+      showAdminEdgeDetail(params.edges[0]);
+    } else {
+      if (isPanelLocked) hideAdminPanel();
+    }
+  });
+
+  document.getElementById('stats').textContent = data.nodes.length + ' nodes, ' + data.edges.length + ' edges';
+  document.getElementById('totalCases').textContent = 1;
+  updateCaseListHighlight(entry.row_id);
+
+  // Show raw data
+  var rawContent = document.getElementById('rawContent');
+  if (rawContent && jsonResult) {
+    rawContent.textContent = JSON.stringify(jsonResult, null, 2);
+  }
+}
+
+// Build vis data from a single entry (same logic as buildVisData but without ALL_GRAPHS dependency)
+function buildVisDataFromEntry(g) {
+  const visNodes = [];
+  const visEdges = [];
+  const nodeSet = new Set();
+  const edgeSet = new Set();
+
+  for (const n of g.nodes) {
+    if (nodeSet.has(n.id)) continue;
+    nodeSet.add(n.id);
+    const c = getAdminColor(n.type);
+    const isLawGroup = n.group === 'law';
+    const bg = isLawGroup ? c.bg : lightenColor(c.bg, (n.level || 0) >= 2 ? 40 : 0);
+    visNodes.push({
+      id: n.id,
+      label: n.label,
+      title: n.title || n.label,
+      shape: ADMIN_SHAPES[n.type] || 'ellipse',
+      size: n.level === 0 ? 35 : n.level === 1 ? 26 : 20,
+      color: { background: bg, border: c.border },
+      font: { color: '#fff', size: n.level === 0 ? 14 : 12, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
+      borderWidth: 2,
+      group: n.group,
+      nodeType: n.type,
+    });
+  }
+  for (const e of g.edges || []) {
+    const key = e.from + '|' + e.to + '|' + e.label;
+    if (edgeSet.has(key)) continue;
+    edgeSet.add(key);
+    visEdges.push({
+      from: e.from, to: e.to, label: e.label,
+      color: { color: '#7f8c8d', highlight: '#333', hover: '#333', opacity: 0.7 },
+      font: { size: 10, color: '#555', strokeWidth: 2, strokeColor: '#fff' },
+      width: 1.5, smooth: { type: 'continuous' },
+      arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+    });
+  }
+  return { nodes: visNodes, edges: visEdges };
 }
 
 buildAdminLegend();
