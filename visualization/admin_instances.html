@@ -392,6 +392,8 @@ var panelClose = document.getElementById('panelClose');
 
 panelClose.addEventListener('click', function(e) { e.stopPropagation(); hideAdminPanel(); });
 document.addEventListener('click', function(e) {
+  // Don't close if click is on the network canvas (handled by network.on('click'))
+  if (e.target.closest && e.target.closest('#mynetwork')) return;
   if (isPanelLocked && !detailPanel.contains(e.target) && e.target !== panelClose) hideAdminPanel();
 });
 document.addEventListener('keydown', function(e) {
