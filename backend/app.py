@@ -160,6 +160,8 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=9120)
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--serve-files", action="store_true",
+                        help="Also serve static files from visualization/ on the same port")
     args = parser.parse_args()
 
     # Load .env if available
@@ -167,6 +169,18 @@ if __name__ == "__main__":
     if hermes_env.exists():
         from dotenv import load_dotenv
         load_dotenv(hermes_env)
+
+    if args.serve_files:
+        from flask import send_from_directory
+        VIS_DIR = REPO_ROOT / "visualization"
+
+        @app.route("/")
+        def serve_index():
+            return send_from_directory(VIS_DIR, "ontology_v2.2.html")
+
+        @app.route("/<path:filename>")
+        def serve_static(filename):
+            return send_from_directory(VIS_DIR, filename)
 
     print(f"Starting parse API on {args.host}:{args.port}", flush=True)
     app.run(host=args.host, port=args.port, debug=args.debug)
