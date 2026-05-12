@@ -1257,7 +1257,7 @@ function renderEdgePanel(edgeId) {
 #parseTerminal .term-col:last-child { border-right: none; }
 #parseTerminal .term-col-left   { flex: 0 0 30%; }
 #parseTerminal .term-col-middle { flex: 0 0 35%; }
-#parseTerminal .term-col-right  { flex: 1; }
+#parseTerminal .term-col-right  { flex: 1; display: flex; flex-direction: column; }
 #parseTerminal .term-input-area {
   flex: 1; display: flex; flex-direction: column; padding: 10px;
 }
@@ -1307,6 +1307,18 @@ function renderEdgePanel(edgeId) {
   transform: translate(-50%, -50%);
   color: #bbb; font-size: 13px; text-align: center;
 }
+#parseTerminal .term-col-header {
+  display: flex; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
+}
+#parseTerminal .term-tab {
+  padding: 6px 14px; font-size: 12px; cursor: pointer; color: #999;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+  user-select: none;
+}
+#parseTerminal .term-tab:hover { color: #555; }
+#parseTerminal .term-tab.active { color: #2980b9; border-bottom-color: #2980b9; font-weight: 600; }
+#parseTerminal .term-issues-area { overflow-y: auto; }
+#parseTerminal .term-issues-item { padding: 4px 0; font-size: 12px; color: #e74c3c; border-bottom: 1px solid #f5f5f5; }
 #parseTerminal .term-footer {
   display: flex; align-items: center; gap: 12px;
   padding: 6px 18px; background: #f5f6fa;
@@ -1350,9 +1362,16 @@ function renderEdgePanel(edgeId) {
         </div>
       </div>
       <div class="term-col term-col-right">
+        <div class="term-col-header">
+          <span class="term-tab active" id="tabGraph" onclick="switchTermTab('graph')">📊 图</span>
+          <span class="term-tab" id="tabIssues" onclick="switchTermTab('issues')">⚠ 问题</span>
+        </div>
         <div class="term-vis-area" id="termVisArea">
           <div id="termVisContainer"></div>
           <div class="term-vis-placeholder" id="termVisPlaceholder">等待解析结果</div>
+        </div>
+        <div class="term-issues-area" id="termIssuesArea" style="display:none;padding:10px;overflow:auto;flex:1;">
+          <div class="term-issues-placeholder" id="termIssuesPlaceholder">等待解析结果</div>
         </div>
       </div>
     </div>
@@ -1370,6 +1389,19 @@ var termExpanded = false;
 var termLastResult = null;
 var termVisNetwork = null;
 var API_BASE = '';
+
+// Shape/color constants for terminal vis-network (mirrors ontology values)
+var TERM_COLORS = {
+  LegalNorm:      { bg: '#2980b9', border: '#1a5276' },
+  JudicialEntity: { bg: '#d35400', border: '#a04000' },
+  LegalSubject:   { bg: '#27ae60', border: '#1e8449' },
+  Person:         { bg: '#16a085', border: '#0e6655' },
+};
+var TERM_SHAPES = {
+  GuidingCase: 'hexagon', CourtCase: 'box', CaseType: 'diamond',
+  LegalProvision: 'hexagon', LegalSubject: 'ellipse', Evidence: 'diamond',
+  Judge: 'ellipse', Attorney: 'ellipse', JudgmentResult: 'box', CaseSummary: 'box',
+};
 
 function toggleParseTerminal() {
   termExpanded = !termExpanded;
@@ -1430,6 +1462,34 @@ function displayResult(result) {
     issuesEl.textContent = '⚠ ' + result.issues.slice(0, 3).join('; ');
   }
   renderTermVis(result.nodes, result.edges);
+
+  // Populate issues tab
+  var issuesArea = document.getElementById('termIssuesArea');
+  var issuesPlaceholder = document.getElementById('termIssuesPlaceholder');
+  if (result.issues && result.issues.length > 0) {
+    issuesPlaceholder.style.display = 'none';
+    var html = '';
+    result.issues.forEach(function(iss) {
+      html += '<div class="term-issues-item">⚠ ' + iss + '</div>';
+    });
+    // Also show score
+    html += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #eee;font-size:12px;color:#2980b9;">得分: ' + result.score + '/100</div>';
+    issuesArea.innerHTML = html;
+  } else {
+    issuesPlaceholder.style.display = 'block';
+    issuesPlaceholder.textContent = '✅ 未发现问题';
+    issuesArea.innerHTML = '<div id="termIssuesPlaceholder" style="color:#bbb;font-size:13px;text-align:center;margin-top:40%;">✅ 未发现问题</div>';
+  }
+}
+
+function switchTermTab(tab) {
+  document.getElementById('tabGraph').classList.toggle('active', tab === 'graph');
+  document.getElementById('tabIssues').classList.toggle('active', tab === 'issues');
+  document.getElementById('termVisArea').style.display = tab === 'graph' ? 'block' : 'none';
+  document.getElementById('termIssuesArea').style.display = tab === 'issues' ? 'block' : 'none';
+  if (tab === 'graph' && termVisNetwork) {
+    setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 100);
+  }
 }
 
 function renderTermVis(nodes, edges) {
@@ -1438,12 +1498,12 @@ function renderTermVis(nodes, edges) {
     return;
   }
   var visNodes = new vis.DataSet(nodes.map(function(n) {
-    var nc = ROOT_COLORS[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
+    var nc = TERM_COLORS[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
     return {
       id: n.id,
       label: n.label,
       title: n.title || '',
-      shape: ADMIN_SHAPES[n.nodeType] || 'ellipse',
+      shape: TERM_SHAPES[n.nodeType] || 'ellipse',
       size: n.size || 20,
       color: { background: nc.bg, border: nc.border },
       font: { color: '#fff', size: (n.font && n.font.size) || 12 },
