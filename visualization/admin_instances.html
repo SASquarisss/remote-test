@@ -359,29 +359,30 @@ function initNetwork(filterCaseId) {
   document.getElementById('stats').textContent = data.nodes.length + ' nodes, ' + data.edges.length + ' edges';
   document.getElementById('totalCases').textContent = filtered.length;
   updateCaseListHighlight(filterCaseId);
+
+  // Register event handlers on the new network instance
+  network.on('hoverNode', function(params) {
+    if (isPanelLocked) return;
+    if (currentSelection === 'node:' + params.node) return;
+    showAdminEntityDetail(params.node, params.pointer.DOM);
+  });
+
+  network.on('hoverEdge', function(params) {
+    if (isPanelLocked) return;
+    if (currentSelection === 'edge:' + params.edge) return;
+    showAdminEdgeDetail(params.edge);
+  });
+
+  network.on('click', function(params) {
+    if (params.nodes.length > 0) {
+      showAdminEntityDetail(params.nodes[0], null);
+    } else if (params.edges.length > 0) {
+      showAdminEdgeDetail(params.edges[0]);
+    } else {
+      if (isPanelLocked) hideAdminPanel();
+    }
+  });
 }
-
-network.on('hoverNode', function(params) {
-  if (isPanelLocked) return;
-  if (currentSelection === 'node:' + params.node) return;
-  showAdminEntityDetail(params.node, params.pointer.DOM);
-});
-
-network.on('hoverEdge', function(params) {
-  if (isPanelLocked) return;
-  if (currentSelection === 'edge:' + params.edge) return;
-  showAdminEdgeDetail(params.edge);
-});
-
-network.on('click', function(params) {
-  if (params.nodes.length > 0) {
-    showAdminEntityDetail(params.nodes[0], null);
-  } else if (params.edges.length > 0) {
-    showAdminEdgeDetail(params.edges[0]);
-  } else {
-    if (isPanelLocked) hideAdminPanel();
-  }
-});
 
 // ===== Detail Panel =====
 var detailPanel = document.getElementById('detailPanel');
