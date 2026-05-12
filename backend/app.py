@@ -152,6 +152,25 @@ def api_saved_case(row_id):
     })
 
 
+@app.route("/api/ontology-evaluate", methods=["POST"])
+def api_ontology_evaluate():
+    """Evaluate LLM extraction quality against ontology."""
+    data = request.get_json(silent=True) or {}
+    raw_text = data.get("raw_text", "")
+    json_result = data.get("json_result", {})
+    row_id = data.get("row_id", "manual_eval")
+
+    if not json_result:
+        return jsonify({"error": "json_result is required"}), 400
+
+    try:
+        from evaluator import ontology_evaluate
+        result = ontology_evaluate(raw_text, json_result, row_id, use_llm=True)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ── Main ────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

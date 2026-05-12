@@ -1256,7 +1256,7 @@ function renderEdgePanel(edgeId) {
 }
 #parseTerminal .term-col:last-child { border-right: none; }
 #parseTerminal .term-col-left   { flex: 0 0 30%; }
-#parseTerminal .term-col-middle { flex: 0 0 35%; }
+#parseTerminal .term-col-middle { flex: 0 0 35%; display: flex; flex-direction: column; }
 #parseTerminal .term-col-right  { flex: 1; display: flex; flex-direction: column; }
 #parseTerminal .term-input-area {
   flex: 1; display: flex; flex-direction: column; padding: 10px;
@@ -1334,6 +1334,19 @@ function renderEdgePanel(edgeId) {
 #parseTerminal .btn-save:disabled { background: #95a5a6; border-color: #95a5a6; cursor: not-allowed; }
 #parseTerminal .term-footer-score { font-weight: 600; color: #2980b9; }
 #parseTerminal .term-footer-issues { color: #e74c3c; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#parseTerminal .term-eval-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-top: 1px solid #e0e0e0;
+  background: #fafbfc; flex-shrink: 0;
+}
+#parseTerminal .btn-eval {
+  padding: 5px 16px; border: 1px solid #8e44ad; border-radius: 6px;
+  background: #8e44ad; color: #fff; font-size: 12px;
+  cursor: pointer; font-weight: 500; transition: background 0.2s;
+}
+#parseTerminal .btn-eval:hover { background: #6c3483; }
+#parseTerminal .btn-eval:disabled { background: #a569bd; border-color: #a569bd; cursor: wait; }
+#parseTerminal .term-eval-score { font-size: 12px; color: #666; }
 </style>
 
 <div id="parseTerminal">
@@ -1359,6 +1372,10 @@ function renderEdgePanel(edgeId) {
         <div class="term-json-area" id="termJsonArea">
           <div class="term-json-placeholder" id="termJsonPlaceholder">等待解析结果...</div>
           <pre id="termJsonPre" style="display:none;"></pre>
+        </div>
+        <div class="term-eval-row">
+          <button class="btn-eval" id="btnEval" onclick="doEval()" disabled>🔍 本体论评估</button>
+          <span class="term-eval-score" id="termEvalScore"></span>
         </div>
       </div>
       <div class="term-col term-col-right">
@@ -1438,6 +1455,7 @@ function doParse() {
     displayResult(result);
     setTermStatus('解析完成', '#27ae60');
     document.getElementById('btnSave').disabled = false;
+    document.getElementById('btnEval').disabled = false;
   })
   .catch(function(err) { setTermStatus('请求失败: ' + err.message, '#e74c3c'); })
   .finally(function() { btn.disabled = false; btn.classList.remove('loading'); });
@@ -1565,6 +1583,67 @@ function doSave() {
     }
   })
   .catch(function(err) { btn.textContent = '💾 保存'; setTermStatus('保存失败: ' + err.message, '#e74c3c'); });
+}
+
+function doEval() {
+  if (!termLastResult) return;
+  var btn = document.getElementById('btnEval');
+  var scoreEl = document.getElementById('termEvalScore');
+  btn.disabled = true; btn.textContent = '评估中...';
+  scoreEl.textContent = '';
+
+  var inputText = document.getElementById('termInput').value;
+
+  fetch(API_BASE + '/api/ontology-evaluate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      raw_text: inputText,
+      json_result: termLastResult.json_result,
+      row_id: termLastResult.row_id,
+    }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(result) {
+    if (result.error) { scoreEl.textContent = '评估失败: ' + result.error; return; }
+    var total = result.total_score || result.summary?.total_score || 0;
+    var confidence = result.confidence || result.summary?.confidence || '-';
+    scoreEl.textContent = '总分: ' + total + '/100 [' + confidence + ']';
+    // Show eval result JSON in the middle column
+    var pre = document.getElementById('termJsonPre');
+    pre.textContent = JSON.stringify(result, null, 2);
+    pre.style.display = 'block';
+    document.getElementById('termJsonPlaceholder').style.display = 'none';
+    // Also populate issues tab
+    var dims = result.dimension_scores || result.summary?.dimensions || [];
+    if (dims.length > 0) {
+      var issuesArea = document.getElementById('termIssuesArea');
+      var html = '<div style="font-weight:600;font-size:13px;color:#8e44ad;padding:6px 0;border-bottom:1px solid #eee;">📊 评估分项</div>';
+      dims.forEach(function(d) {
+        var code = d.code || d.dimension || '';
+        var name = d.name || '';
+        var sc = d.score != null ? d.score : (d.total_score ?? '');
+        html += '<div class="term-issues-item" style="color:#333;">' + code + ' ' + name + ': <b>' + sc + '</b></div>';
+      });
+      html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee;font-size:12px;color:#8e44ad;">总分: ' + total + '/100 [' + confidence + ']</div>';
+      if (result.issues) {
+        result.issues.forEach(function(iss) {
+          var msg = typeof iss === 'string' ? iss : (iss.msg || iss);
+          html += '<div class="term-issues-item">⚠ ' + msg + '</div>';
+        });
+      }
+      issuesArea.innerHTML = html;
+    }
+    setTermStatus('评估完成', '#8e44ad');
+  })
+  .catch(function(err) {
+    scoreEl.textContent = '评估请求失败';
+    setTermStatus('评估失败: ' + err.message, '#e74c3c');
+  })
+  .finally(function() {
+    btn.textContent = '🔍 本体论评估';
+    btn.disabled = false;
+  });
 }
 </script>
 
