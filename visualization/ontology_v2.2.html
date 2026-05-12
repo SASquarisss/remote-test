@@ -1318,6 +1318,8 @@ function renderEdgePanel(edgeId) {
 #parseTerminal .term-tab:hover { color: #555; }
 #parseTerminal .term-tab.active { color: #2980b9; border-bottom-color: #2980b9; font-weight: 600; }
 #parseTerminal .term-issues-area { overflow-y: auto; }
+#parseTerminal .term-issues-area::-webkit-scrollbar { width: 4px; }
+#parseTerminal .term-issues-area::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
 #parseTerminal .term-eval-area { overflow-y: auto; }
 #parseTerminal .term-eval-area::-webkit-scrollbar { width: 4px; }
 #parseTerminal .term-eval-area::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
@@ -1502,23 +1504,34 @@ function displayResult(result) {
   }
   renderTermVis(result.nodes, result.edges);
 
-  // Populate issues tab
+  // ── Call parse quality analysis & render into issues tab ──
+  fetchParseQuality(result.json_result);
+}
+
+function fetchParseQuality(jsonResult) {
   var issuesArea = document.getElementById('termIssuesArea');
   var issuesPlaceholder = document.getElementById('termIssuesPlaceholder');
-  if (result.issues && result.issues.length > 0) {
-    issuesPlaceholder.style.display = 'none';
-    var html = '';
-    result.issues.forEach(function(iss) {
-      html += '<div class="term-issues-item">⚠ ' + iss + '</div>';
-    });
-    // Also show score
-    html += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #eee;font-size:12px;color:#2980b9;">得分: ' + result.score + '/100</div>';
-    issuesArea.innerHTML = html;
-  } else {
-    issuesPlaceholder.style.display = 'block';
-    issuesPlaceholder.textContent = '✅ 未发现问题';
-    issuesArea.innerHTML = '<div id="termIssuesPlaceholder" style="color:#bbb;font-size:13px;text-align:center;margin-top:40%;">✅ 未发现问题</div>';
-  }
+  issuesPlaceholder.style.display = 'none';
+  issuesArea.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">分析中...</div>';
+
+  fetch(API_BASE + '/api/parse-quality', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ json_result: jsonResult }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(qa) {
+    if (qa.error) {
+      issuesArea.innerHTML = '<div style="color:#e74c3c;padding:10px;">分析失败: ' + qa.error + '</div>';
+      return;
+    }
+    renderQualityTab(qa);
+    // Switch to issues tab automatically
+    switchTermTab('issues');
+  })
+  .catch(function(err) {
+    issuesArea.innerHTML = '<div style="color:#e74c3c;padding:10px;">请求失败: ' + err.message + '</div>';
+  });
 }
 
 function switchTermTab(tab) {
@@ -1743,6 +1756,154 @@ function renderEvalTab(result) {
 function _escapeHtml(s) {
   if (typeof s !== 'string') return String(s || '');
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Parse Quality Tab (⚠ Issue tab) — Local Statistics
+// ═══════════════════════════════════════════════════════════════
+
+function renderQualityTab(qa) {
+  var area = document.getElementById('termIssuesArea');
+  area.style.display = 'block';
+  area.style.padding = '0';
+  area.style.overflow = 'auto';
+  area.style.flex = '1';
+
+  var html = '';
+
+  // ── Global Score Header ──
+  var bgColor = qa.total_score >= 80 ? '#27ae60' : (qa.total_score >= 60 ? '#e67e22' : '#e74c3c');
+  html += '<div style="position:sticky;top:0;z-index:10;background:#fff;padding:12px 14px 8px;border-bottom:2px solid ' + bgColor + ';margin-bottom:0;">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  html += '<div><span style="font-weight:700;font-size:16px;">📊 解析质量分析</span>';
+  html += ' <span style="font-size:12px;color:#999;">(纯本地统计)</span></div>';
+  html += '<div style="text-align:right;">';
+  html += '<span style="font-size:24px;font-weight:700;color:' + bgColor + ';">' + qa.total_score + '</span>';
+  html += '<span style="font-size:13px;color:#999;">/100</span>';
+  html += ' <span class="term-eval-score-badge" style="background:' + bgColor + '20;color:' + bgColor + ';font-size:13px;">' + qa.confidence + '</span>';
+  html += '</div></div>';
+  // Progress bar
+  html += '<div class="term-eval-dim-bar" style="margin-top:6px;height:6px;">';
+  html += '<div class="term-eval-dim-fill" style="width:' + qa.total_score + '%;background:' + bgColor + ';height:6px;"></div>';
+  html += '</div></div>';
+
+  // ── Issues Alert Bar ──
+  if (qa.issues && qa.issues.length > 0) {
+    var criticalCount = qa.issues.filter(function(i) { return i.severity === 'critical'; }).length;
+    var majorCount = qa.issues.filter(function(i) { return i.severity === 'major'; }).length;
+    html += '<div style="padding:8px 14px;background:#fff8f0;border-bottom:1px solid #f0e0c0;font-size:12px;display:flex;gap:12px;flex-wrap:wrap;">';
+    if (criticalCount > 0) html += '<span style="color:#e74c3c;">🚨 严重: ' + criticalCount + '</span>';
+    if (majorCount > 0) html += '<span style="color:#e67e22;">⚠ 主要: ' + majorCount + '</span>';
+    html += '<span style="color:#f1c40f;">🔸 次要: ' + (qa.issues.length - criticalCount - majorCount) + '</span>';
+    html += '<span style="color:#999;margin-left:auto;">共 ' + qa.issues.length + ' 项</span>';
+    html += '</div>';
+  }
+
+  // ── Category / Entity Tree ──
+  html += '<div style="padding:6px 14px 80px;">';
+
+  if (qa.categories) {
+    qa.categories.forEach(function(cat) {
+      var catBg = cat.score >= 80 ? '#27ae60' : (cat.score >= 60 ? '#e67e22' : '#e74c3c');
+
+      // ── 一级标题：实体大类 ──
+      html += '<div style="margin-top:14px;">';
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f0f4f8;border-radius:6px;border-left:4px solid ' + catBg + ';">';
+      html += '<span style="font-weight:700;font-size:15px;color:#2c3e50;">' + cat.category_label + '</span>';
+      html += '<span style="font-size:11px;color:#888;">(' + cat.category + ')</span>';
+      html += '<span style="margin-left:auto;font-size:13px;font-weight:600;color:' + catBg + ';">' + cat.score + '/100</span>';
+      html += '</div>';
+
+      // Progress bar for category
+      html += '<div class="term-eval-dim-bar" style="margin:4px 10px 8px;height:4px;">';
+      html += '<div class="term-eval-dim-fill" style="width:' + cat.score + '%;background:' + catBg + ';height:4px;"></div>';
+      html += '</div>';
+
+      // ── 二级标题：具体实体类型 ──
+      cat.entities.forEach(function(entity) {
+        if (entity.fields_count === 0 && entity.instance_count === 0) return; // skip empty computed entities
+        var entBg = entity.score >= 80 ? '#27ae60' : (entity.score >= 60 ? '#e67e22' : '#e74c3c');
+        var entIcon = entity.status === 'ok' ? '✅' : (entity.status === 'partial' ? '⚠️' : '❌');
+
+        html += '<div style="margin-left:10px;margin-bottom:8px;">';
+        html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:#fafafa;border-radius:4px;">';
+        html += '<span>' + entIcon + '</span>';
+        html += '<span style="font-weight:600;font-size:13px;color:#34495e;">' + entity.type_label + '</span>';
+        html += '<span style="font-size:11px;color:#999;">(' + entity.type + ')</span>';
+        if (entity.instance_count > 1) {
+          html += '<span style="font-size:11px;color:#888;background:#eef;padding:1px 6px;border-radius:8px;">×' + entity.instance_count + '</span>';
+        }
+        html += '<span style="margin-left:auto;font-size:12px;font-weight:600;color:' + entBg + ';">' + entity.score + '/100</span>';
+        html += '</div>';
+
+        // Entity progress bar
+        html += '<div class="term-eval-dim-bar" style="margin:3px 8px 4px;height:3px;">';
+        html += '<div class="term-eval-dim-fill" style="width:' + entity.score + '%;background:' + entBg + ';height:3px;"></div>';
+        html += '</div>';
+
+        // ── 三级标题：具体属性/关系 ──
+        entity.items.forEach(function(item) {
+          html += '<div style="margin-left:20px;margin-bottom:4px;">';
+          html += '<div style="font-size:12px;color:#555;padding:2px 0;">';
+          if (item.label) {
+            html += '<span style="color:#888;font-size:11px;">📄 ' + _escapeHtml(item.label) + '</span>';
+          }
+          html += '</div>';
+
+          // Fields
+          if (item.fields && item.fields.length > 0) {
+            item.fields.forEach(function(f) {
+              var fIcon = f.status === 'ok' ? '✅' : (f.status === 'partial' ? '⚠️' : '❌');
+              var fColor = f.status === 'ok' ? '#27ae60' : (f.status === 'partial' ? '#e67e22' : '#e74c3c');
+              html += '<div style="margin-left:24px;padding:2px 0;font-size:12px;display:flex;align-items:center;gap:4px;">';
+              html += '<span>' + fIcon + '</span>';
+              html += '<span style="color:' + fColor + ';">' + _escapeHtml(f.label) + '</span>';
+              if (f.status === 'missing' && f.value !== null && f.value !== undefined) {
+                html += '<span style="color:#999;font-size:11px;">(值: ' + _escapeHtml(JSON.stringify(f.value)) + ')</span>';
+              }
+              if (f.required && f.status !== 'ok') {
+                html += '<span style="color:#e74c3c;font-size:10px;background:#ffe0e0;padding:0 4px;border-radius:2px;">必填</span>';
+              }
+              html += '</div>';
+            });
+          }
+          html += '</div>';
+        });
+
+        // Relations
+        if (entity.relations && entity.relations.length > 0) {
+          entity.relations.forEach(function(rel) {
+            var rIcon = rel.status === 'ok' ? '🔗' : '🔗';
+            html += '<div style="margin-left:44px;padding:2px 0;font-size:11px;color:#888;">';
+            html += rIcon + ' ' + _escapeHtml(rel.label) + ' → ' + _escapeHtml(rel.target);
+            html += '</div>';
+          });
+        }
+
+        html += '</div>';
+      });
+
+      html += '</div>';
+    });
+  }
+
+  // ── Detailed Issues List ──
+  if (qa.issues && qa.issues.length > 0) {
+    html += '<div style="margin-top:16px;padding-top:12px;border-top:2px solid #eee;">';
+    html += '<div style="font-weight:600;font-size:14px;color:#e74c3c;margin-bottom:8px;">⚠ 问题详情</div>';
+    qa.issues.forEach(function(iss) {
+      var sevClass = iss.severity || 'minor';
+      var icon = sevClass === 'critical' ? '🚨' : (sevClass === 'major' ? '⚠' : '🔸');
+      html += '<div class="term-eval-issue ' + sevClass + '">';
+      html += icon + ' <b>' + _escapeHtml(iss.entity) + '</b>: ' + _escapeHtml(iss.msg);
+      html += ' <span style="font-size:10px;color:#999;">[' + sevClass + ']</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>'; // end padding container
+  area.innerHTML = html;
 }
 </script>
 

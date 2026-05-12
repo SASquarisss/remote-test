@@ -152,6 +152,23 @@ def api_saved_case(row_id):
     })
 
 
+@app.route("/api/parse-quality", methods=["POST"])
+def api_parse_quality():
+    """Local parse quality analysis — no LLM call, pure statistics."""
+    data = request.get_json(silent=True) or {}
+    json_result = data.get("json_result", {})
+
+    if not json_result:
+        return jsonify({"error": "json_result is required"}), 400
+
+    try:
+        from quality_analyzer import parse_quality
+        result = parse_quality(json_result)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/ontology-evaluate", methods=["POST"])
 def api_ontology_evaluate():
     """Evaluate LLM extraction quality against ontology."""
