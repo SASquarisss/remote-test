@@ -318,7 +318,7 @@ function buildVisData(filterCaseId) {
       });
     }
   }
-  return { nodes: visNodes, edges: visEdges };
+  return { nodes: visNodes, edges: visEdges, filteredCount: filtered.length };
 }
 
 function initNetwork(filterCaseId) {
@@ -345,7 +345,7 @@ function initNetwork(filterCaseId) {
     interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
     edges: { smooth: { type: 'continuous' }, font: { size: 10, color: '#555', face: 'Microsoft YaHei' } },
     nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }, borderWidth: 2, shadow: { enabled: true, size: 3, x: 0, y: 0 } },
-    layout: { improvedLayout: true, randomSeed: 42 },
+    layout: { improvedLayout: false, randomSeed: 42 },
   };
 
   network = new vis.Network(container, networkData, options);
@@ -357,7 +357,7 @@ function initNetwork(filterCaseId) {
   });
 
   document.getElementById('stats').textContent = data.nodes.length + ' nodes, ' + data.edges.length + ' edges';
-  document.getElementById('totalCases').textContent = filtered.length;
+  document.getElementById('totalCases').textContent = data.filteredCount;
   updateCaseListHighlight(filterCaseId);
 
   // Register event handlers on the new network instance
