@@ -428,27 +428,27 @@ var data = {
 
 var options = {
   layout: {
-    hierarchical: {
-      direction: 'UD',
-      sortMethod: 'directed',
-      nodeSpacing: 180,
-      treeSpacing: 250,
-      blockShifting: true,
-      edgeMinimization: true,
-      parentCentralization: true,
-      levelSeparation: 180
-    }
+    // 使用随机初始位置，physics 会通过力导向算法均匀分布节点
+    randomSeed: 42,
+    improvedLayout: true
   },
   physics: {
-    hierarchicalRepulsion: {
-      nodeDistance: 200,
+    solver: 'barnesHut',
+    barnesHut: {
+      gravitationalConstant: -3000,
       centralGravity: 0.3,
-      springLength: 180,
-      springConstant: 0.01,
-      damping: 0.6
+      springLength: 120,
+      springConstant: 0.04,
+      damping: 0.5,
+      avoidOverlap: 0.5
     },
-    solver: 'hierarchicalRepulsion',
-    stabilization: { iterations: 200 }
+    stabilization: {
+      iterations: 400,
+      updateInterval: 25,
+      fit: true
+    },
+    maxVelocity: 50,
+    minVelocity: 0.5
   },
   edges: {
     smooth: { type: 'curvedCW', roundness: 0.12 },
@@ -457,7 +457,9 @@ var options = {
   nodes: {
     font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' },
     borderWidth: 2,
-    shadow: { enabled: true, size: 4, x: 0, y: 0 }
+    shadow: { enabled: true, size: 4, x: 0, y: 0 },
+    mass: 1,
+    scaling: { min: 16, max: 32 }
   },
   interaction: {
     hover: true,
@@ -478,10 +480,12 @@ var options = {
 
 var network = new vis.Network(container, data, options);
 
-// 更新统计
+// 更新统计 + 自适应视口
 network.on('stabilizationIterationsDone', function() {
   document.getElementById('nodeCount').textContent = '📦 ' + nodes.length;
   document.getElementById('edgeCount').textContent = '🔗 ' + edges.length;
+  // 稳定后自适应视口，确保充分利用屏幕空间
+  network.fit({ animation: true, nodes: TYPE_NAMES });
 });
 
 // 窗口自适应
