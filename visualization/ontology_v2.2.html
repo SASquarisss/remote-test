@@ -68,7 +68,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   display: flex; align-items: center; justify-content: center;
 }
 .config-modal {
-  background: #fff; border-radius: 12px; width: 580px;
+  background: #fff; border-radius: 12px; width: 620px;
   max-height: 80vh; display: flex; flex-direction: column;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
 }
@@ -105,10 +105,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 }
 .config-item:last-child { border-bottom: none; }
 .config-item-label {
-  flex: 0 0 120px; font-size: 13px; font-weight: 600; color: #333;
+  flex: 0 0 130px; font-size: 13px; font-weight: 600; color: #333;
 }
 .config-item-type {
-  flex: 0 0 100px; font-size: 12px; color: #888;
+  flex: 0 0 130px; font-size: 12px; color: #888;
   font-family: 'SFMono-Regular', Consolas, monospace;
 }
 .config-item-shape {
@@ -128,9 +128,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 .config-item-note {
   font-size: 11px; color: #aaa; flex: 1;
 }
-.config-preview {
-  display: inline-block; width: 20px; height: 20px; border-radius: 4px;
-  vertical-align: middle; margin-left: 4px;
+.config-item-preview {
+  flex: 0 0 40px; text-align: center;
+}
+.config-preview-box {
+  display: inline-block; width: 28px; height: 28px;
+  border-radius: 4px; vertical-align: middle;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 /* ===== Detail Panel (右侧信息面板) ===== */
@@ -1405,12 +1409,13 @@ function buildStyleConfigTable() {
     var opts = shapeOptions.map(function(sh) {
       return '<option value="' + sh + '"' + (sh === s.shape ? ' selected' : '') + '>' + sh + '</option>';
     }).join('');
+    var cleanLabel = (ZH_LABELS[k] || k).replace(/（[^）]*）/g, '').trim();
     html += '<div class="config-item" data-typename="' + k + '">';
-    html += '  <span class="config-item-label">' + (ZH_LABELS[k] || k) + '</span>';
+    html += '  <span class="config-item-label">' + cleanLabel + '</span>';
     html += '  <span class="config-item-type">' + k + '</span>';
     html += '  <span class="config-item-shape"><select class="config-shape-select">' + opts + '</select></span>';
     html += '  <span class="config-item-color"><input type="color" class="config-color-input" value="' + s.color + '"></span>';
-    html += '  <span class="config-item-note">' + (s.note || '') + ' <span class="config-preview" style="background:' + s.color + '"></span></span>';
+    html += '  <span class="config-item-preview"><span class="config-preview-box" style="background:' + s.color + ';border:2px solid ' + s.border + ';border-radius:4px;width:28px;height:28px;display:inline-block;vertical-align:middle;"></span></span>';
     html += '</div>';
   });
   body.innerHTML = html;
@@ -1767,7 +1772,9 @@ function loadTestData() {
     if (data.text && data.json_result && Object.keys(data.json_result).length > 0) {
       document.getElementById('termInput').value = data.text;
       document.getElementById('btnParse').textContent = '⚡ 重新解析';
-      // Also auto-render the saved parse result into the terminal
+      // Expand terminal panel first so all DOM elements are visible
+      ensureTerminalExpanded();
+      // Auto-render the saved parse result into the terminal
       var result = {
         json_result: data.json_result,
         nodes: data.nodes || [],
@@ -1778,12 +1785,17 @@ function loadTestData() {
         case_name: data.case_name || '',
       };
       displayResult(result);
-      // Re-display parse quality on issues tab
-      fetchParseQuality(data.json_result);
       setTermStatus('测试数据已加载（含上次解析结果）', '#27ae60');
     }
   })
   .catch(function(err) { console.warn('加载测试数据失败:', err); });
+}
+
+function ensureTerminalExpanded() {
+  var term = document.getElementById('parseTerminal');
+  if (term && term.style.display !== 'flex') {
+    toggleParseTerminal();
+  }
 }
 
 function setTermStatus(msg, color) {
@@ -1812,7 +1824,14 @@ function displayResult(result) {
 
 function fetchParseQuality(jsonResult) {
   var issuesArea = document.getElementById('termIssuesArea');
+  // Recreate placeholder if it was destroyed by a previous call
   var issuesPlaceholder = document.getElementById('termIssuesPlaceholder');
+  if (!issuesPlaceholder) {
+    issuesPlaceholder = document.createElement('div');
+    issuesPlaceholder.className = 'term-issues-placeholder';
+    issuesPlaceholder.id = 'termIssuesPlaceholder';
+    issuesArea.appendChild(issuesPlaceholder);
+  }
   issuesPlaceholder.style.display = 'none';
   issuesArea.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">分析中...</div>';
 
