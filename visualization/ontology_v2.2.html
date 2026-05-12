@@ -129,12 +129,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   font-size: 11px; color: #aaa; flex: 1;
 }
 .config-item-preview {
-  flex: 0 0 40px; text-align: center;
+  flex: 0 0 40px; text-align: center; line-height: 0;
 }
 .config-preview-box {
-  display: inline-block; width: 28px; height: 28px;
-  border-radius: 4px; vertical-align: middle;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  display: inline-block; vertical-align: middle;
 }
 
 /* ===== Detail Panel (右侧信息面板) ===== */
@@ -1397,6 +1395,10 @@ window.applyEntityStyles = function() {
   syncTermMaps();
   // Update main vis-network node colors
   updateMainVisStyles();
+  // Refresh SVG previews
+  Object.keys(ENTITY_STYLES).forEach(function(k) {
+    renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border);
+  });
   document.getElementById('styleConfigOverlay').style.display = 'none';
 };
 
@@ -1415,10 +1417,71 @@ function buildStyleConfigTable() {
     html += '  <span class="config-item-type">' + k + '</span>';
     html += '  <span class="config-item-shape"><select class="config-shape-select">' + opts + '</select></span>';
     html += '  <span class="config-item-color"><input type="color" class="config-color-input" value="' + s.color + '"></span>';
-    html += '  <span class="config-item-preview"><span class="config-preview-box" style="background:' + s.color + ';border:2px solid ' + s.border + ';border-radius:4px;width:28px;height:28px;display:inline-block;vertical-align:middle;"></span></span>';
+    html += '  <span class="config-item-preview"><span class="config-preview-box" id="preview_' + k + '"></span></span>';
     html += '</div>';
   });
   body.innerHTML = html;
+  // Render SVG shapes for every entity
+  Object.keys(ENTITY_STYLES).sort().forEach(function(k) {
+    renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border);
+  });
+}
+
+function renderShapePreview(containerId, shape, color, border) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var size = 28;
+  var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
+  var cx = size / 2, cy = size / 2, r = size / 2 - 2;
+  switch (shape) {
+    case 'box':
+    case 'square':
+      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'ellipse':
+    case 'circle':
+      svg += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + r + '" ry="' + r + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'database':
+      svg += '<ellipse cx="' + cx + '" cy="8" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<path d="M 4 8 L 4 20 C 4 22.76 9.37 24 14 24 C 18.63 24 24 22.76 24 20 L 24 8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<ellipse cx="' + cx + '" cy="20" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'diamond':
+      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + cy + ' ' + cx + ',' + (size - 2) + ' 2,' + cy + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'dot':
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'star':
+      var pts = [];
+      for (var i = 0; i < 5; i++) {
+        var angle = -Math.PI / 2 + (i * 2 * Math.PI / 5);
+        pts.push((cx + r * Math.cos(angle)).toFixed(1) + ',' + (cy + r * Math.sin(angle)).toFixed(1));
+        angle += Math.PI / 5;
+        pts.push((cx + r * 0.45 * Math.cos(angle)).toFixed(1) + ',' + (cy + r * 0.45 * Math.sin(angle)).toFixed(1));
+      }
+      svg += '<polygon points="' + pts.join(' ') + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'hexagon':
+      var pts = [];
+      for (var i = 0; i < 6; i++) {
+        var angle = -Math.PI / 2 + (i * 2 * Math.PI / 6);
+        pts.push((cx + r * Math.cos(angle)).toFixed(1) + ',' + (cy + r * Math.sin(angle)).toFixed(1));
+      }
+      svg += '<polygon points="' + pts.join(' ') + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'triangle':
+      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + (size - 2) + ' 2,' + (size - 2) + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    case 'triangleDown':
+      svg += '<polygon points="' + cx + ',' + (size - 2) + ' 2,2 ' + (size - 2) + ',2" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      break;
+    default:
+      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+  }
+  svg += '</svg>';
+  el.innerHTML = svg;
 }
 
 function syncTermMaps() {
