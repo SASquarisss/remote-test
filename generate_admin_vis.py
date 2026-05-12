@@ -6,6 +6,8 @@ Reads extracted_v2.2_admin_all.jsonl filtered by admin_cases_only.csv row_ids.
 import json
 import csv
 import os
+import hashlib
+from collections import defaultdict
 
 PROJECT = '/root/remote-test'
 JSONL_PATH = os.path.join(PROJECT, 'data_lake/extracted_v2.2_admin_all.jsonl')
@@ -20,20 +22,50 @@ with open(CSV_PATH, 'r', encoding='utf-8') as f:
     for row in reader:
         admin_ids.add(row['id'])
 
-# Read JSONL and filter admin cases
-cases = []
+# Read JSONL and filter admin cases, handling versions and dedup
+cases_raw = []
 with open(JSONL_PATH, 'r', encoding='utf-8') as f:
     for line in f:
         data = json.loads(line)
-        if data['row_id'] in admin_ids and data.get('output') is not None:
-            cases.append(data)
+        rid = data.get('row_id')
+        if rid and str(rid).strip() and rid in admin_ids and data.get('output') is not None:
+            # Compute fingerprint for dedup
+            fp = hashlib.sha256(
+                json.dumps(data['output'], sort_keys=True, ensure_ascii=False).encode()
+            ).hexdigest()
+            raw_line = line.rstrip('\n')
+            cases_raw.append({'row_id': rid, 'data': data, 'fingerprint': fp, 'raw': raw_line})
 
-print(f"Loaded {len(cases)} admin cases with output data")
+# Dedup by row_id + fingerprint
+by_rid = defaultdict(list)
+for c in cases_raw:
+    by_rid[c['row_id']].append(c)
+
+cases = []
+raw_data = {}  # {row_id_v1: raw_json, row_id_v2: raw_json, ...}
+for rid, entries in by_rid.items():
+    # Group by fingerprint within same row_id
+    by_fp = defaultdict(list)
+    for e in entries:
+        by_fp[e['fingerprint']].append(e)
+    ver = 1
+    for fp, fp_entries in by_fp.items():
+        # Take the first entry per fingerprint (they're identical)
+        entry = fp_entries[0]
+        entry['version'] = ver
+        compound_key = f"{rid}__v{ver}" if len(fp_entries) > 1 or len(by_fp) > 1 else str(rid)
+        raw_data[compound_key] = entry['raw']
+        cases.append(entry)
+        ver += 1
+
+print(f"Loaded {len(cases)} admin cases (from {len(cases_raw)} raw lines, {len(admin_ids)} admin IDs)")
+print(f"Versions assigned: {sum(len(v) for v in by_fp.values())} entries -> {len(cases)} output cases")
+print(f"Raw data entries: {len(raw_data)}")
 
 # Build graph data per case
 case_graphs = []
 for case in cases:
-    output = case['output']
+    output = case['data']['output']
     guiding = output.get('guiding_case') or {}
     court_cases_list = output.get('court_cases') or []
     legal_subjects = output.get('legal_subjects') or []
@@ -180,6 +212,7 @@ for case in cases:
         'row_id': row_id,
         'case_name': case_name,
         'case_type': level2,
+        'version': case.get('version', 1),
         'nodes': nodes,
         'edges': edges
     })
@@ -254,15 +287,80 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
   width: 100%; height: calc(100vh - 130px);
   background: white;
 }
-.legend {
-  position: fixed; bottom: 20px; left: 20px; background: rgba(255,255,255,0.95);
-  border-radius: 8px; padding: 12px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.12);
-  font-size: 13px; z-index: 5;
+/* Detail Panel (same style as ontology) */
+#detailPanel {
+  position: fixed; right: -420px; top: 130px; width: 400px;
+  height: calc(100vh - 130px); z-index: 998;
+  background: rgba(255,255,255,0.98); box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  transition: right 0.3s ease; overflow-y: auto; overflow-x: hidden;
+  font-size: 13px; color: #333; border-left: 1px solid #e0e0e0;
+  display: flex; flex-direction: column;
 }
-.legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-.legend-color {
-  width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1);
-  flex-shrink: 0;
+#detailPanel.open { right: 0; }
+#detailPanel .panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%);
+  color: #fff; position: sticky; top: 0; z-index: 1;
+}
+#detailPanel .panel-header h2 { font-size: 15px; font-weight: 600; margin:0; }
+#detailPanel .panel-close {
+  background: none; border: none; color: #fff; font-size: 20px;
+  cursor: pointer; padding: 0 4px; opacity: 0.7; line-height: 1;
+}
+#detailPanel .panel-close:hover { opacity: 1; }
+#detailPanel .panel-body { padding: 14px 18px 80px; flex: 1; }
+#detailPanel .panel-section { margin-bottom: 16px; }
+#detailPanel .panel-section-title {
+  font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #eee;
+}
+#detailPanel .field-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; font-size: 13px; }
+#detailPanel .desc-text { font-size: 13px; color: #555; line-height: 1.6; padding: 6px 0; }
+#detailPanel .empty-hint { color: #bbb; font-style: italic; font-size: 12px; padding: 4px 0; }
+#detailPanel.edge-mode .panel-header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%); }
+#detailPanel::-webkit-scrollbar { width: 6px; }
+#detailPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+/* Legend — tree style */
+.legend {
+  position: fixed; top: 140px; left: 16px; z-index: 999;
+  background: rgba(255,255,255,0.96); border-radius: 10px;
+  padding: 12px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  font-size: 13px; line-height: 1.6; border: 1px solid #e8e8e8;
+  max-height: calc(100vh - 160px); overflow-y: auto;
+}
+.legend::-webkit-scrollbar { width: 4px; }
+.legend::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+.legend-title { font-weight: 600; margin-bottom: 6px; font-size: 14px; color: #333; }
+.legend-root { font-weight: 600; font-size: 13px; margin: 5px 0 2px 0; display: flex; align-items: center; gap: 6px; }
+.legend-root .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+.legend-children { padding-left: 20px; }
+.legend-child { font-size: 12px; color: #555; padding: 1px 0; display: flex; align-items: center; gap: 6px; }
+.legend-child .cdot { width: 8px; height: 8px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
+
+/* Version selector */
+.version-control { display: none; align-items: center; gap: 6px; }
+.version-control label { font-weight: 600; font-size: 13px; white-space: nowrap; }
+.version-control select { padding: 5px 10px; border: 1px solid #bbb; border-radius: 5px; font-size: 13px; }
+
+/* Raw Data Panel */
+#rawDataPanel {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 997;
+  background: rgba(255,255,255,0.97); border-top: 1px solid #ddd;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+  max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+}
+#rawDataPanel.open { max-height: 240px; overflow-y: auto; }
+#rawDataPanel .raw-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 18px; background: #f5f5f5; border-bottom: 1px solid #eee;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: #555;
+  position: sticky; top: 0;
+}
+#rawDataPanel .raw-content {
+  padding: 10px 18px 16px; font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px; color: #333; white-space: pre-wrap; word-break: break-all;
+  line-height: 1.5; max-height: 180px; overflow-y: auto;
 }
 .stats { font-size: 13px; color: #666; }
 .loading {
@@ -294,6 +392,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
     <button class="btn info" onclick="fitView()">&#x1F532; 适应视图</button>
   </div>
   <span class="stats" id="stats"></span>
+  <div class="version-control" id="versionWrapper">
+    <label>版本：</label>
+    <select id="versionSelect" onchange="switchVersion(this.value)"></select>
+  </div>
 </div>
 
 <div id="mynetwork">
@@ -301,14 +403,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
 </div>
 
 <div class="legend">
-  <div style="font-weight:600;margin-bottom:4px;font-size:14px;">图例</div>
-  <div class="legend-item"><span class="legend-color" style="background:#e91e63;"></span> 指导案例/典型案例</div>
-  <div class="legend-item"><span class="legend-color" style="background:#4caf50;"></span> 法院案件</div>
-  <div class="legend-item"><span class="legend-color" style="background:#ff9800;"></span> 诉讼主体</div>
-  <div class="legend-item"><span class="legend-color" style="background:#2196f3;"></span> 法律条文</div>
-  <div class="legend-item"><span class="legend-color" style="background:#9c27b0;"></span> 裁判结果</div>
-  <div class="legend-item"><span class="legend-color" style="background:#00bcd4;"></span> 证据</div>
-  <div class="legend-item"><span class="legend-color" style="background:#607d8b;"></span> 案件类型</div>
+  <div class="legend-title">📋 实体类型</div>
+</div>
+
+<!-- Detail Panel -->
+<div id="detailPanel">
+  <div class="panel-header">
+    <h2 id="panelTitle">📋 详细信息</h2>
+    <button class="panel-close" id="panelClose" title="关闭">✕</button>
+  </div>
+  <div class="panel-body" id="panelBody">
+    <div class="empty-hint">悬停或点击节点/边查看详细信息</div>
+  </div>
+</div>
+
+<!-- Raw Data Panel -->
+<div id="rawDataPanel" class="open">
+  <div class="raw-header" onclick="toggleRawData()">
+    <span>📄 原始数据</span>
+    <span id="rawDataLabel">收起</span>
+  </div>
+  <div class="raw-content" id="rawContent">选择案例后显示原始JSON数据</div>
 </div>
 
 <!-- Case List Panel -->
@@ -323,60 +438,54 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
 <script>
 """)
 
-# Embed all graph data as JSON
+# Embed all graph data as JSON + raw data
 all_graphs_json = json.dumps(case_graphs, ensure_ascii=False)
-html_parts.append(f"const ALL_GRAPHS = {all_graphs_json};\n\n")
+all_raw_json = json.dumps(raw_data, ensure_ascii=False)
+html_parts.append(f"const ALL_GRAPHS = {all_graphs_json};\n")
+html_parts.append(f"const RAW_DATA = {all_raw_json};\n\n")
 
 html_parts.append("""
 let network = null;
 let nodesDataset = null;
 let edgesDataset = null;
 let currentFilter = 'all';
+let isPanelLocked = false;
+let currentSelection = null;
 
-// Node type colors
-const TYPE_COLORS = {
-  'GuidingCase': { background: '#e91e63', border: '#c2185b', shape: 'hexagon', size: 35 },
-  'CourtCase': { background: '#4caf50', border: '#388e3c', shape: 'box', size: 25 },
-  'LegalSubject': { background: '#ff9800', border: '#f57c00', shape: 'ellipse', size: 22 },
-  'LegalProvision': { background: '#2196f3', border: '#1976d2', shape: 'ellipse', size: 20 },
-  'JudgmentResult': { background: '#9c27b0', border: '#7b1fa2', shape: 'diamond', size: 24 },
-  'Evidence': { background: '#00bcd4', border: '#0097a7', shape: 'ellipse', size: 20 },
-  'CaseSummary': { background: '#607d8b', border: '#455a64', shape: 'ellipse', size: 20 },
+// ===== Color scheme from ontology (matched by entity type → root class) =====
+const ROOT_COLORS = {
+  'LegalNorm':      { bg: '#2980b9', border: '#1a5276' },
+  'JudicialEntity': { bg: '#d35400', border: '#a04000' },
+  'LegalSubject':   { bg: '#27ae60', border: '#1e8449' },
+  'Person':         { bg: '#16a085', border: '#0e6655' },
 };
 
-// Edge colors
-const EDGE_COLORS = {
-  'has_court_case': '#4caf50',
-  'has_subject': '#ff9800',
-  'references': '#2196f3',
-  'applied_in': '#2196f3',
-  'has_evidence': '#00bcd4',
-  'has_result': '#9c27b0',
-  'determines': '#9c27b0',
-  'classified_as': '#607d8b',
+// Admin entity type → ontology root class
+const ADMIN_TYPE_ROOT = {
+  'GuidingCase':    'LegalNorm',
+  'LegalProvision': 'LegalNorm',
+  'CourtCase':      'JudicialEntity',
+  'CaseSummary':    'JudicialEntity',
+  'Evidence':       'JudicialEntity',
+  'JudgmentResult': 'JudicialEntity',
+  'LegalSubject':   'LegalSubject',
 };
 
-// Case-specific color generation
-function getCaseColor(rowId) {
-  if (rowId === 'law') return { bg: '#2196f3', border: '#1565c0' };
-  // Use row_id numeric value to pick from palette
-  const palettes = [
-    ['#e91e63','#c2185b'], ['#9c27b0','#7b1fa2'], ['#3f51b5','#303f9f'],
-    ['#009688','#00796b'], ['#ff5722','#e64a19'], ['#795548','#5d4037'],
-    ['#607d8b','#455a64'], ['#d81b60','#ad1457'], ['#8e24aa','#6a1b9a'],
-    ['#3949ab','#283593'], ['#00897b','#00695c'], ['#f4511e','#d84315'],
-    ['#6d4c41','#4e342e'], ['#546e7a','#37474f'], ['#c62828','#b71c1c'],
-    ['#2e7d32','#1b5e20'], ['#1565c0','#0d47a1'], ['#6a1b9a','#4a148c'],
-    ['#e65100','#bf360c'], ['#004d40','#00332c'], ['#311b92','#1a237e'],
-    ['#880e4f','#4a0024'], ['#0d47a1','#002f6c'], ['#004d40','#00251a'],
-    ['#1a237e','#000051'], ['#b71c1c','#7f0000'], ['#1b5e20','#003300'],
-    ['#4a148c','#12005e'], ['#01579b','#00344d'], ['#bf360c','#870000'],
-    ['#33691e','#1b3d00'], ['#827717','#4d4b00'], ['#e65100','#ac3a00'],
-    ['#3e2723','#1b0000'], ['#004d40','#001b14'], ['#0d47a1','#002171'],
-    ['#880e4f','#4d0024'],
-  ];
-  const idx = (parseInt(rowId) || 0) % palettes.length;
-  return { bg: palettes[idx][0], border: palettes[idx][1] };
+// Node shapes by type (keep distinguishing)
+const ADMIN_SHAPES = {
+  'GuidingCase':    'hexagon',
+  'CourtCase':      'box',
+  'CaseSummary':    'ellipse',
+  'JudgmentResult': 'diamond',
+  'Evidence':       'ellipse',
+  'LegalSubject':   'ellipse',
+  'LegalProvision': 'ellipse',
+};
+
+function getAdminColor(typeName) {
+  const root = ADMIN_TYPE_ROOT[typeName];
+  const c = ROOT_COLORS[root];
+  return c || { bg: '#7f8c8d', border: '#5d6d7e' };
 }
 
 function lightenColor(hex, percent) {
@@ -385,7 +494,7 @@ function lightenColor(hex, percent) {
   const R = Math.min(255, (num >> 16) + amt);
   const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
   const B = Math.min(255, (num & 0x0000FF) + amt);
-  return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
+  return '#' + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1);
 }
 
 // Build vis data
@@ -397,67 +506,46 @@ function buildVisData(filterCaseId) {
 
   let filtered = ALL_GRAPHS;
   if (filterCaseId && filterCaseId !== 'all') {
-    filtered = ALL_GRAPHS.filter(g => g.row_id === filterCaseId);
+    filtered = ALL_GRAPHS.filter(g => {
+      const key = g.version ? g.row_id + '__v' + g.version : g.row_id;
+      return key === filterCaseId || g.row_id === filterCaseId;
+    });
   }
 
   for (const g of filtered) {
     for (const n of g.nodes) {
       if (nodeSet.has(n.id)) continue;
       nodeSet.add(n.id);
-
-      const tc = TYPE_COLORS[n.type] || { background: '#999', border: '#666', shape: 'ellipse', size: 20 };
-      let color;
-      if (n.group === 'law') {
-        color = { background: '#2196f3', border: '#1565c0', highlight: { background: '#42a5f5', border: '#0d47a1' } };
-      } else {
-        const cc = getCaseColor(n.group);
-        const isLight = (n.level || 0) >= 2;
-        const bg = isLight ? lightenColor(cc.bg, 50) : cc.bg;
-        color = {
-          background: bg,
-          border: cc.border,
-          highlight: { background: lightenColor(cc.bg, isLight ? 30 : 20), border: cc.border }
-        };
-      }
-
-      let size = tc.size || 20;
-      if (n.level === 0) size = 40;
-      else if (n.level === 1) size = 28;
-
+      const c = getAdminColor(n.type);
+      const isLawGroup = n.group === 'law';
+      const bg = isLawGroup ? c.bg : lightenColor(c.bg, (n.level || 0) >= 2 ? 40 : 0);
       visNodes.push({
         id: n.id,
         label: n.label,
         title: n.title,
-        shape: tc.shape,
-        size: size,
-        color: color,
-        font: { color: '#222', size: 12, face: 'PingFang SC, Microsoft YaHei, sans-serif' },
+        shape: ADMIN_SHAPES[n.type] || 'ellipse',
+        size: n.level === 0 ? 35 : n.level === 1 ? 26 : 20,
+        color: { background: bg, border: c.border },
+        font: { color: '#fff', size: n.level === 0 ? 14 : 12, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
         borderWidth: 2,
-        borderWidthSelected: 3,
         group: n.group,
         nodeType: n.type,
       });
     }
-
     for (const e of g.edges) {
       const key = e.from + '|' + e.to + '|' + e.label;
       if (edgeSet.has(key)) continue;
       edgeSet.add(key);
-
-      const ec = EDGE_COLORS[e.label] || '#999';
+      const ec = '#7f8c8d';
       visEdges.push({
-        from: e.from,
-        to: e.to,
-        label: e.label,
+        from: e.from, to: e.to, label: e.label,
         color: { color: ec, highlight: '#333', hover: '#333', opacity: 0.7 },
-        font: { size: 10, color: '#666', strokeWidth: 2, strokeColor: '#fff' },
-        width: 1.5,
-        smooth: { type: 'continuous' },
+        font: { size: 10, color: '#555', strokeWidth: 2, strokeColor: '#fff' },
+        width: 1.5, smooth: { type: 'continuous' },
         arrows: { to: { enabled: true, scaleFactor: 0.6 } },
       });
     }
   }
-
   return { nodes: visNodes, edges: visEdges };
 }
 
@@ -471,132 +559,302 @@ function initNetwork(filterCaseId) {
     document.getElementById('stats').textContent = '0 nodes, 0 edges';
     return;
   }
-
   nodesDataset = new vis.DataSet(data.nodes);
   edgesDataset = new vis.DataSet(data.edges);
   const networkData = { nodes: nodesDataset, edges: edgesDataset };
 
   const options = {
     physics: {
-      enabled: true,
-      solver: 'forceAtlas2Based',
-      forceAtlas2Based: {
-        gravitationalConstant: -40,
-        centralGravity: 0.005,
-        springLength: 180,
-        springConstant: 0.08,
-        damping: 0.4,
-      },
-      stabilization: { iterations: 150 },
+      enabled: true, solver: 'forceAtlas2Based',
+      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.005, springLength: 180, springConstant: 0.08, damping: 0.4 },
+      stabilization: { iterations: 150, fit: true },
+      minVelocity: 0.5,
     },
-    interaction: {
-      hover: true,
-      tooltipDelay: 200,
-      navigationButtons: true,
-      keyboard: true,
-      multiselect: true,
-    },
-    edges: {
-      smooth: { type: 'continuous' },
-      arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-    },
-    nodes: {
-      font: { face: 'PingFang SC, Microsoft YaHei, sans-serif' },
-    },
-    layout: { improvedLayout: true },
+    interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
+    edges: { smooth: { type: 'continuous' }, font: { size: 10, color: '#555', face: 'Microsoft YaHei' } },
+    nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }, borderWidth: 2, shadow: { enabled: true, size: 3, x: 0, y: 0 } },
+    layout: { improvedLayout: true, randomSeed: 42 },
   };
 
   network = new vis.Network(container, networkData, options);
 
-  document.getElementById('stats').textContent =
-    data.nodes.length + ' nodes, ' + data.edges.length + ' edges';
-  document.getElementById('totalCases').textContent = filtered.length;
+  // Freeze physics after stabilization
+  network.on('stabilizationIterationsDone', function() {
+    network.setOptions({ physics: { enabled: false } });
+    network.fit({ animation: true });
+  });
 
+  document.getElementById('stats').textContent = data.nodes.length + ' nodes, ' + data.edges.length + ' edges';
+  document.getElementById('totalCases').textContent = filtered.length;
   updateCaseListHighlight(filterCaseId);
 }
 
+network.on('hoverNode', function(params) {
+  if (isPanelLocked) return;
+  if (currentSelection === 'node:' + params.node) return;
+  showAdminEntityDetail(params.node, params.pointer.DOM);
+});
+
+network.on('hoverEdge', function(params) {
+  if (isPanelLocked) return;
+  if (currentSelection === 'edge:' + params.edge) return;
+  showAdminEdgeDetail(params.edge);
+});
+
+network.on('click', function(params) {
+  if (params.nodes.length > 0) {
+    showAdminEntityDetail(params.nodes[0], null);
+  } else if (params.edges.length > 0) {
+    showAdminEdgeDetail(params.edges[0]);
+  } else {
+    if (isPanelLocked) hideAdminPanel();
+  }
+});
+
+// ===== Detail Panel =====
+var detailPanel = document.getElementById('detailPanel');
+var panelTitle = document.getElementById('panelTitle');
+var panelBody = document.getElementById('panelBody');
+var panelClose = document.getElementById('panelClose');
+
+panelClose.addEventListener('click', function(e) { e.stopPropagation(); hideAdminPanel(); });
+document.addEventListener('click', function(e) {
+  if (isPanelLocked && !detailPanel.contains(e.target) && e.target !== panelClose) hideAdminPanel();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && detailPanel.classList.contains('open')) hideAdminPanel();
+});
+detailPanel.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+
+function showAdminEntityDetail(nodeId, pointer) {
+  // Find the ALL_GRAPHS entry for this node
+  var nodeData = null;
+  var caseInfo = null;
+  for (var i = 0; i < ALL_GRAPHS.length; i++) {
+    var g = ALL_GRAPHS[i];
+    for (var j = 0; j < g.nodes.length; j++) {
+      if (g.nodes[j].id === nodeId) {
+        nodeData = g.nodes[j];
+        caseInfo = g;
+        break;
+      }
+    }
+    if (nodeData) break;
+  }
+  if (!nodeData) {
+    panelBody.innerHTML = '<div class="empty-hint">节点信息不可用</div>';
+    return;
+  }
+
+  detailPanel.classList.remove('edge-mode');
+  panelTitle.textContent = '📋 ' + (nodeData.type || '节点');
+  var html = '';
+  html += '<div class="panel-section"><div class="panel-section-title">📌 类型</div>';
+  html += '<div class="desc-text">' + (nodeData.type || '未知') + '</div></div>';
+
+  html += '<div class="panel-section"><div class="panel-section-title">📌 标签</div>';
+  html += '<div class="desc-text">' + (nodeData.label || '') + '</div></div>';
+
+  if (caseInfo) {
+    html += '<div class="panel-section"><div class="panel-section-title">📌 所属案例</div>';
+    html += '<div class="desc-text">' + (caseInfo.case_name || '') + ' (#' + caseInfo.row_id + ')</div></div>';
+  }
+
+  // Show title content (rich HTML tooltip)
+  if (nodeData.title) {
+    var plainTitle = nodeData.title.replace(/<[^>]*>/g, '');
+    html += '<div class="panel-section"><div class="panel-section-title">📌 详细信息</div>';
+    html += '<div class="desc-text" style="font-size:12px;white-space:pre-wrap;">' + plainTitle + '</div></div>';
+  }
+
+  panelBody.innerHTML = html;
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  currentSelection = 'node:' + nodeId;
+}
+
+function showAdminEdgeDetail(edgeId) {
+  var allEdges = edgesDataset ? edgesDataset.get(edgeId) : null;
+  if (!allEdges) return;
+  detailPanel.classList.add('edge-mode');
+  panelTitle.textContent = '🔗 ' + (allEdges.label || '关系边');
+  var html = '';
+  html += '<div class="panel-section"><div class="panel-section-title">📌 关系</div>';
+  html += '<div class="desc-text">' + (allEdges.label || '') + '</div></div>';
+
+  html += '<div class="panel-section"><div class="panel-section-title">📌 方向</div>';
+  html += '<div class="field-row"><span style="font-weight:500;">' + allEdges.from + '</span> → <span style="font-weight:500;">' + allEdges.to + '</span></div></div>';
+
+  panelBody.innerHTML = html;
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  currentSelection = 'edge:' + edgeId;
+}
+
+function hideAdminPanel() {
+  detailPanel.classList.remove('open');
+  isPanelLocked = false;
+  currentSelection = null;
+}
+
+// ===== Version-aware filter =====
 function filterByCase(value) {
   currentFilter = value;
   document.getElementById('caseSelect').value = value;
+  // Extract row_id from compound key
+  var rid = value.split('__')[0];
   initNetwork(value === 'all' ? null : value);
+
+  // Show/hide version selector
+  var verWrapper = document.getElementById('versionWrapper');
+  if (verWrapper) {
+    verWrapper.style.display = 'none';
+  }
+  if (value && value !== 'all') {
+    // Count versions for this row_id
+    var versions = [];
+    for (var i = 0; i < ALL_GRAPHS.length; i++) {
+      if (ALL_GRAPHS[i].row_id === rid) versions.push(ALL_GRAPHS[i]);
+    }
+    if (versions.length > 1 && verWrapper) {
+      verWrapper.style.display = 'inline-flex';
+      var verSelect = document.getElementById('versionSelect');
+      versionSelect.innerHTML = '';
+      for (var v = 0; v < versions.length; v++) {
+        var opt = document.createElement('option');
+        opt.value = rid + '__v' + (v + 1);
+        opt.textContent = 'v' + (v + 1);
+        if (opt.value === value) opt.selected = true;
+        verSelect.appendChild(opt);
+      }
+    }
+  }
+
+  // Show raw data
+  showRawData(value);
 }
 
+function switchVersion(val) {
+  filterByCase(val);
+}
+
+// ===== Legend (tree style, matching ontology) =====
+function buildAdminLegend() {
+  var roots = ['LegalNorm', 'JudicialEntity', 'LegalSubject'];
+  var rootNames = {'LegalNorm':'规范层', 'JudicialEntity':'司法实体层', 'LegalSubject':'主体层'};
+  var rootColors = {'LegalNorm':'#2980b9', 'JudicialEntity':'#d35400', 'LegalSubject':'#27ae60'};
+  var children = {
+    'LegalNorm': ['GuidingCase', 'LegalProvision'],
+    'JudicialEntity': ['CourtCase', 'CaseSummary', 'Evidence', 'JudgmentResult'],
+    'LegalSubject': ['LegalSubject'],
+  };
+  var html = '';
+  roots.forEach(function(root) {
+    var c = rootColors[root];
+    var label = root + ' (' + (rootNames[root] || '') + ')';
+    html += '<div class="legend-root">';
+    html += '<span class="dot" style="background:' + c + ';"></span>';
+    html += '<span>' + label + '</span></div>';
+    html += '<div class="legend-children">';
+    var kids = children[root] || [];
+    kids.sort();
+    kids.forEach(function(k) {
+      var kc = ROOT_COLORS[root] || {bg:'#7f8c8d'};
+      var shape = ADMIN_SHAPES[k] || 'ellipse';
+      var shapeIcon = shape === 'hexagon' ? '⬡' : shape === 'box' ? '▢' : shape === 'diamond' ? '◇' : '○';
+      html += '<div class="legend-child">';
+      html += '<span class="cdot" style="background:' + kc.bg + ';"></span>';
+      html += '<span>' + shapeIcon + ' ' + k + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  document.querySelector('.legend').innerHTML = '<div class="legend-title">📋 实体类型</div>' + html;
+}
+
+// ===== Raw Data Panel =====
+var rawDataOpen = true;
+function toggleRawData() {
+  rawDataOpen = !rawDataOpen;
+  var panel = document.getElementById('rawDataPanel');
+  panel.classList.toggle('open', rawDataOpen);
+  document.getElementById('rawDataLabel').textContent = rawDataOpen ? '收起' : '展开';
+}
+function showRawData(filterVal) {
+  var content = document.getElementById('rawContent');
+  if (!filterVal || filterVal === 'all') {
+    content.textContent = '选择单个案例后显示原始JSON数据';
+    return;
+  }
+  var raw = RAW_DATA[filterVal];
+  if (raw) {
+    try {
+      var parsed = JSON.parse(raw);
+      content.textContent = JSON.stringify(parsed, null, 2);
+    } catch(e) {
+      content.textContent = raw;
+    }
+  } else {
+    content.textContent = '未找到该版本的原始数据';
+  }
+}
+
+// ===== Legacy UI functions =====
 function setLayout(btn, mode) {
   document.querySelectorAll('.btn-group .btn').forEach(function(b) { b.classList.remove('active'); });
   btn.classList.add('active');
   if (!network) return;
   if (mode === 'force') {
-    network.setOptions({
-      physics: { enabled: true, solver: 'forceAtlas2Based' },
-      layout: { improvedLayout: true, hierarchical: { enabled: false } },
-    });
+    network.setOptions({ physics: { enabled: true, solver: 'forceAtlas2Based' }, layout: { improvedLayout: true, hierarchical: { enabled: false } } });
   } else {
-    network.setOptions({
-      physics: { enabled: false },
-      layout: {
-        improvedLayout: true,
-        hierarchical: {
-          enabled: true,
-          direction: 'LR',
-          sortMethod: 'directed',
-          nodeSpacing: 150,
-          levelSeparation: 200,
-        },
-      },
-    });
+    network.setOptions({ physics: { enabled: false }, layout: { improvedLayout: true, hierarchical: { enabled: true, direction: 'LR', sortMethod: 'directed', nodeSpacing: 150, levelSeparation: 200 } } });
   }
 }
-
-function fitView() {
-  if (network) network.fit({ animation: true });
-}
-
-function toggleCaseList() {
-  document.getElementById('caseListPanel').classList.toggle('open');
-}
-
+function fitView() { if (network) network.fit({ animation: true }); }
+function toggleCaseList() { document.getElementById('caseListPanel').classList.toggle('open'); }
 function updateCaseListHighlight(filterCaseId) {
   document.querySelectorAll('.case-list-item').forEach(function(el) {
     el.classList.toggle('active', el.dataset.rowId === filterCaseId || (!filterCaseId || filterCaseId === 'all'));
   });
 }
-
-function selectFromList(rowId) {
-  filterByCase(rowId);
-  if (rowId !== 'all') {
-    document.getElementById('caseListPanel').classList.remove('open');
-  }
-}
+function selectFromList(rowId) { filterByCase(rowId); if (rowId !== 'all') document.getElementById('caseListPanel').classList.remove('open'); }
 
 // Populate
 function populateSelectors() {
   const select = document.getElementById('caseSelect');
   const listScroll = document.getElementById('caseListScroll');
-  let listHtml = '<div class="case-list-item" data-row-id="all" onclick="selectFromList(\'all\')"><div class="case-name">&#x1F4CC; 全部案例</div><div class="case-meta">显示所有行政案例</div></div>';
+  let listHtml = '<div class=\"case-list-item\" data-row-id=\"all\" onclick=\"selectFromList(\\'all\\')\"><div class=\"case-name\">&#x1F4CC; 全部案例</div><div class=\"case-meta\">显示所有行政案例</div></div>';
 
   const sorted = ALL_GRAPHS.slice().sort(function(a, b) { return parseInt(a.row_id) - parseInt(b.row_id); });
 
+  // Track seen row_ids to avoid duplicate names in list (but keep versioned compound keys)
+  var seen = {};
   for (let i = 0; i < sorted.length; i++) {
     const g = sorted[i];
+    const valKey = g.version ? g.row_id + '__v' + g.version : g.row_id;
+    const displayName = g.version ? '[' + g.row_id + '] ' + g.case_name + ' (v' + g.version + ')' : '[' + g.row_id + '] ' + g.case_name;
+    
     const opt = document.createElement('option');
-    opt.value = g.row_id;
-    opt.textContent = '[' + g.row_id + '] ' + g.case_name;
+    opt.value = valKey;
+    opt.textContent = displayName;
     select.appendChild(opt);
 
-    listHtml += '<div class="case-list-item" data-row-id="' + g.row_id + '" onclick="selectFromList(\'' + g.row_id + '\')">' +
-      '<div class="case-name">' + g.case_name + '</div>' +
-      '<div class="case-meta">#' + g.row_id + ' &middot; ' + (g.case_type || '') + '</div></div>';
+    // Only add to list if we haven't seen this row_id before (dedup list display)
+    if (!seen[g.row_id]) {
+      seen[g.row_id] = true;
+      listHtml += '<div class=\"case-list-item\" data-row-id=\"' + g.row_id + '\" onclick=\"selectFromList(\\'' + g.row_id + '\\')\">' +
+        '<div class=\"case-name\">' + g.case_name + '</div>' +
+        '<div class=\"case-meta\">#' + g.row_id + ' &middot; ' + (g.case_type || '') + '</div></div>';
+    }
   }
-
   listScroll.innerHTML = listHtml;
 }
 
+buildAdminLegend();
 populateSelectors();
 initNetwork(null);
 
-window.addEventListener('resize', function() {
-  if (network) network.fit({ animation: false });
-});
+window.addEventListener('resize', function() { if (network) network.fit({ animation: false }); });
 
 </script>
 </body>
