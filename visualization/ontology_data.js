@@ -747,6 +747,31 @@ var ENTITY_DATA = {
     },
     "constraints": [],
     "is_a": "JudicialEntity"
+  },
+  "LegalProvisionElement": {
+    "description": "法条构成要件要素（主体/行为/结果/因果关系/主观要件等结构化分解，用于事实→法条匹配推理）",
+    "required": [
+      "provision_id",
+      "element_type"
+    ],
+    "optional": [
+      "content",
+      "applicable_fact_pattern"
+    ],
+    "enums": {
+      "element_type": [
+        "subject_element",
+        "object_element",
+        "act_element",
+        "result_element",
+        "causality_element",
+        "subjective_element",
+        "legal_consequence",
+        "exception_clause"
+      ]
+    },
+    "constraints": [],
+    "is_a": null
   }
 };
 
@@ -785,6 +810,13 @@ var RELATIONS_BY_ENTITY = {
         "source": "JudgmentResult",
         "cardinality": "many_to_many",
         "description": "裁判结果依据法律条文",
+        "attributes": []
+      },
+      {
+        "relation": "resolved_by",
+        "source": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "description": "争议焦点由法律条文解决（争议焦点→法条映射）",
         "attributes": []
       }
     ]
@@ -1193,6 +1225,20 @@ var RELATIONS_BY_ENTITY = {
         "cardinality": "one_to_one",
         "description": "执行依据裁判结果",
         "attributes": []
+      },
+      {
+        "relation": "leads_to",
+        "source": "Fact",
+        "cardinality": "many_to_many",
+        "description": "事实/争议焦点推导出裁判结果（三段论推理的结论链路）",
+        "attributes": []
+      },
+      {
+        "relation": "leads_to",
+        "source": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "description": "事实/争议焦点推导出裁判结果（三段论推理的结论链路）",
+        "attributes": []
       }
     ]
   },
@@ -1284,7 +1330,25 @@ var RELATIONS_BY_ENTITY = {
     "incoming": []
   },
   "Fact": {
-    "outgoing": [],
+    "outgoing": [
+      {
+        "relation": "matches_element",
+        "target": "LegalProvisionElement",
+        "cardinality": "many_to_many",
+        "description": "案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配）",
+        "attributes": [
+          "match_score",
+          "match_reasoning"
+        ]
+      },
+      {
+        "relation": "leads_to",
+        "target": "JudgmentResult",
+        "cardinality": "many_to_many",
+        "description": "事实/争议焦点推导出裁判结果（三段论推理的结论链路）",
+        "attributes": []
+      }
+    ],
     "incoming": [
       {
         "relation": "proves_fact",
@@ -1303,7 +1367,22 @@ var RELATIONS_BY_ENTITY = {
     ]
   },
   "DisputeFocus": {
-    "outgoing": [],
+    "outgoing": [
+      {
+        "relation": "resolved_by",
+        "target": "LegalProvision",
+        "cardinality": "many_to_many",
+        "description": "争议焦点由法律条文解决（争议焦点→法条映射）",
+        "attributes": []
+      },
+      {
+        "relation": "leads_to",
+        "target": "JudgmentResult",
+        "cardinality": "many_to_many",
+        "description": "事实/争议焦点推导出裁判结果（三段论推理的结论链路）",
+        "attributes": []
+      }
+    ],
     "incoming": [
       {
         "relation": "proves_fact",
@@ -1330,6 +1409,21 @@ var RELATIONS_BY_ENTITY = {
         "cardinality": "one_to_one",
         "description": "审判组织配备书记员",
         "attributes": []
+      }
+    ]
+  },
+  "LegalProvisionElement": {
+    "outgoing": [],
+    "incoming": [
+      {
+        "relation": "matches_element",
+        "source": "Fact",
+        "cardinality": "many_to_many",
+        "description": "案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配）",
+        "attributes": [
+          "match_score",
+          "match_reasoning"
+        ]
       }
     ]
   }
@@ -1589,6 +1683,33 @@ var RELATION_DETAILS = {
     "name": "has_fact",
     "cardinality": "one_to_many",
     "description": "案件具有事实",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "matches_element": {
+    "name": "matches_element",
+    "cardinality": "many_to_many",
+    "description": "案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配）",
+    "attributes": [
+      "match_score",
+      "match_reasoning"
+    ],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "resolved_by": {
+    "name": "resolved_by",
+    "cardinality": "many_to_many",
+    "description": "争议焦点由法律条文解决（争议焦点→法条映射）",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "leads_to": {
+    "name": "leads_to",
+    "cardinality": "many_to_many",
+    "description": "事实/争议焦点推导出裁判结果（三段论推理的结论链路）",
     "attributes": [],
     "optional_attributes": [],
     "acyclic": false

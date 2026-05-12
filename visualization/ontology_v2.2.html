@@ -11,22 +11,22 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 .legend {
   position: fixed; top: 60px; left: 16px; z-index: 999;
   background: rgba(255,255,255,0.96); border-radius: 10px;
-  padding: 12px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-  font-size: 12px; line-height: 1.5; border: 1px solid #e8e8e8;
+  padding: 14px 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  font-size: 14px; line-height: 1.7; border: 1px solid #e8e8e8;
   max-height: calc(100vh - 80px); overflow-y: auto;
 }
 .legend::-webkit-scrollbar { width: 4px; }
 .legend::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
 .legend-title {
-  font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #333;
+  font-weight: 600; margin-bottom: 8px; font-size: 15px; color: #333;
   display: flex; align-items: center; gap: 6px;
 }
-.legend-root { font-weight: 600; font-size: 12px; margin: 5px 0 2px 0; display: flex; align-items: center; gap: 6px; }
-.legend-root .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
-.legend-children { padding-left: 20px; }
-.legend-child { font-size: 11px; color: #555; padding: 1px 0; display: flex; align-items: center; gap: 6px; }
-.legend-child .child-dot { width: 8px; height: 8px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
-.legend-orphan { font-size: 11px; color: #7f8c8d; margin-left: 20px; }
+.legend-root { font-weight: 600; font-size: 14px; margin: 6px 0 3px 0; display: flex; align-items: center; gap: 8px; }
+.legend-root .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+.legend-children { padding-left: 24px; }
+.legend-child { font-size: 13px; color: #555; padding: 2px 0; display: flex; align-items: center; gap: 8px; }
+.legend-child .child-dot { width: 10px; height: 10px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
+.legend-orphan { font-size: 13px; color: #7f8c8d; margin-left: 24px; }
 .title-bar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 999;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);

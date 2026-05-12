@@ -378,7 +378,7 @@ function selectFromList(rowId) {
 function populateSelectors() {
   const select = document.getElementById('caseSelect');
   const listScroll = document.getElementById('caseListScroll');
-  let listHtml = '<div class="case-list-item" data-row-id="all" onclick="selectFromList('all')"><div class="case-name">&#x1F4CC; 全部案例</div><div class="case-meta">显示所有行政案例</div></div>';
+  let listHtml = '<div class="case-list-item" data-row-id="all" onclick=&quot;selectFromList(&apos;all&apos;)&quot;><div class="case-name">&#x1F4CC; 全部案例</div><div class="case-meta">显示所有行政案例</div></div>';
 
   const sorted = ALL_GRAPHS.slice().sort(function(a, b) { return parseInt(a.row_id) - parseInt(b.row_id); });
 
@@ -389,7 +389,7 @@ function populateSelectors() {
     opt.textContent = '[' + g.row_id + '] ' + g.case_name;
     select.appendChild(opt);
 
-    listHtml += '<div class="case-list-item" data-row-id="' + g.row_id + '" onclick="selectFromList('' + g.row_id + '')">' +
+    listHtml += '<div class="case-list-item" data-row-id="' + g.row_id + '" onclick=&quot;selectFromList(&apos;' + g.row_id + '&apos;)&quot;>' +
       '<div class="case-name">' + g.case_name + '</div>' +
       '<div class="case-meta">#' + g.row_id + ' &middot; ' + (g.case_type || '') + '</div></div>';
   }

@@ -15,8 +15,29 @@ OUTPUT_PATH = '/root/remote-test/visualization/ontology_data.js'
 with open(YAML_PATH, 'r', encoding='utf-8') as f:
     data = yaml.safe_load(f)
 
+# Also load English YAML for entities missing in Chinese version
+EN_YAML_PATH = '/root/remote-test/ontology/schemas/legal_ontology_v2.yaml'
+try:
+    with open(EN_YAML_PATH, 'r', encoding='utf-8') as f:
+        en_data = yaml.safe_load(f)
+    en_types = en_data.get('types', {})
+    en_relations = en_data.get('relations', {})
+except:
+    en_types = {}
+    en_relations = {}
+
 types = data.get('types', {})
 relations = data.get('relations', {})
+
+# Merge missing entity types from English YAML (e.g. LegalProvisionElement)
+for type_name, type_info in en_types.items():
+    if type_name not in types and isinstance(type_info, dict):
+        types[type_name] = type_info
+
+# Merge missing relations from English YAML
+for rel_name, rel_info in en_relations.items():
+    if rel_name not in relations and isinstance(rel_info, dict):
+        relations[rel_name] = rel_info
 
 # Parse entity data
 entity_data = {}
@@ -88,61 +109,68 @@ for rel_name, rel_info in relations.items():
     from_type = rel_info.get('from')
     to_type = rel_info.get('to')
     
+    # Handle from_type that can be a list (English YAML uses [Fact, DisputeFocus])
+    if isinstance(from_type, list):
+        from_types = from_type
+    else:
+        from_types = [from_type] if from_type else []
+    
     # Handle to_type that can be a list
     if isinstance(to_type, list):
         to_types = to_type
     else:
-        to_types = [to_type]
+        to_types = [to_type] if to_type else []
     
-    for t in to_types:
-        if t is None:
-            continue
+    for f in from_types:
+        for t in to_types:
+            if f is None or t is None:
+                continue
         
-        details = {
-            'name': rel_name,
-            'cardinality': rel_info.get('cardinality', ''),
-            'description': rel_info.get('description', ''),
-            'attributes': rel_info.get('attributes', []),
-            'optional_attributes': rel_info.get('optional_attributes', []),
-            'acyclic': rel_info.get('acyclic', False)
-        }
-        
-        # Index by relation name + target
-        rel_key = f"{rel_name}___{t}" if len(to_types) > 1 else rel_name
-        relation_details[rel_key] = details
-        
-        # Outgoing: from_type -> t
-        if from_type and from_type in entity_data:
-            if from_type not in relations_by_entity:
-                relations_by_entity[from_type] = {'outgoing': [], 'incoming': []}
-            label = rel_info.get('description', rel_name)
-            # Convert attributes dict to list of keys if needed
-            attr_names = rel_info.get('attributes', [])
-            if isinstance(attr_names, dict):
-                attr_names = list(attr_names.keys())
-            relations_by_entity[from_type]['outgoing'].append({
-                'relation': rel_name,
-                'target': t,
+            details = {
+                'name': rel_name,
                 'cardinality': rel_info.get('cardinality', ''),
-                'description': label,
-                'attributes': attr_names
-            })
+                'description': rel_info.get('description', ''),
+                'attributes': rel_info.get('attributes', []),
+                'optional_attributes': rel_info.get('optional_attributes', []),
+                'acyclic': rel_info.get('acyclic', False)
+            }
         
-        # Incoming: t gets incoming from from_type
-        if t in entity_data:
-            if t not in relations_by_entity:
-                relations_by_entity[t] = {'outgoing': [], 'incoming': []}
-            label = rel_info.get('description', rel_name)
-            attr_names = rel_info.get('attributes', [])
-            if isinstance(attr_names, dict):
-                attr_names = list(attr_names.keys())
-            relations_by_entity[t]['incoming'].append({
-                'relation': rel_name,
-                'source': from_type,
-                'cardinality': rel_info.get('cardinality', ''),
-                'description': label,
-                'attributes': attr_names
-            })
+            # Index by relation name + target
+            rel_key = f"{rel_name}___{t}" if len(to_types) > 1 else rel_name
+            relation_details[rel_key] = details
+        
+            # Outgoing: f -> t
+            if f in entity_data:
+                if f not in relations_by_entity:
+                    relations_by_entity[f] = {'outgoing': [], 'incoming': []}
+                label = rel_info.get('description', rel_name)
+                # Convert attributes dict to list of keys if needed
+                attr_names = rel_info.get('attributes', [])
+                if isinstance(attr_names, dict):
+                    attr_names = list(attr_names.keys())
+                relations_by_entity[f]['outgoing'].append({
+                    'relation': rel_name,
+                    'target': t,
+                    'cardinality': rel_info.get('cardinality', ''),
+                    'description': label,
+                    'attributes': attr_names
+                })
+        
+            # Incoming: t gets incoming from f
+            if t in entity_data:
+                if t not in relations_by_entity:
+                    relations_by_entity[t] = {'outgoing': [], 'incoming': []}
+                label = rel_info.get('description', rel_name)
+                attr_names = rel_info.get('attributes', [])
+                if isinstance(attr_names, dict):
+                    attr_names = list(attr_names.keys())
+                relations_by_entity[t]['incoming'].append({
+                    'relation': rel_name,
+                    'source': f,
+                    'cardinality': rel_info.get('cardinality', ''),
+                    'description': label,
+                    'attributes': attr_names
+                })
 
 # Generate JS
 js_lines = []
