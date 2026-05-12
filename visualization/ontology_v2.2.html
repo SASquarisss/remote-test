@@ -1750,6 +1750,12 @@ function saveTestData(text, result) {
     body: JSON.stringify({
       text: text,
       json_result: result.json_result || result,
+      nodes: result.nodes || [],
+      edges: result.edges || [],
+      score: result.score || 0,
+      issues: result.issues || [],
+      row_id: result.row_id || null,
+      case_name: result.case_name || '',
     }),
   }).catch(function(err) { console.warn('保存测试数据失败:', err); });
 }
@@ -1760,10 +1766,21 @@ function loadTestData() {
   .then(function(data) {
     if (data.text && data.json_result && Object.keys(data.json_result).length > 0) {
       document.getElementById('termInput').value = data.text;
-      // If the terminal is expanded and we have a result, display it
-      // But we don't auto-trigger re-parse — user clicks parse themselves
       document.getElementById('btnParse').textContent = '⚡ 重新解析';
-      setTermStatus('测试数据已加载，点击解析', '#2980b9');
+      // Also auto-render the saved parse result into the terminal
+      var result = {
+        json_result: data.json_result,
+        nodes: data.nodes || [],
+        edges: data.edges || [],
+        score: data.score || 0,
+        issues: data.issues || [],
+        row_id: data.row_id || null,
+        case_name: data.case_name || '',
+      };
+      displayResult(result);
+      // Re-display parse quality on issues tab
+      fetchParseQuality(data.json_result);
+      setTermStatus('测试数据已加载（含上次解析结果）', '#27ae60');
     }
   })
   .catch(function(err) { console.warn('加载测试数据失败:', err); });

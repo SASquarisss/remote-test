@@ -105,5 +105,436 @@
     ],
     "prosecutors": [],
     "trial_organizations": []
-  }
+  },
+  "nodes": [
+    {
+      "id": "gc",
+      "label": "法国某某公司等与李某某等商标撤销复审行政纠纷案",
+      "title": "案号: <br>效力: reference",
+      "shape": "hexagon",
+      "size": 35,
+      "color": {
+        "bg": "#2980b9",
+        "border": "#1a5276"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 14
+      },
+      "borderWidth": 2,
+      "group": "LegalNorm",
+      "nodeType": "GuidingCase",
+      "level": 0
+    },
+    {
+      "id": "ct",
+      "label": "administrative",
+      "title": "",
+      "shape": "diamond",
+      "size": 35,
+      "color": {
+        "bg": "#d35400",
+        "border": "#a04000"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 14
+      },
+      "borderWidth": 2,
+      "group": "JudicialEntity",
+      "nodeType": "CaseType",
+      "level": 0
+    },
+    {
+      "id": "ct_level1_行政",
+      "label": "行政",
+      "title": "",
+      "shape": "diamond",
+      "size": 26,
+      "color": {
+        "bg": "#d35400",
+        "border": "#a04000"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 12
+      },
+      "borderWidth": 2,
+      "group": "JudicialEntity",
+      "nodeType": "CaseType",
+      "level": 1
+    },
+    {
+      "id": "ct_level2_商标相关行政案件",
+      "label": "商标相关行政案件",
+      "title": "",
+      "shape": "diamond",
+      "size": 26,
+      "color": {
+        "bg": "#d35400",
+        "border": "#a04000"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 12
+      },
+      "borderWidth": 2,
+      "group": "JudicialEntity",
+      "nodeType": "CaseType",
+      "level": 1
+    },
+    {
+      "id": "cc_0",
+      "label": "",
+      "title": "案号: <br>立案日期: ",
+      "shape": "box",
+      "size": 35,
+      "color": {
+        "bg": "#d35400",
+        "border": "#a04000"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 14
+      },
+      "borderWidth": 2,
+      "group": "JudicialEntity",
+      "nodeType": "CourtCase",
+      "level": 0
+    },
+    {
+      "id": "subj_0",
+      "label": "法国某某公司",
+      "title": "",
+      "shape": "ellipse",
+      "size": 35,
+      "color": {
+        "bg": "#27ae60",
+        "border": "#1e8449"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 14
+      },
+      "borderWidth": 2,
+      "group": "LegalSubject",
+      "nodeType": "LegalSubject",
+      "level": 0
+    },
+    {
+      "id": "subj_1",
+      "label": "李某某",
+      "title": "",
+      "shape": "ellipse",
+      "size": 35,
+      "color": {
+        "bg": "#27ae60",
+        "border": "#1e8449"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 14
+      },
+      "borderWidth": 2,
+      "group": "LegalSubject",
+      "nodeType": "LegalSubject",
+      "level": 0
+    },
+    {
+      "id": "subj_2",
+      "label": "国家工商行政管理总局商标评审委员会",
+      "title": "",
+      "shape": "ellipse",
+      "size": 35,
+      "color": {
+        "bg": "#27ae60",
+        "border": "#1e8449"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 14
+      },
+      "borderWidth": 2,
+      "group": "LegalSubject",
+      "nodeType": "LegalSubject",
+      "level": 0
+    },
+    {
+      "id": "prov_0",
+      "label": "商标法第条",
+      "title": "注册商标连续3年停止使用撤销制度",
+      "shape": "hexagon",
+      "size": 26,
+      "color": {
+        "bg": "#2980b9",
+        "border": "#1a5276"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 12
+      },
+      "borderWidth": 2,
+      "group": "LegalNorm",
+      "nodeType": "LegalProvision",
+      "level": 1
+    },
+    {
+      "id": "jr_0",
+      "label": "upheld",
+      "title": "",
+      "shape": "box",
+      "size": 35,
+      "color": {
+        "bg": "#d35400",
+        "border": "#a04000"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 14
+      },
+      "borderWidth": 2,
+      "group": "JudicialEntity",
+      "nodeType": "JudgmentResult",
+      "level": 0
+    },
+    {
+      "id": "summary",
+      "label": "涉案注册商标是否因连续三年停止使用而应予撤销。",
+      "title": "涉案注册商标是否因连续三年停止使用而应予撤销。",
+      "shape": "box",
+      "size": 26,
+      "color": {
+        "bg": "#d35400",
+        "border": "#a04000"
+      },
+      "font": {
+        "color": "#fff",
+        "size": 12
+      },
+      "borderWidth": 2,
+      "group": "JudicialEntity",
+      "nodeType": "CaseSummary",
+      "level": 1
+    }
+  ],
+  "edges": [
+    {
+      "from": "ct",
+      "to": "ct_level1_行政",
+      "label": "一级案由",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "ct",
+      "to": "ct_level2_商标相关行政案件",
+      "label": "二级案由",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "ct",
+      "to": "cc_0",
+      "label": "案由",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "",
+      "to": "subj_0",
+      "label": "当事人",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "",
+      "to": "subj_1",
+      "label": "当事人",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "",
+      "to": "subj_2",
+      "label": "当事人",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "",
+      "to": "prov_0",
+      "label": "引用",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "",
+      "to": "jr_0",
+      "label": "裁判",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    }
+  ],
+  "score": 0,
+  "issues": []
 }
