@@ -1773,14 +1773,15 @@ function darkenColor(hex, factor) {
   return '#' + [r,g,b].map(function(v) { return v.toString(16).padStart(2, '0'); }).join('');
 }
 
-})();
-
-// ── 暴露 IIFE 内部函数到全局，供第二个 <script> 块的 renderTermVis 使用 ──
+// ── 暴露 IIFE 内部函数到全局 ──
 window.__panelLocked = false;
 window.__panelSelection = null;
 window.__hidePanel = hidePanel;
 window.__renderEntityPanel = renderEntityPanel;
 window.__renderEdgePanel = renderEdgePanel;
+
+})();
+// END OF FIRST SCRIPT BLOCK — window.__* variables are set above
 </script>
 
 <!-- ============================================================
