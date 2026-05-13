@@ -422,7 +422,7 @@ ADMIN_SHAPES = {
     "CaseType": "diamond",
     "LegalProvision": "hexagon",
     "LegalSubject": "ellipse",
-    "Evidence": "diamond",
+    "Evidence": "database",  # 圆柱体，比 diamond 紧凑
     "Judge": "ellipse",
     "Attorney": "ellipse",
     "JudgmentResult": "box",

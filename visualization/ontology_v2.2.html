@@ -1570,6 +1570,20 @@ window.resetEntityStyles = function() {
   });
   syncTermMaps();
   buildStyleConfigTable();
+  // Apply to both ontology graph and parse graph
+  updateMainVisStyles();
+  if (termVisNetwork) {
+    var ds = termVisNetwork.body.data.nodes;
+    ds.forEach(function(n) {
+      var ntype = n.nodeType || n.group;
+      if (!ntype) return;
+      var es = ENTITY_STYLES[ntype];
+      if (es) {
+        ds.update({ id: n.id, shape: es.shape, size: es.size || 18, color: { background: es.color, border: es.border } });
+      }
+    });
+    termVisNetwork.redraw();
+  }
 };
 window.applyEntityStyles = function() {
   // Read all config items from the DOM
@@ -1582,7 +1596,6 @@ window.applyEntityStyles = function() {
     if (shapeSelect) ENTITY_STYLES[typeName].shape = shapeSelect.value;
     if (colorInput) {
       ENTITY_STYLES[typeName].color = colorInput.value;
-      // Compute a slightly darker border
       ENTITY_STYLES[typeName].border = darkenColor(colorInput.value, 0.2);
     }
     var sizeSlider = item.querySelector('.config-size-slider');
@@ -1593,8 +1606,22 @@ window.applyEntityStyles = function() {
     }
   });
   syncTermMaps();
-  // Update main vis-network node colors
+  // Update main vis-network node colors (ontology图)
   updateMainVisStyles();
+  // Also update termVisNetwork (解析图) if it exists
+  if (termVisNetwork) {
+    var ds = termVisNetwork.body.data.nodes;
+    ds.forEach(function(n) {
+      var ntype = n.nodeType || n.group;
+      if (!ntype) return;
+      var es = ENTITY_STYLES[ntype];
+      if (es) {
+        var newSize = es.size || 18;
+        ds.update({ id: n.id, shape: es.shape, size: newSize, color: { background: es.color, border: es.border } });
+      }
+    });
+    termVisNetwork.redraw();
+  }
   // Refresh SVG previews
   Object.keys(ENTITY_STYLES).forEach(function(k) {
     renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border, ENTITY_STYLES[k].size || 22);
@@ -1625,6 +1652,33 @@ function buildStyleConfigTable() {
   // Render SVG shapes for every entity
   Object.keys(ENTITY_STYLES).sort().forEach(function(k) {
     renderShapePreview('preview_' + k, ENTITY_STYLES[k].shape, ENTITY_STYLES[k].color, ENTITY_STYLES[k].border, ENTITY_STYLES[k].size || 22);
+  });
+  // ── Bind real-time preview updates (onchange) ──
+  Object.keys(ENTITY_STYLES).sort().forEach(function(k) {
+    var item = body.querySelector('.config-item[data-typename="' + k + '"]');
+    if (!item) return;
+    var shapeSelect = item.querySelector('.config-shape-select');
+    var colorInput = item.querySelector('.config-color-input');
+    var sizeSlider = item.querySelector('.config-size-slider');
+    function updatePreview() {
+      var curShape = shapeSelect.value;
+      var curColor = colorInput.value;
+      var curBorder = darkenColor(curColor, 0.2);
+      var curSize = parseInt(sizeSlider.value);
+      ENTITY_STYLES[k].shape = curShape;
+      ENTITY_STYLES[k].color = curColor;
+      ENTITY_STYLES[k].border = curBorder;
+      ENTITY_STYLES[k].size = curSize;
+      renderShapePreview('preview_' + k, curShape, curColor, curBorder, curSize);
+      // Update size label
+      if (sizeSlider) {
+        var label = item.querySelector('.config-size-label');
+        if (label) label.textContent = curSize;
+      }
+    }
+    shapeSelect.addEventListener('change', updatePreview);
+    colorInput.addEventListener('input', updatePreview);
+    sizeSlider.addEventListener('input', updatePreview);
   });
 }
 
@@ -2250,6 +2304,7 @@ function renderTermVis(nodes, edges) {
       title: n.title || '',
       shape: shapeType,
       size: styleSize,
+      nodeType: n.nodeType || n.group || '',
       color: { background: nc.bg, border: nc.border },
       font: { color: '#fff', size: fontSize },
       borderWidth: 2, group: n.group,
