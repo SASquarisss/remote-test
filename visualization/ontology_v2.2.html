@@ -361,7 +361,7 @@ var ENTITY_STYLES = {
   LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法条/法律依据' },
   Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法律' },
   // 证据/争议标的 — 圆柱体
-  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 14, note: '证据' },
+  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 10, note: '证据' },
   // 诉讼角色/关系 — 菱形
   LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', size: 16, note: '诉讼角色' },
   // 案件核心争议/焦点 — 五角星
@@ -2289,24 +2289,46 @@ function renderTermVis(nodes, edges) {
   var colMap = window.__TERM_COLORS || {};
   var sizeMap = window.__TERM_SIZES || {};
 
-  // ── 布局层级映射（瀑布流 Y 坐标） ──
-  var LEVEL_MAP = {
-    CaseType:        0,
-    CourtCase:       0,
-    GuidingCase:     1,
-    CaseSummary:     1,
-    JudgmentResult:  1,
-    Person:          2,
-    LegalRole:       2,
-    Judge:           2,
-    Attorney:        2,
-    Evidence:        3,
-    LegalSubject:    3,
-    LegalProvision:  4,
-    Law:             4,
-    LegalNorm:       4,
+  // ── X 轴区域映射（左中右）+ Y 轴层级（二维布局） ──
+  var ZONE_MAP = {
+    // 左侧：证据
+    Evidence:      'left',
+    // 中间：案件核心
+    CourtCase:     'center',
+    GuidingCase:   'center',
+    CaseType:      'center',
+    CaseSummary:   'center',
+    JudgmentResult:'center',
+    // 右侧：次要角色
+    Judge:         'right',
+    Attorney:      'right',
+    LegalRole:     'right',
+    Person:        'right',
+    LegalSubject:  'right',
+    // 下方：法条
+    LegalProvision:'bottom',
+    Law:           'bottom',
+    LegalNorm:     'bottom',
   };
-  var DEFAULT_LEVEL = 5;
+
+  // ── Y 轴层级（同一区域内垂直分布），数值越大，Y 坐标越低（越靠下）
+  var Y_LEVEL_MAP = {
+    CourtCase:     0,
+    GuidingCase:   0,
+    CaseType:      0,
+    CaseSummary:   1,
+    JudgmentResult:1,
+    Evidence:      0,
+    Judge:         0,
+    Attorney:      1,
+    LegalRole:     1,
+    Person:        0,
+    LegalSubject:  0,
+    LegalProvision:0,
+    Law:           0,
+    LegalNorm:     0,
+  };
+  var DEFAULT_Y_LEVEL = 2;
   var __SKIP_LAYOUT_OPTIMIZE = window.__SKIP_LAYOUT_OPTIMIZE === true;
   var visNodes = new vis.DataSet(nodes.map(function(n) {
     var nc = colMap[n.nodeType] || colMap[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
@@ -2355,36 +2377,66 @@ function renderTermVis(nodes, edges) {
     layout: { improvedLayout: false, randomSeed: 42 },
   };
   termVisNetwork = new vis.Network(mynetwork, data, options);
+
+  // ── 拖拽时不触发物理引擎（解决拖拽晃动） ──
+  termVisNetwork.on('dragStart', function() {
+    termVisNetwork.setOptions({ physics: { enabled: false } });
+  });
+
+  // ── stabilization 完成后：应用二维左中右下布局，然后冻结物理引擎 ──
   termVisNetwork.on('stabilizationIterationsDone', function() {
     // Close physics first
     termVisNetwork.setOptions({ physics: { enabled: false } });
 
     if (!__SKIP_LAYOUT_OPTIMIZE) {
-      // ── Step 1: 按 nodeType 固定 Y 坐标（瀑布流分层） ──
+      // 收集每个 zone + y_level 下的节点，方便 X 方向分散
+      var zoneBuckets = {};
       nodes.forEach(function(n) {
-        var level = LEVEL_MAP[n.nodeType] !== undefined ? LEVEL_MAP[n.nodeType] : DEFAULT_LEVEL;
-        var baseY = level * 130 + 30;
-        var yOffset = (Math.random() - 0.5) * 20;  // 层内微偏移
-        termVisNetwork.moveNode(n.id, null, baseY + yOffset);
+        var zone = ZONE_MAP[n.nodeType] || 'center';
+        var yLvl = Y_LEVEL_MAP[n.nodeType] !== undefined ? Y_LEVEL_MAP[n.nodeType] : DEFAULT_Y_LEVEL;
+        var key = zone + '|' + yLvl;
+        if (!zoneBuckets[key]) zoneBuckets[key] = [];
+        zoneBuckets[key].push(n);
       });
 
-      // ── Step 2: 短暂启用 physics（repulsion 模式）让 X 方向自然展开 ──
-      termVisNetwork.setOptions({
-        physics: {
-          enabled: true,
-          solver: 'repulsion',
-          repulsion: { nodeDistance: 150, centralGravity: 0.05, springLength: 200, damping: 0.9 },
-          stabilization: { iterations: 30, fit: false },
-        }
+      // 各区域的 X 偏移量（负=左侧，正=右侧）
+      var zoneXOffset = {
+        left:   -500,
+        center: 0,
+        right:  500,
+        bottom: 0,     // 法条在正下方，与中间同X区域
+      };
+
+      // 各区域的 Y 基准（bottom 区域在更下方，与 center 错开）
+      var zoneYBase = {
+        left:   30,
+        center: 30,
+        right:  30,
+        bottom: 550,   // 法条在底部显示
+      };
+
+      nodes.forEach(function(n) {
+        var zone = ZONE_MAP[n.nodeType] || 'center';
+        var yLvl = Y_LEVEL_MAP[n.nodeType] !== undefined ? Y_LEVEL_MAP[n.nodeType] : DEFAULT_Y_LEVEL;
+        var xBase = zoneXOffset[zone] || 0;
+        var yBase = (zoneYBase[zone] || 30) + yLvl * 120;
+
+        // X 方向分散：同 zone 同 yLevel 的节点均匀分布
+        var key = zone + '|' + yLvl;
+        var bucket = zoneBuckets[key] || [];
+        var idx = bucket.indexOf(n);
+        var bucketSize = bucket.length;
+        var spacing = 160; // 两个同区节点间距
+        var startX = xBase - (bucketSize - 1) * spacing / 2;
+        var targetX = startX + idx * spacing;
+
+        termVisNetwork.moveNode(n.id, targetX, yBase);
       });
 
-      // ── Step 3: 等待二次稳定后再冻结 ──
-      termVisNetwork.once('stabilizationIterationsDone', function() {
-        termVisNetwork.setOptions({ physics: { enabled: false } });
-        termVisNetwork.fit({ animation: true });
-        // ── Step 4: 应用聚类折叠 ──
-        applyClustering(termVisNetwork, nodes);
-      });
+      // 不再启动物理引擎，直接 fit
+      termVisNetwork.fit({ animation: true });
+      // 应用聚类折叠
+      applyClustering(termVisNetwork, nodes);
     } else {
       termVisNetwork.fit({ animation: true });
     }
