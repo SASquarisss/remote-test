@@ -1329,6 +1329,29 @@ function renderParseNode(node) {
   html += '<div class="field-row"><span class="field-name">ID</span><span style="margin-left:8px;font-family:monospace;font-size:11px;color:#666;">' + escapeHtml(node.id) + '</span></div>';
   html += '</div>';
 
+  // ── Extra fields from node object (case_number, role_name, evidence_type, etc.) ──
+  var extraFields = {
+    '案号': node.case_number || node.caseNumber || '',
+    '角色': node.role_name || node.roleName || '',
+    '证据类型': node.evidence_type || node.evidenceType || '',
+    '当事人类型': node.party_type || node.partyType || '',
+    '身份': node.identity || '',
+    '案由': node.case_type || node.caseType || '',
+    '总得分': node.score !== undefined ? node.score : undefined,
+  };
+  var hasExtra = Object.keys(extraFields).filter(function(k) { return extraFields[k]; }).length > 0;
+  if (hasExtra) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">📎 附加属性</div>';
+    Object.keys(extraFields).forEach(function(k) {
+      var v = extraFields[k];
+      if (v) {
+        html += '<div class="field-row"><span class="field-name">' + k + '</span><span style="margin-left:8px;color:#555;word-break:break-all;">' + escapeHtml(String(v)) + '</span></div>';
+      }
+    });
+    html += '</div>';
+  }
+
   // Title (extra info from parser) — structured display with <br> splitting
   var title = node.title || '';
   if (title) {
@@ -1706,22 +1729,28 @@ function renderShapePreview(containerId, shape, color, border, sizeVal) {
   switch (shape) {
     case 'box':
     case 'square':
-      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/><rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'ellipse':
     case 'circle':
-      svg += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + r + '" ry="' + r + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+      svg += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + r + '" ry="' + r + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/><ellipse cx="' + cx + '" cy="' + cy + '" rx="' + r + '" ry="' + r + '" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'database':
-      svg += '<ellipse cx="' + cx + '" cy="8" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
-      svg += '<path d="M 4 8 L 4 20 C 4 22.76 9.37 24 14 24 C 18.63 24 24 22.76 24 20 L 24 8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
-      svg += '<ellipse cx="' + cx + '" cy="20" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+      var dbR = Math.max(size / 2 - 2, 4);
+      var dbHalfR = Math.max(dbR * 0.5, 2);
+      var dbTop = dbHalfR + 1;
+      var dbBot = size - dbHalfR - 1;
+      var dbLeft = dbR + 1;
+      var dbRight = size - dbR - 1;
+      svg += '<ellipse cx="' + cx + '" cy="' + dbTop + '" rx="' + dbR + '" ry="' + dbHalfR + '" fill="' + color + '" stroke="' + border + '" stroke-width="1"/>';
+      svg += '<path d="M ' + dbLeft + ' ' + dbTop + ' L ' + dbLeft + ' ' + dbBot + ' C ' + dbLeft + ' ' + (dbBot + 2) + ' ' + (cx) + ' ' + (dbBot + 3) + ' ' + dbRight + ' ' + dbBot + ' L ' + dbRight + ' ' + dbTop + '" fill="' + color + '" stroke="' + border + '" stroke-width="1"/>';
+      svg += '<ellipse cx="' + cx + '" cy="' + dbBot + '" rx="' + dbR + '" ry="' + dbHalfR + '" fill="' + color + '" stroke="' + border + '" stroke-width="1"/>';
       break;
     case 'diamond':
-      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + cy + ' ' + cx + ',' + (size - 2) + ' 2,' + cy + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + cy + ' ' + cx + ',' + (size - 2) + ' 2,' + cy + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/><polygon points="' + cx + ',2 ' + (size - 2) + ',' + cy + ' ' + cx + ',' + (size - 2) + ' 2,' + cy + '" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'dot':
-      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/><circle cx="' + cx + '" cy="' + cy + '" r="8" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'star':
       var pts = [];
