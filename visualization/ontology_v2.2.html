@@ -6,8 +6,37 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: #f5f7fa; }
-#mynetwork { width: 100%; height: 100vh; display: none; }
-#ontologyContainer { width: 100%; height: 100vh; position: relative; display: block; }
+#mynetwork { width: 100%; height: 100vh; display: block; }
+#ontologyContainer {
+  position: fixed; top: 54px; left: 20px; z-index: 998;
+  width: 460px; height: 520px; min-width: 300px; min-height: 240px;
+  resize: both; overflow: hidden;
+  background: #f5f7fa; border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3); border: 1px solid #ddd;
+  display: block;
+}
+#ontologyContainer .ontology-drag-handle {
+  position: absolute; top: 0; left: 0; right: 0; height: 28px;
+  cursor: grab; user-select: none;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-radius: 9px 9px 0 0; color: #fff;
+  font-size: 12px; display: flex; align-items: center; padding: 0 10px; gap: 6px;
+  z-index: 2;
+}
+#ontologyContainer .ontology-drag-handle:active { cursor: grabbing; }
+#ontologyContainer .ontology-drag-handle .oh-close {
+  margin-left: auto; cursor: pointer; opacity: 0.7; font-size: 14px;
+}
+#ontologyContainer .ontology-drag-handle .oh-close:hover { opacity: 1; }
+#ontologyContainer .ontology-drag-handle .oh-toggle-full {
+  cursor: pointer; opacity: 0.7; font-size: 13px; margin-left: 4px;
+}
+#ontologyContainer .ontology-drag-handle .oh-toggle-full:hover { opacity: 1; }
+#ontologyContainer #mynetwork {
+  position: absolute; top: 28px; left: 0; right: 0; bottom: 0;
+  width: auto; height: auto; display: block;
+  min-height: 100px;
+}
 /* Legend — 树形继承图例，固定在左上角 */
 .legend {
   position: fixed; top: 60px; left: 16px; z-index: 999;
@@ -258,9 +287,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 #detailPanel::-webkit-scrollbar-track { background: transparent; }
 #detailPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 #detailPanel::-webkit-scrollbar-thumb:hover { background: #999; }
+
+/* ── 主区域解析知识图谱容器 ── */
+#kgMainView {
+  position: fixed; top: 44px; left: 0; right: 0; bottom: 0;
+  z-index: 1; overflow: hidden;
+  background: #f5f7fa;
+}
 </style>
 </head>
 <body>
+
+<!-- 主区域解析知识图谱容器 -->
+<div id="kgMainView"></div>
 
 <div class="title-bar">
   <div>
@@ -275,6 +314,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 </div>
 
 <div id="ontologyContainer" class="hidden">
+<div class="ontology-drag-handle" id="ontologyDragHandle">
+  <span>📐 本体论图谱</span>
+  <span class="oh-toggle-full" id="ohToggleFull" title="切换全屏/窗口">⛶</span>
+  <span class="oh-close" id="ohClose" title="关闭（切换到解析KG）">✕</span>
+</div>
 <div id="mynetwork"></div>
 
 <div class="legend">
@@ -300,6 +344,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
       <button class="btn-config-apply" onclick="applyEntityStyles()">✓ 应用配置</button>
     </div>
   </div>
+</div>
 </div>
 
 <!-- ===== Detail Panel ===== -->
@@ -2097,6 +2142,7 @@ window.__DOM = {};
   window.__DOM._legend = document.querySelector('.legend');
   console.log('[PRECAPTURE] panelClose=' + !!window.__DOM.panelClose);
   console.log('[PRECAPTURE] body.children=' + (document.body ? document.body.children.length : -1));
+  console.log('[PRECAPTURE] legend=' + !!window.__DOM._legend + ' parent=' + (window.__DOM._legend ? window.__DOM._legend.parentNode ? window.__DOM._legend.parentNode.tagName : 'null' : 'null'));
 })();
 </script>
 <script>
@@ -2110,6 +2156,289 @@ console.log('[DOM-DEBUG] docFrameElement: ' + (document.defaultView === window))
 var ids = []; try { document.querySelectorAll('[id]').forEach(function(e){ids.push(e.id);}); } catch(e) {}
 console.log('[DOM-DEBUG] all_ids=[' + ids.join(',') + ']');
 }catch(e){console.error('[DOM-DEBUG] error:',e);}})();
+
+// ── DOM Repair: restore elements removed by Edge content.js ──
+(function(){
+  var REPAIR_TARGETS = [
+    { containerId: 'detailPanel',   childIds: ['panelTabs','panelBody','panelTitle','panelShrink','panelClose'] },
+    { containerId: 'panelBody',     childIds: ['panelTabInfo','panelTabNeighbors','panelTabRaw'] },
+    { containerId: 'parseTerminal', childIds: ['termResizeHandle','termInput','btnParse','btnClear',
+      'termStatus','termJsonArea','termVisArea','termIssuesArea','termEvalArea','termFooter'] },
+  ];
+  REPAIR_TARGETS.forEach(function(rt) {
+    var containerEl = window.__DOM[rt.containerId] || document.getElementById(rt.containerId);
+    if (!containerEl) return;
+    rt.childIds.forEach(function(cid) {
+      if (!document.getElementById(cid) && window.__DOM[cid]) {
+        var child = window.__DOM[cid];
+        if (child.parentNode !== containerEl) {
+          try { containerEl.appendChild(child); } catch(e) {}
+        }
+      }
+    });
+  });
+  // Also repair .legend in ontologyContainer
+  var oc = window.__DOM.ontologyContainer || document.getElementById('ontologyContainer');
+  if (oc && !document.querySelector('.legend') && window.__DOM._legend) {
+    try { oc.appendChild(window.__DOM._legend); } catch(e) {}
+  }
+  console.log('[REPAIR] body.children=' + document.body.children.length);
+})();
+
+// ── Continuous DOM Repair via MutationObserver ──
+(function(){
+  if (window.__domRepairMO) return;
+  var REPAIR_CFG = {
+    containers: [
+      { parentId: null, childIds: ['title-bar','ontologyContainer','styleConfigOverlay','detailPanel','parseTerminal'] },
+    ],
+    reparent: {
+      'detailPanel':   { children: ['panelTitle','panelShrink','panelClose','panelTabs','panelBody'] },
+      'panelBody':     { children: ['panelTabInfo','panelTabNeighbors','panelTabRaw'] },
+      'parseTerminal': { children: ['termResizeHandle','termInput','btnParse','btnClear','termStatus',
+        'termJsonArea','termVisArea','termIssuesArea','termEvalArea','termFooter'] },
+    }
+  };
+  function doRepair() {
+    // Level 1: reattach major panels to body
+    REPAIR_CFG.containers[0].childIds.forEach(function(cid) {
+      if (!document.getElementById(cid) && window.__DOM[cid]) {
+        try { document.body.appendChild(window.__DOM[cid]); } catch(e) {}
+      }
+    });
+    // Level 2: reattach children to their parents
+    Object.keys(REPAIR_CFG.reparent).forEach(function(pid) {
+      var parent = window.__DOM[pid] || document.getElementById(pid);
+      if (!parent) return;
+      REPAIR_CFG.reparent[pid].children.forEach(function(cid) {
+        if (!document.getElementById(cid) && window.__DOM[cid]) {
+          var child = window.__DOM[cid];
+          if (child.parentNode !== parent) {
+            try { parent.appendChild(child); } catch(e) {}
+          }
+        }
+      });
+    });
+    // Level 3: legend
+    if (!document.querySelector('.legend') && window.__DOM._legend) {
+      var oc = window.__DOM.ontologyContainer || document.getElementById('ontologyContainer');
+      if (oc) try { oc.appendChild(window.__DOM._legend); } catch(e) {}
+      if (window.__DOM._legendShow && !document.querySelector('.legend-show-trigger')) {
+        try { document.body.appendChild(window.__DOM._legendShow); } catch(e) {}
+      }
+    }
+  }
+  doRepair();
+  window.__domRepairMO = new MutationObserver(function() {
+    if (document.body.children.length < 4) { doRepair(); }
+  });
+  window.__domRepairMO.observe(document.body, { childList: true, subtree: true });
+})();
+
+// ── Pre-declare switchPanelTab for first script block ──
+if (typeof window.switchPanelTab === 'undefined') {
+  window.switchPanelTab = function(tab) {
+    try {
+      document.querySelectorAll('#panelTabs .panel-tab').forEach(function(t) {
+        t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+      });
+      document.querySelectorAll('#panelBody .panel-tab-content').forEach(function(c) {
+        c.classList.toggle('active', c.id === 'panelTab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+      });
+      // Lazy render neighbor/raw tabs based on current panel data
+      if (tab === 'neighbors') {
+        renderNeighborTab();
+      } else if (tab === 'raw') {
+        renderRawTab();
+      }
+    } catch(e) {
+      console.warn('[switchPanelTab] error:', e);
+    }
+  };
+}
+
+// ── Lazy render functions for detail panel tabs ──
+function renderNeighborTab() {
+  var el = document.getElementById('panelTabNeighbors');
+  if (!el) return;
+  if (!window.currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
+  var nodeId = window.currentPanelData.id || '';
+  var usedNetwork = (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) ? termVisNetwork : (window.network || null);
+  if (!usedNetwork) { el.innerHTML = '<div class="empty-hint">网络未就绪</div>'; return; }
+  var _esc = window.__escapeHtml || function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+
+  // ── 收集数据 ──
+  var connected, connectedEdges;
+  try {
+    connected = usedNetwork.getConnectedNodes(nodeId) || [];
+    connectedEdges = usedNetwork.getConnectedEdges(nodeId) || [];
+  } catch(e) {
+    connected = []; connectedEdges = [];
+  }
+
+  // label for the center node
+  var centerNode = usedNetwork.body.data.nodes.get(nodeId);
+  var centerLabel = centerNode ? (centerNode.label || centerNode.title || nodeId) : nodeId;
+
+  // Build edgeId → {from, to, label} map
+  var edgeMap = {};
+  connectedEdges.forEach(function(eid) {
+    var eData = usedNetwork.body.data.edges.get(eid);
+    if (eData) {
+      edgeMap[eid] = { from: eData.from, to: eData.to, label: eData.label || '' };
+    }
+  });
+
+  // Build paths: for each neighbor, find the connecting edge
+  var paths = [];
+  connected.forEach(function(cid) {
+    var neighborNode = usedNetwork.body.data.nodes.get(cid);
+    var neighborLabel = neighborNode ? (neighborNode.label || neighborNode.title || cid) : cid;
+    var neighborType = (neighborNode && neighborNode.nodeType) || '';
+    // Find the edge that connects nodeId ↔ cid
+    var relLabel = '';
+    var relEdgeId = '';
+    Object.keys(edgeMap).forEach(function(eid) {
+      var e = edgeMap[eid];
+      // direction: center → neighbor or neighbor → center
+      if ((e.from === nodeId && e.to === cid) || (e.from === cid && e.to === nodeId)) {
+        relLabel = e.label;
+        relEdgeId = eid;
+      }
+    });
+    paths.push({
+      neighborId: cid,
+      neighborLabel: neighborLabel,
+      neighborType: neighborType,
+      relLabel: relLabel || '关联',
+      relEdgeId: relEdgeId,
+    });
+  });
+
+  // ── 渲染：路径区（置顶） ──
+  var html = '';
+  html += '<div class="panel-section"><div class="panel-section-title">🛤️ 关联路径 (' + paths.length + ')</div>';
+  if (paths.length === 0) {
+    html += '<div class="empty-hint">无关联路径</div>';
+  } else {
+    paths.forEach(function(p) {
+      var actualFrom = '', actualTo = '';
+      if (p.relEdgeId) {
+        var eData = usedNetwork.body.data.edges.get(p.relEdgeId);
+        if (eData) { actualFrom = eData.from; actualTo = eData.to; }
+      }
+      var fromLabel = (actualFrom === nodeId) ? centerLabel : p.neighborLabel;
+      var toLabel = (actualTo === nodeId) ? centerLabel : p.neighborLabel;
+
+      html += '<div class="path-item" data-path-edge="' + _esc(String(p.relEdgeId)) + '"';
+      html += ' data-path-from="' + _esc(String(p.neighborId)) + '" data-path-to="' + _esc(String(p.neighborId)) + '"';
+      html += ' style="cursor:pointer;padding:4px 0;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:4px;font-size:12px;">';
+      if (actualFrom === nodeId) {
+        // center → neighbor
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(fromLabel)) + '">' + _esc(String(fromLabel)) + '</span>';
+        html += '<span style="color:#2980b9;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="border:1px solid #2980b9;border-radius:3px;padding:0 4px;font-size:10px;color:#2980b9;flex-shrink:0;">' + _esc(p.relLabel) + '</span>';
+        html += '<span style="color:#2980b9;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(toLabel)) + '">' + _esc(String(toLabel)) + '</span>';
+      } else {
+        // neighbor → center
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(fromLabel)) + '">' + _esc(String(fromLabel)) + '</span>';
+        html += '<span style="color:#e74c3c;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="border:1px solid #e74c3c;border-radius:3px;padding:0 4px;font-size:10px;color:#e74c3c;flex-shrink:0;">' + _esc(p.relLabel) + '</span>';
+        html += '<span style="color:#e74c3c;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(toLabel)) + '">' + _esc(String(toLabel)) + '</span>';
+      }
+      html += '<span style="margin-left:auto;font-size:10px;color:#999;flex-shrink:0;">' + _esc(p.neighborType) + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // ── 邻居列表（下方） ──
+  html += '<div class="panel-section"><div class="panel-section-title">🔗 邻居节点 (' + connected.length + ')</div>';
+  if (connected.length === 0) {
+    html += '<div class="empty-hint">无关联节点</div>';
+  } else {
+    connected.forEach(function(cid) {
+      var cNode = usedNetwork.body.data.nodes.get(cid);
+      var cLabel = cNode ? (cNode.label || cNode.title || cid) : cid;
+      html += '<div class="rel-item" data-target="' + cid + '" style="cursor:pointer;">';
+      html += '<span class="rel-source">' + _esc(String(cLabel)) + '</span>';
+      html += '<span class="rel-meta">' + (cNode && cNode.nodeType ? cNode.nodeType : '') + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  html += '<div class="panel-section"><div class="panel-section-title">🔗 关系边 (' + connectedEdges.length + ')</div>';
+  if (connectedEdges.length === 0) {
+    html += '<div class="empty-hint">无关系边</div>';
+  } else {
+    connectedEdges.forEach(function(eid) {
+      var eData = usedNetwork.body.data.edges.get(eid);
+      if (!eData) return;
+      var fromNode = usedNetwork.body.data.nodes.get(eData.from);
+      var toNode = usedNetwork.body.data.nodes.get(eData.to);
+      var fromLabel = fromNode ? (fromNode.label || eData.from) : eData.from;
+      var toLabel = toNode ? (toNode.label || eData.to) : eData.to;
+      html += '<div class="rel-item" data-edge="' + eid + '" style="cursor:pointer;font-size:11px;">';
+      html += '<span class="rel-source">' + _esc(String(fromLabel)) + '</span>';
+      html += ' <span style="color:#999;">→[' + _esc(eData.label || '') + ']→</span> ';
+      html += '<span class="rel-source">' + _esc(String(toLabel)) + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  el.innerHTML = html;
+
+  // ── 点击路径：高亮图中节点和边 ──
+  el.querySelectorAll('.path-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var edgeId = this.getAttribute('data-path-edge');
+      var nid = this.getAttribute('data-path-to');
+      usedNetwork.setOptions({ edges: { smooth: { type: 'curvedCW', roundness: 0.12 } } });
+      if (edgeId) {
+        usedNetwork.selectEdges([edgeId]);
+      }
+      if (nid) {
+        usedNetwork.focus(nid, { scale: 1.3, animation: true });
+      }
+    });
+  });
+
+  // ── 点击邻居节点：聚焦 + 切换面板 ──
+  el.querySelectorAll('.rel-item[data-target]').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var tid = this.getAttribute('data-target');
+      if (usedNetwork.getNode(tid)) {
+        usedNetwork.focus(tid, { scale: 1.2, animation: true });
+        if (usedNetwork === termVisNetwork) {
+          var n = usedNetwork.body.data.nodes.get(tid);
+          if (n) { window.currentPanelData = n; renderParseNode(n); switchPanelTab('info'); }
+        } else {
+          window.currentPanelData = { id: tid };
+          showEntityDetail(tid);
+        }
+      }
+    });
+  });
+}
+function renderRawTab() {
+  var el = document.getElementById('panelTabRaw');
+  if (!el) return;
+  if (!window.currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
+  var raw = JSON.stringify(window.currentPanelData, null, 2);
+  var _esc = window.__escapeHtml || function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  el.innerHTML = '<pre style="font-size:11px;line-height:1.4;overflow:auto;max-height:50vh;background:#f8f9fa;padding:10px;border-radius:4px;font-family:monospace;white-space:pre-wrap;word-break:break-all;">' + _esc(raw) + '</pre>';
+}
+
+// ── Pre-declare toggleParseTerminal for inline onclick ──
+if (typeof window.toggleParseTerminal === 'undefined') {
+  window.toggleParseTerminal = function() {
+    console.warn('[DEFER] toggleParseTerminal called before terminal code loaded');
+  };
+}
 
 // ============================================================
 // 1. 类型定义 — is_a 继承关系 + 颜色分组 + 中文标注
@@ -2586,7 +2915,13 @@ network.on('stabilizationIterationsDone', function() {
   // 稳定后关闭物理引擎，防止持续浮动
   network.setOptions({ physics: { enabled: false } });
   // 构建继承树图例
-  if (document.querySelector('.legend')) {
+  var legendEl = window.__DOM._legend || document.querySelector('.legend');
+  if (legendEl) {
+    // Check if legend is still in document body
+    if (!document.body.contains(legendEl)) {
+      var oc = window.__DOM.ontologyContainer || document.getElementById('ontologyContainer');
+      if (oc) try { oc.insertBefore(legendEl, oc.firstChild); } catch(e) {}
+    }
     buildLegend();
   } else {
     console.warn('[DOM] .legend element not found, skipping buildLegend()');
@@ -2599,14 +2934,72 @@ network.on('stabilizationIterationsDone', function() {
 window.addEventListener('resize', function() {
   network.fit({ animation: true });
   // Also fit parse network if visible
-  if (termVisNetwork && window.__DOM.mynetwork.style.display !== 'none') {
+  if (typeof termVisNetwork !== 'undefined' && termVisNetwork && window.__DOM.mynetwork.style.display !== 'none') {
     termVisNetwork.fit({ animation: true });
   }
 });
 
-// 适配 title-bar 高度
-container.style.marginTop = '44px';
-container.style.height = 'calc(100vh - 44px)';
+// 改为悬浮窗口模式：不再修改 marginTop/height，移除 hidden 类
+container.classList.remove('hidden');
+
+// ── 拖拽逻辑 ──
+var dragHandle = document.getElementById('ontologyDragHandle');
+if (dragHandle) {
+  var dragStartX, dragStartY, dragStartLeft, dragStartTop;
+  dragHandle.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.oh-close') || e.target.closest('.oh-toggle-full')) return;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    var rect = container.getBoundingClientRect();
+    dragStartLeft = rect.left;
+    dragStartTop = rect.top;
+    function onMove(ev) {
+      container.style.left = (dragStartLeft + ev.clientX - dragStartX) + 'px';
+      container.style.top = (dragStartTop + ev.clientY - dragStartY) + 'px';
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+// 关闭按钮：隐藏本体论图，显示解析 KG
+var ohClose = document.getElementById('ohClose');
+if (ohClose) {
+  ohClose.addEventListener('click', function() {
+    container.style.display = 'none';
+    var mn = window.__DOM.mynetwork || document.getElementById('mynetwork');
+    if (mn) {
+      mn.style.display = 'block';
+      mn.style.width = '100%';
+      mn.style.height = '100vh';
+    }
+    if (window.network) window.network.fit({ animation: true });
+    if (typeof toggleOntologyView !== 'undefined') ontologyVisible = false;
+  });
+}
+// 全屏切换
+var ohToggle = document.getElementById('ohToggleFull');
+if (ohToggle) {
+  ohToggle.addEventListener('click', function() {
+    var isFull = container.classList.toggle('ontology-fullscreen');
+    if (isFull) {
+      container.style.width = '100vw';
+      container.style.height = '100vh';
+      container.style.top = '0'; container.style.left = '0';
+      container.style.zIndex = '9999';
+      container.style.resize = 'none';
+    } else {
+      container.style.width = '460px'; container.style.height = '520px';
+      container.style.top = '54px'; container.style.left = '20px';
+      container.style.zIndex = '998';
+      container.style.resize = 'both';
+    }
+    if (window.network) setTimeout(function() { window.network.fit({ animation: true }); }, 50);
+  });
+}
 
 // ============================================================
 // 7. Detail Panel Logic
@@ -2638,6 +3031,37 @@ if (!panelClose || !panelShrink || !detailPanel) {
 } else {
   bindPanelEvents();
 }
+
+function hidePanel() {
+  detailPanel.classList.remove('open');
+  detailPanel.classList.remove('panel-compact');
+  panelShrink.innerHTML = '◁';
+  panelShrink.title = '缩略模式';
+  panelCompact = false;
+  isPanelLocked = false;
+  currentSelection = null;
+}
+window.hidePanel = hidePanel;
+
+function showEntityDetail(typeName) {
+  detailPanel.classList.remove('edge-mode');
+  detailPanel.classList.remove('panel-compact');
+  renderEntityPanel(typeName);
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  currentSelection = 'node:' + typeName;
+}
+window.showEntityDetail = showEntityDetail;
+
+function showEdgeDetail(edgeId) {
+  detailPanel.classList.add('edge-mode');
+  detailPanel.classList.remove('panel-compact');
+  renderEdgePanel(edgeId);
+  detailPanel.classList.add('open');
+  isPanelLocked = true;
+  currentSelection = 'edge:' + edgeId;
+}
+window.showEdgeDetail = showEdgeDetail;
 
 function bindPanelEvents() {
 // Close button — closes panel completely
@@ -2679,34 +3103,6 @@ document.addEventListener('keydown', function(e) {
     hidePanel();
   }
 });
-
-function showEntityDetail(typeName) {
-  detailPanel.classList.remove('edge-mode');
-  detailPanel.classList.remove('panel-compact');
-  renderEntityPanel(typeName);
-  detailPanel.classList.add('open');
-  isPanelLocked = true;
-  currentSelection = 'node:' + typeName;
-}
-
-function showEdgeDetail(edgeId) {
-  detailPanel.classList.add('edge-mode');
-  detailPanel.classList.remove('panel-compact');
-  renderEdgePanel(edgeId);
-  detailPanel.classList.add('open');
-  isPanelLocked = true;
-  currentSelection = 'edge:' + edgeId;
-}
-
-function hidePanel() {
-  detailPanel.classList.remove('open');
-  detailPanel.classList.remove('panel-compact');
-  panelShrink.innerHTML = '◁';
-  panelShrink.title = '缩略模式';
-  panelCompact = false;
-  isPanelLocked = false;
-  currentSelection = null;
-}
 } // end bindPanelEvents
 
 // Node hover → 预览，不锁定
@@ -2907,6 +3303,7 @@ function renderInheritanceChain(chain) {
 // 构建继承树图例
 function buildLegend() {
   var roots = ['LegalNorm', 'JudicialEntity', 'LegalSubject', 'Person'];
+  console.log('[LEGEND] start, roots=' + roots.length);
   var rootNames = {'LegalNorm':'规范层', 'JudicialEntity':'司法实体层', 'LegalSubject':'主体层', 'Person':'自然人层'};
   var rootColors = {'LegalNorm':'#2980b9', 'JudicialEntity':'#d35400', 'LegalSubject':'#27ae60', 'Person':'#16a085'};
   var children = {};
@@ -2952,6 +3349,7 @@ function buildLegend() {
   html += '</div>';
   html += '<div style="margin-top:8px;font-size:10px;color:#aaa;">&#x1F5B2; 悬停高亮同类型节点，点击聚焦</div>';
   window.__DOM._legend.innerHTML = '<div class="legend-title"><span>📋 继承树</span><span class="legend-close" onclick="toggleLegend()">⭕−</span></div>' + html;
+  console.log('[LEGEND] done, html=' + html.length + ' chars, legend parent=' + (window.__DOM._legend.parentNode ? window.__DOM._legend.parentNode.id || window.__DOM._legend.parentNode.className : 'none'));
 
   // ── 图例悬停高亮对应节点 ──
   setTimeout(function() {
@@ -3180,11 +3578,27 @@ function renderEntityPanel(typeName) {
     html += '</div>';
   }
 
-  // ── 写入基本信息Tab ──
-  document.getElementById('panelTabInfo').innerHTML = html;
-  document.getElementById('panelTabs').style.display = 'flex';
+  // ── 写入基本信息Tab，带空值保护 ──
+  var tabInfo = document.getElementById('panelTabInfo');
+  if (!tabInfo) {
+    console.warn('[RENDER] panelTabInfo not found, attempting DOM repair');
+    var pb = window.__DOM.panelBody || document.getElementById('panelBody');
+    if (pb && window.__DOM.panelTabInfo) {
+      try { pb.appendChild(window.__DOM.panelTabInfo); } catch(e) {}
+      if (window.__DOM.panelTabNeighbors) try { pb.appendChild(window.__DOM.panelTabNeighbors); } catch(e) {}
+      if (window.__DOM.panelTabRaw) try { pb.appendChild(window.__DOM.panelTabRaw); } catch(e) {}
+      tabInfo = document.getElementById('panelTabInfo');
+    }
+  }
+  if (tabInfo) tabInfo.innerHTML = html;
+  var tabs = document.getElementById('panelTabs');
+  if (tabs) tabs.style.display = 'flex';
   // 重置tab到基本信息，清除邻居/raw缓存
   switchPanelTab('info');
+  var _nb = document.getElementById('panelTabNeighbors');
+  if (_nb) _nb.removeAttribute('data-rendered');
+  var _rw = document.getElementById('panelTabRaw');
+  if (_rw) _rw.removeAttribute('data-rendered');
 
   // Attach click handlers to relation items
   panelBody.querySelectorAll('.rel-item').forEach(function(el) {
@@ -3326,6 +3740,11 @@ function renderParseNode(node) {
   document.getElementById('panelTabInfo').innerHTML = html;
   document.getElementById('panelTabs').style.display = 'flex';
   switchPanelTab('info');
+  // Reset neighbor/raw lazy render flags for next tab switch
+  var _b = document.getElementById('panelTabNeighbors');
+  if (_b) _b.removeAttribute('data-rendered');
+  var _w = document.getElementById('panelTabRaw');
+  if (_w) _w.removeAttribute('data-rendered');
 }
 
 function escapeHtml(str) {
@@ -3457,8 +3876,10 @@ function renderEdgePanel(edgeId) {
     html += '</div>';
   }
 
-  document.getElementById('panelTabInfo').innerHTML = html;
-  document.getElementById('panelTabs').style.display = 'flex';
+  var tabInfo = document.getElementById('panelTabInfo');
+  if (tabInfo) tabInfo.innerHTML = html;
+  var tabs = document.getElementById('panelTabs');
+  if (tabs) tabs.style.display = 'flex';
   switchPanelTab('info');
 }
 
@@ -4374,7 +4795,7 @@ var TERM_SHAPES = {
   Judge: 'ellipse', Attorney: 'ellipse', JudgmentResult: 'box', CaseSummary: 'box',
   Fact: 'ellipse', DisputeFocus: 'star',
 };
-
+// ── 终端展开/收起 ──
 function toggleParseTerminal() {
   termExpanded = !termExpanded;
   var panel = document.getElementById('parseTerminal');
@@ -4396,6 +4817,7 @@ function toggleParseTerminal() {
     setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 350);
   }
 }
+window.toggleParseTerminal = toggleParseTerminal;
 
 function doParse() {
   var textarea = document.getElementById('termInput');
@@ -4470,14 +4892,24 @@ function regenIssues() {
     btn.disabled = false; btn.classList.remove('loading');
   }, 100);
 }
+
+// ── 加载测试数据 ──
 function loadTestData() {
+  var termInput = document.getElementById('termInput');
+  if (!termInput) {
+    console.warn('[LOAD] #termInput not found in DOM, retrying in 500ms');
+    setTimeout(loadTestData, 500);
+    return;
+  }
+  var btnParse = document.getElementById('btnParse');
+  console.log('[LOAD] fetching test data...');
   fetch(API_BASE + '/api/test-data')
   .then(function(r) { return r.json(); })
   .then(function(data) {
     var inputText = data.text || data.raw_text || '';
     if (inputText && data.json_result && Object.keys(data.json_result).length > 0) {
-      document.getElementById('termInput').value = inputText;
-      document.getElementById('btnParse').textContent = '⚡ 重新解析';
+      termInput.value = inputText;
+      if (btnParse) btnParse.textContent = '⚡ 重新解析';
       // Expand terminal panel first so all DOM elements are visible
       ensureTerminalExpanded();
       // Auto-render the saved parse result into the terminal
@@ -4498,8 +4930,24 @@ function loadTestData() {
 }
 
 function ensureTerminalExpanded() {
-  // P0: No-op — terminal stays collapsed by default on page load.
-  // User must click the toggle button to expand.
+  var terminal = document.getElementById('parseTerminal');
+  if (!terminal) return;
+  if (!terminal.classList.contains('expanded')) {
+    terminal.classList.add('expanded');
+    // Update mynetwork height if it exists
+    var mn = window.__DOM.mynetwork || document.getElementById('mynetwork');
+    if (mn) {
+      mn.style.height = 'calc(100vh - 44px - 50vh)';
+    }
+    // Notify vis-network to resize
+    if (window.network) {
+      setTimeout(function() { window.network.fit({ animation: true }); }, 100);
+    }
+    // Terminally created containers might need to adjust
+    if (typeof termVisNetwork !== 'undefined' && termVisNetwork) {
+      setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 150);
+    }
+  }
 }
 
 function setTermStatus(msg, color) {
@@ -4587,25 +5035,37 @@ function renderTermVis(nodes, edges) {
   if (!nodes || nodes.length === 0) {
     return;
   }
-  // Hide ontology container (keep network alive in background)
-  var ontologyContainer = window.__DOM.ontologyContainer;
-  var mynetwork = window.__DOM.mynetwork;
-  if (!mynetwork) {
-    console.error('[DOM] #mynetwork not found in renderTermVis, aborting');
+  // Defer to next frame so terminal panel layout is complete (flex expansion)
+  setTimeout(function() {
+  // This renders into the terminal panel's "图" tab
+  var termContainer = document.getElementById('termVisContainer');
+  if (!termContainer) {
+    console.warn('[renderTermVis] #termVisContainer not found');
     return;
   }
-  ontologyContainer.classList.add('hidden');
-  // Adjust ontology network if it exists (keep alive)
-  if (window.network) {
-    setTimeout(function() {
-      window.network.fit({ animation: false });
-      window.network.setOptions({ physics: { enabled: false } });
-    }, 50);
+  // Clear previous network FIRST (before any innerHTML clearing)
+  if (typeof termVisNetwork !== 'undefined' && termVisNetwork) {
+    termVisNetwork.destroy();
   }
-  // Show main graph area
+  // Use #kgMainView as the render target — positioned in the main content area
+  var mynetwork = document.getElementById('kgMainView');
+  if (!mynetwork) {
+    console.error('[renderTermVis] #kgMainView not found, falling back to #mynetwork');
+    mynetwork = window.__DOM.mynetwork || document.getElementById('mynetwork');
+  }
+  if (!mynetwork) {
+    console.error('[renderTermVis] no container found, aborting');
+    return;
+  }
+  mynetwork.innerHTML = '';
+  mynetwork.style.width = '100%';
+  mynetwork.style.height = '100%';
   mynetwork.style.display = 'block';
-  mynetwork.style.height = document.getElementById('parseTerminal').classList.contains('expanded')
-    ? 'calc(100vh - 44px - ' + (typeof termHeightPercent !== 'undefined' ? termHeightPercent : 50) + 'vh)' : 'calc(100vh - 44px)';
+  // Force layout to ensure non-zero dimensions
+  void mynetwork.offsetHeight;
+  // Also update termVisContainer placeholder
+  var placeholder = document.getElementById('termVisPlaceholder');
+  if (placeholder) placeholder.textContent = '⚡ 知识图谱已渲染至主区域（点击上方 📋 本体论 按钮切换查看本体论图谱）';
 
   var shpMap = window.__TERM_SHAPES || {};
   var colMap = window.__TERM_COLORS || {};
@@ -4729,7 +5189,43 @@ function renderTermVis(nodes, edges) {
     nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }, borderWidth: 2, shadow: { enabled: true, size: 3 } },
     layout: { improvedLayout: false, randomSeed: 42 },
   };
-  termVisNetwork = new vis.Network(mynetwork, data, options);
+  console.log('[renderTermVis] about to create vis.Network, mynetwork id=', mynetwork.id, 'data nodes=', data.nodes.length, 'edges=', data.edges.length);
+  try {
+    termVisNetwork = new vis.Network(mynetwork, data, options);
+    window.termVisNetwork = termVisNetwork; // expose for cross-script block access
+    console.log('[renderTermVis] vis.Network created successfully');
+  } catch(e) {
+    console.error('[renderTermVis] vis.Network creation FAILED:', e.message);
+    return;
+  }
+  // Log canvas details after creation
+  setTimeout(function() {
+    var cv = mynetwork.querySelector('canvas');
+    if (cv && (cv.width === 0 || cv.height === 0)) {
+      console.warn('[renderTermVis] canvas has zero logical size, forcing resize');
+      cv.width = mynetwork.clientWidth || 400;
+      cv.height = mynetwork.clientHeight || 300;
+      if (typeof termVisNetwork !== 'undefined' && termVisNetwork) {
+        termVisNetwork.redraw();
+        termVisNetwork.fit({ animation: false });
+      }
+    }
+    var allCvs = document.querySelectorAll('canvas');
+    console.log('[renderTermVis] canvas after create:', !!cv, cv ? cv.width+'x'+cv.height : 'N/A');
+    console.log('[renderTermVis] total canvases on page:', allCvs.length);
+    for (var i = 0; i < allCvs.length; i++) {
+      var c = allCvs[i];
+      console.log('  canvas #' + i + ': size=' + c.width + 'x' + c.height + ' parent.id=' + (c.parentElement.id || c.parentElement.className) + ' display=' + c.style.display + ' vis=' + (c.className || 'none'));
+    }
+    // Also check if termVisContainer has the network body reference
+    if (typeof termVisNetwork !== 'undefined' && termVisNetwork) {
+      console.log('[renderTermVis] network.body.container.id=', termVisNetwork.body.container.id);
+      console.log('[renderTermVis] network.canvas.frame:', termVisNetwork.canvas ? !!termVisNetwork.canvas.frame : 'no canvas obj');
+      if (termVisNetwork.canvas && termVisNetwork.canvas.frame) {
+        console.log('[renderTermVis] frame id:', termVisNetwork.canvas.frame.id, 'tag:', termVisNetwork.canvas.frame.tagName, 'parent:', termVisNetwork.canvas.frame.parentElement.id);
+      }
+    }
+  }, 50);
 
   // ── 拖拽时不触发物理引擎（解决拖拽晃动） ──
   termVisNetwork.on('dragStart', function() {
@@ -4818,7 +5314,6 @@ function renderTermVis(nodes, edges) {
 
   // ── Bind click/hover events for parse graph → detail panel ──
   setTimeout(function() {
-    var mynetworkEl = window.__DOM.mynetwork;
     var termPanel = document.getElementById('detailPanel');
 
     termVisNetwork.on('click', function(params) {
@@ -4863,6 +5358,16 @@ function renderTermVis(nodes, edges) {
       window.__panelSelection = 'edge:' + params.edge;
     });
   }, 500);
+}); // end setTimeout for layout defer
+  // Switch to graph tab to make the vis area visible
+  setTimeout(function() {
+    if (typeof switchTermTab === 'function') {
+      switchTermTab('graph');
+    }
+    // Verify canvas was actually created
+    var canvas = document.querySelector('#termVisContainer canvas');
+    console.log('[renderTermVis] canvas created:', !!canvas, 'canvas size:', canvas ? canvas.width+'x'+canvas.height : 'N/A');
+  }, 50);
 }
 
 // ── 恢复原始布局（跳过瀑布流优化，使用纯 barnesHut） ──
@@ -4876,9 +5381,9 @@ function resetGraphLayout() {
     termVisNetwork.destroy();
     termVisNetwork = null;
   }
-  // Clear any cached DOM state
-  var mynetwork = window.__DOM.mynetwork;
-  if (mynetwork) mynetwork.innerHTML = '';
+  // Clear the termVisContainer (NOT #mynetwork — that's the ontology canvas)
+  var termContainer = document.getElementById('termVisContainer');
+  if (termContainer) termContainer.innerHTML = '';
   window.__SKIP_LAYOUT_OPTIMIZE = true;
   setTimeout(function() {
     renderTermVis(termLastResult.nodes, termLastResult.edges);
@@ -5283,10 +5788,19 @@ function toggleOntologyView() {
 }
 window.toggleOntologyView = toggleOntologyView;
 
+// ── Expose key functions globally so console can access them ──
+window.renderTermVis = renderTermVis;
+window.loadTestData = loadTestData;
+window.switchTermTab = switchTermTab;
+window.displayResult = displayResult;
+
 // ── Load test data on page init ──
 loadTestData();
+console.log('[TERM-BOOT] terminal code fully loaded, renderTermVis=', typeof renderTermVis, 'loadTestData=', typeof loadTestData);
 }, 200);
+console.log('[TERM-BOOT] script block parsed');
 </script>
+
 
 </body>
 </html>
