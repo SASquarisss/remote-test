@@ -323,8 +323,21 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
     <h2 id="panelTitle">📋 详细信息</h2>
     <button class="panel-close" id="panelClose" title="关闭">✕</button>
   </div>
+  <div class="panel-tabs" id="panelTabs">
+    <span class="panel-tab active" data-tab="info" onclick="switchPanelTab('info')">📌 基本信息</span>
+    <span class="panel-tab" data-tab="neighbors" onclick="switchPanelTab('neighbors')">🔗 一跳邻居</span>
+    <span class="panel-tab" data-tab="raw" onclick="switchPanelTab('raw')">📄 原始JSON</span>
+  </div>
   <div class="panel-body" id="panelBody">
-    <div class="empty-hint">悬停或点击节点/边查看详细信息</div>
+    <div class="panel-tab-content active" id="panelTabInfo">
+      <div class="empty-hint">悬停或点击节点/边查看详细信息</div>
+    </div>
+    <div class="panel-tab-content" id="panelTabNeighbors">
+      <div class="empty-hint">查看节点的一跳邻居关系</div>
+    </div>
+    <div class="panel-tab-content" id="panelTabRaw">
+      <div class="empty-hint">查看节点/边的原始 JSON 数据</div>
+    </div>
   </div>
 </div>
 
@@ -1117,8 +1130,39 @@ function buildLegend() {
   html += '<div class="legend-child"><span class="child-dot" style="background:#7f8c8d;"></span>';
   html += '<span>LegalProvisionElement</span></div>';
   html += '</div>';
-  html += '<div style="margin-top:8px;font-size:10px;color:#aaa;">&#x1F5B2; 悬停/点击查看详情</div>';
+  html += '<div style="margin-top:8px;font-size:10px;color:#aaa;">&#x1F5B2; 悬停高亮同类型节点，点击聚焦</div>';
   document.querySelector('.legend').innerHTML = '<div class="legend-title"><span>📋 继承树</span><span class="legend-close" onclick="toggleLegend()">⭕−</span></div>' + html;
+
+  // ── 图例悬停高亮对应节点 ──
+  setTimeout(function() {
+    var legendEl = document.querySelector('.legend');
+    if (!legendEl) return;
+    legendEl.querySelectorAll('.legend-root, .legend-child').forEach(function(el) {
+      var spans = el.querySelectorAll('span');
+      if (spans.length < 2) return;
+      var typeName = spans[1].textContent.trim();
+      var typeKey = typeName.split(' ')[0] || typeName;
+      // 孤立节点文本不是类型名，跳过
+      if (typeKey === 'LegalProvisionElement') return;
+      // 仅在 TYPE_NAMES 中的才绑定
+      if (TYPE_NAMES.indexOf(typeKey) === -1) return;
+
+      el.style.cursor = 'pointer';
+      el.addEventListener('mouseenter', function() {
+        if (window.network) window.network.selectNodes([typeKey], false);
+      });
+      el.addEventListener('mouseleave', function() {
+        if (window.network) window.network.unselectAll();
+      });
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (window.network && window.network.getNode(typeKey)) {
+          window.network.focus(typeKey, { scale: 1.5, animation: true });
+          window.showEntityDetail(typeKey);
+        }
+      });
+    });
+  }, 1000);
 
   var btnSpan = document.querySelector('.legend-title .legend-close');
   if (localStorage.getItem('legendCollapsed') === 'true') {
@@ -1140,11 +1184,13 @@ function toggleLegend() {
 window.toggleLegend = toggleLegend;
 
 function renderEntityPanel(typeName) {
+  currentPanelMode = 'node';
   // Check if this is a parse graph node (from termVisNetwork)
   if (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) {
     try {
       var parseNode = termVisNetwork.body.data.nodes.get(typeName);
       if (parseNode) {
+        currentPanelData = parseNode;
         renderParseNode(parseNode);
         return;
       }
@@ -1294,7 +1340,11 @@ function renderEntityPanel(typeName) {
     html += '</div>';
   }
 
-  panelBody.innerHTML = html;
+  // ── 写入基本信息Tab ──
+  document.getElementById('panelTabInfo').innerHTML = html;
+  document.getElementById('panelTabs').style.display = 'flex';
+  // 重置tab到基本信息，清除邻居/raw缓存
+  switchPanelTab('info');
 
   // Attach click handlers to relation items
   panelBody.querySelectorAll('.rel-item').forEach(function(el) {
@@ -1407,7 +1457,9 @@ function renderParseNode(node) {
   }
   html += '</div>';
 
-  panelBody.innerHTML = html;
+  document.getElementById('panelTabInfo').innerHTML = html;
+  document.getElementById('panelTabs').style.display = 'flex';
+  switchPanelTab('info');
 }
 
 function escapeHtml(str) {
@@ -1418,11 +1470,13 @@ function escapeHtml(str) {
 }
 
 function renderEdgePanel(edgeId) {
+  currentPanelMode = 'edge';
   // Check if this is a parse graph edge (from termVisNetwork)
   if (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) {
     try {
       var parseEdge = termVisNetwork.body.data.edges.get(edgeId);
       if (parseEdge) {
+        currentPanelData = parseEdge;
         renderParseEdge(parseEdge);
         return;
       }
@@ -1449,7 +1503,9 @@ function renderEdgePanel(edgeId) {
     html += '<div class="field-row"><span style="font-weight:500;">' + edge.from + '</span> <span style="color:#888;">→</span> <span style="font-weight:500;">' + edge.to + '</span></div>';
     html += '<div class="desc-text" style="font-size:12px;color:#888;">' + edge.from + ' 继承自 ' + edge.to + '</div>';
     html += '</div>';
-    panelBody.innerHTML = html;
+    document.getElementById('panelTabInfo').innerHTML = html;
+    document.getElementById('panelTabs').style.display = 'flex';
+    switchPanelTab('info');
     return;
   }
 
@@ -1535,7 +1591,9 @@ function renderEdgePanel(edgeId) {
     html += '</div>';
   }
 
-  panelBody.innerHTML = html;
+  document.getElementById('panelTabInfo').innerHTML = html;
+  document.getElementById('panelTabs').style.display = 'flex';
+  switchPanelTab('info');
 }
 
 // ── Render a parse graph edge into the detail panel ──
@@ -1572,7 +1630,9 @@ function renderParseEdge(edge) {
   html += '<div class="field-row"><span class="field-name">ID</span><span style="margin-left:8px;font-family:monospace;font-size:11px;color:#666;">' + escapeHtml(edge.id) + '</span></div>';
   html += '</div>';
 
-  panelBody.innerHTML = html;
+  document.getElementById('panelTabInfo').innerHTML = html;
+  document.getElementById('panelTabs').style.display = 'flex';
+  switchPanelTab('info');
 }
 
 // ── 样式配置弹窗 ──────────────────────────────────────────────
@@ -2034,6 +2094,44 @@ window.__renderEdgePanel = renderEdgePanel;
 #parseTerminal .btn-eval:hover { background: #6c3483; }
 #parseTerminal .btn-eval:disabled { background: #a569bd; border-color: #a569bd; cursor: wait; }
 #parseTerminal .term-eval-score { font-size: 12px; color: #666; }
+
+/* ── 终端面板高度拖拽/切换 ── */
+#parseTerminal .term-resize-handle {
+  position: absolute; top: 0; left: 0; right: 0; height: 8px;
+  cursor: ns-resize; z-index: 998;
+  background: transparent;
+}
+#parseTerminal .term-resize-handle::after {
+  content: ''; display: block; margin: 0 auto; width: 40px; height: 4px;
+  background: #ccc; border-radius: 2px; opacity: 0.6;
+}
+#parseTerminal .term-resize-handle:hover::after { background: #2980b9; opacity: 1; }
+#parseTerminal .term-height-btns {
+  display: flex; gap: 4px; margin-left: auto;
+}
+#parseTerminal .term-height-btn {
+  padding: 2px 10px; border: 1px solid #ddd; border-radius: 4px;
+  background: #fff; color: #666; font-size: 11px; cursor: pointer;
+  transition: all 0.15s;
+}
+#parseTerminal .term-height-btn:hover { border-color: #2980b9; color: #2980b9; }
+#parseTerminal .term-height-btn.active { background: #2980b9; color: #fff; border-color: #2980b9; }
+
+/* ── 右侧面板 Tab 机制 ── */
+#detailPanel .panel-tabs {
+  display: none; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;
+  background: #f8f9fa;
+}
+#detailPanel .panel-tab {
+  flex: 1; text-align: center; padding: 6px 8px; font-size: 11px; cursor: pointer;
+  color: #999; border-bottom: 2px solid transparent; transition: all 0.15s;
+  user-select: none;
+}
+#detailPanel .panel-tab:hover { color: #555; }
+#detailPanel .panel-tab.active { color: #2980b9; border-bottom-color: #2980b9; font-weight: 600; background: #fff; }
+#detailPanel .panel-body .panel-tab-content { display: none; }
+#detailPanel .panel-body .panel-tab-content.active { display: block; }
+
 </style>
 
 <div id="parseTerminal">
@@ -2043,8 +2141,13 @@ window.__renderEdgePanel = renderEdgePanel;
   <div class="terminal-panel">
     <div class="term-header">
       <span>📋 法律文本解析终端</span>
+      <span class="term-height-btns">
+        <button class="term-height-btn active" data-height="50" onclick="setTerminalHeight(50)" title="50% 高度">50%</button>
+        <button class="term-height-btn" data-height="70" onclick="setTerminalHeight(70)" title="70% 高度">70%</button>
+      </span>
       <button class="term-close" onclick="toggleParseTerminal()" title="收起终端">▼ 收起</button>
     </div>
+    <div class="term-resize-handle" id="termResizeHandle" title="拖拽调整高度"></div>
     <div class="term-body">
       <div class="term-col term-col-left">
         <div class="term-input-area">
@@ -2111,6 +2214,142 @@ var termExpanded = false;
 var termLastResult = null;
 var termVisNetwork = null;
 var API_BASE = '';
+var termHeightPercent = 50; // 50% or 70
+
+// ── 终端面板高度预设切换 ──
+function setTerminalHeight(pct) {
+  termHeightPercent = pct;
+  var termPanel = document.querySelector('#parseTerminal .terminal-panel');
+  if (termPanel) termPanel.style.height = pct + 'vh';
+  document.querySelectorAll('.term-height-btn').forEach(function(b) {
+    b.classList.toggle('active', parseInt(b.getAttribute('data-height')) === pct);
+  });
+  if (termExpanded) {
+    updateGraphHeights();
+    if (termVisNetwork) setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 100);
+  }
+}
+function updateGraphHeights() {
+  var mynetwork = document.getElementById('mynetwork');
+  var ontologyContainer = document.getElementById('ontologyContainer');
+  if (mynetwork) mynetwork.style.height = 'calc(100vh - 44px - ' + termHeightPercent + 'vh)';
+  if (ontologyContainer && ontologyContainer.classList.contains('mini-mode')) {
+    ontologyContainer.style.height = 'calc(100vh - 44px - ' + termHeightPercent + 'vh)';
+  }
+}
+
+// ── 拖拽调整终端高度 ──
+(function() {
+  var handle = null, panel = null, startY = 0, startH = 0;
+  function initDrag() {
+    handle = document.getElementById('termResizeHandle');
+    panel = document.querySelector('#parseTerminal .terminal-panel');
+    if (!handle || !panel) return;
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      startY = e.clientY;
+      startH = panel.offsetHeight;
+      var totalH = window.innerHeight;
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+      function onMove(ev) {
+        var dy = startY - ev.clientY;
+        var newH = Math.max(200, Math.min(totalH - 100, startH + dy));
+        panel.style.height = newH + 'px';
+        var mynetwork = document.getElementById('mynetwork');
+        var ontologyContainer = document.getElementById('ontologyContainer');
+        if (mynetwork) mynetwork.style.height = (totalH - 44 - newH) + 'px';
+        if (ontologyContainer && ontologyContainer.classList.contains('mini-mode')) {
+          ontologyContainer.style.height = (totalH - 44 - newH) + 'px';
+        }
+        var pct = Math.round(newH / totalH * 100);
+        document.querySelectorAll('.term-height-btn').forEach(function(b) {
+          b.classList.toggle('active', Math.abs(parseInt(b.getAttribute('data-height')) - pct) < 5);
+        });
+      }
+      function onUp() {
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        var totalH = window.innerHeight;
+        var pct = Math.round(panel.offsetHeight / totalH * 100);
+        termHeightPercent = Math.max(30, Math.min(80, pct));
+        if (termVisNetwork) setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 100);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDrag);
+  } else {
+    initDrag();
+  }
+})();
+
+// ── 右侧面板 Tab 切换 ──
+var currentPanelData = null;
+var currentPanelMode = 'node';
+function switchPanelTab(tab) {
+  document.querySelectorAll('#panelTabs .panel-tab').forEach(function(t) {
+    t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+  });
+  document.querySelectorAll('#panelBody .panel-tab-content').forEach(function(c) {
+    c.classList.toggle('active', c.id === 'panelTab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  });
+  if (tab === 'neighbors' && currentPanelData) {
+    renderNeighborTab();
+  } else if (tab === 'raw' && currentPanelData) {
+    renderRawTab();
+  }
+}
+function renderNeighborTab() {
+  var el = document.getElementById('panelTabNeighbors');
+  if (!currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
+  var nodeId = currentPanelData.id || '';
+  var usedNetwork = (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) ? termVisNetwork : (window.network || null);
+  if (!usedNetwork) { el.innerHTML = '<div class="empty-hint">网络未就绪</div>'; return; }
+  var connected = usedNetwork.getConnectedNodes(nodeId) || [];
+  var connectedEdges = usedNetwork.getConnectedEdges(nodeId) || [];
+  var html = '<div class="panel-section"><div class="panel-section-title">🔗 一跳邻居 (' + connected.length + ')</div>';
+  if (connected.length === 0) {
+    html += '<div class="empty-hint">无关联节点</div>';
+  } else {
+    connected.forEach(function(cid) {
+      var cNode = usedNetwork.body.data.nodes.get(cid);
+      var cLabel = cNode ? (cNode.label || cNode.title || cid) : cid;
+      html += '<div class="rel-item" data-target="' + cid + '" style="cursor:pointer;">';
+      html += '<span class="rel-source">' + escapeHtml(String(cLabel)) + '</span>';
+      html += '<span class="rel-meta">' + (cNode && cNode.nodeType ? cNode.nodeType : '') + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+  html += '<div class="panel-section"><div class="panel-section-title">🔗 关系边 (' + connectedEdges.length + ')</div></div>';
+  el.innerHTML = html;
+  el.querySelectorAll('.rel-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var tid = this.getAttribute('data-target');
+      if (usedNetwork.getNode(tid)) {
+        usedNetwork.focus(tid, { scale: 1.2, animation: true });
+        if (usedNetwork === termVisNetwork) {
+          var n = usedNetwork.body.data.nodes.get(tid);
+          if (n) { currentPanelData = n; renderParseNode(n); switchPanelTab('info'); }
+        } else {
+          currentPanelData = { id: tid };
+          showEntityDetail(tid);
+        }
+      }
+    });
+  });
+}
+function renderRawTab() {
+  var el = document.getElementById('panelTabRaw');
+  if (!currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
+  var raw = JSON.stringify(currentPanelData, null, 2);
+  el.innerHTML = '<pre style="font-size:11px;line-height:1.4;overflow:auto;max-height:50vh;background:#f8f9fa;padding:10px;border-radius:4px;font-family:monospace;white-space:pre-wrap;word-break:break-all;">' + escapeHtml(raw) + '</pre>';
+}
 
 // Shape/color constants for terminal vis-network (mirrors ontology values)
 // ⚠ 以下变量与第一个 <script> 块的 IIFE 作用域隔离，需自行定义
@@ -2136,8 +2375,11 @@ function toggleParseTerminal() {
   var ontologyContainer = document.getElementById('ontologyContainer');
   var isMini = ontologyContainer.classList.contains('mini-mode');
   if (termExpanded) {
-    mynetwork.style.height = 'calc(100vh - 44px - 55vh)';
-    if (!isMini) ontologyContainer.style.height = 'calc(100vh - 44px - 55vh)';
+    var h = termHeightPercent + 'vh';
+    mynetwork.style.height = 'calc(100vh - 44px - ' + h + ')';
+    if (!isMini) ontologyContainer.style.height = 'calc(100vh - 44px - ' + h + ')';
+    var tp = document.querySelector('#parseTerminal .terminal-panel');
+    if (tp) tp.style.height = h;
   } else {
     mynetwork.style.height = 'calc(100vh - 44px)';
     if (!isMini) ontologyContainer.style.height = 'calc(100vh - 44px)';
@@ -2340,7 +2582,7 @@ function renderTermVis(nodes, edges) {
   // Show main graph area
   mynetwork.style.display = 'block';
   mynetwork.style.height = document.getElementById('parseTerminal').classList.contains('expanded')
-    ? 'calc(100vh - 44px - 55vh)' : 'calc(100vh - 44px)';
+    ? 'calc(100vh - 44px - ' + (typeof termHeightPercent !== 'undefined' ? termHeightPercent : 50) + 'vh)' : 'calc(100vh - 44px)';
 
   var shpMap = window.__TERM_SHAPES || {};
   var colMap = window.__TERM_COLORS || {};
