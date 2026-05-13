@@ -201,7 +201,20 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   cursor: pointer; padding: 0 4px; opacity: 0.7; line-height: 1;
 }
 #detailPanel .panel-close:hover { opacity: 1; }
+#detailPanel .panel-shrink {
+  background: none; border: none; color: #fff; font-size: 16px;
+  cursor: pointer; padding: 0 4px; opacity: 0.6; line-height: 1;
+  margin-right: 4px;
+}
+#detailPanel .panel-shrink:hover { opacity: 1; }
+/* P0-2: Compact mode — narrow panel (220px) showing only title + summary */
+#detailPanel.panel-compact { width: 220px; }
+#detailPanel.panel-compact .panel-body { display: none; }
+#detailPanel.panel-compact .panel-tabs { display: none; }
+#detailPanel.panel-compact .panel-header { padding: 14px 10px; }
+#detailPanel.panel-compact .panel-header h2 { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #detailPanel .panel-body { padding: 14px 18px 80px; flex: 1; }
+#detailPanel .panel-header {
 #detailPanel .panel-section { margin-bottom: 16px; }
 #detailPanel .panel-section-title {
   font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase;
@@ -321,7 +334,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 <div id="detailPanel">
   <div class="panel-header">
     <h2 id="panelTitle">📋 详细信息</h2>
-    <button class="panel-close" id="panelClose" title="关闭">✕</button>
+    <div>
+      <button class="panel-shrink" id="panelShrink" title="缩略模式">◁</button>
+      <button class="panel-close" id="panelClose" title="关闭">✕</button>
+    </div>
   </div>
   <div class="panel-tabs" id="panelTabs">
     <span class="panel-tab active" data-tab="info" onclick="switchPanelTab('info')">📌 基本信息</span>
@@ -846,13 +862,33 @@ var detailPanel = document.getElementById('detailPanel');
 var panelTitle = document.getElementById('panelTitle');
 var panelBody = document.getElementById('panelBody');
 var panelClose = document.getElementById('panelClose');
+var panelShrink = document.getElementById('panelShrink');
 var isPanelLocked = false;
 var currentSelection = null; // 'node:TypeName' or 'edge:EdgeId'
+var panelCompact = false; // P0-2: compact mode (220px, title only)
 
-// Close button
+// Close button — closes panel completely
 panelClose.addEventListener('click', function(e) {
   e.stopPropagation();
   hidePanel();
+});
+
+// P0-2: Shrink/expand button
+panelShrink.addEventListener('click', function(e) {
+  e.stopPropagation();
+  if (detailPanel.classList.contains('panel-compact')) {
+    // Expand to full
+    detailPanel.classList.remove('panel-compact');
+    panelShrink.innerHTML = '◁';
+    panelShrink.title = '缩略模式';
+    panelCompact = false;
+  } else {
+    // Compact
+    detailPanel.classList.add('panel-compact');
+    panelShrink.innerHTML = '▷';
+    panelShrink.title = '展开模式';
+    panelCompact = true;
+  }
 });
 
 // Click outside to close (only if locked)
@@ -873,6 +909,7 @@ document.addEventListener('keydown', function(e) {
 
 function showEntityDetail(typeName) {
   detailPanel.classList.remove('edge-mode');
+  detailPanel.classList.remove('panel-compact');
   renderEntityPanel(typeName);
   detailPanel.classList.add('open');
   isPanelLocked = true;
@@ -881,6 +918,7 @@ function showEntityDetail(typeName) {
 
 function showEdgeDetail(edgeId) {
   detailPanel.classList.add('edge-mode');
+  detailPanel.classList.remove('panel-compact');
   renderEdgePanel(edgeId);
   detailPanel.classList.add('open');
   isPanelLocked = true;
@@ -889,6 +927,10 @@ function showEdgeDetail(edgeId) {
 
 function hidePanel() {
   detailPanel.classList.remove('open');
+  detailPanel.classList.remove('panel-compact');
+  panelShrink.innerHTML = '◁';
+  panelShrink.title = '缩略模式';
+  panelCompact = false;
   isPanelLocked = false;
   currentSelection = null;
 }
@@ -927,6 +969,7 @@ network.on('click', function(params) {
   if (params.nodes.length > 0) {
     var nodeId = params.nodes[0];
     detailPanel.classList.remove('edge-mode');
+    detailPanel.classList.remove('panel-compact');
     renderEntityPanel(nodeId);
     detailPanel.classList.add('open');
     isPanelLocked = true;
@@ -934,6 +977,7 @@ network.on('click', function(params) {
   } else if (params.edges.length > 0) {
     var edgeId = params.edges[0];
     detailPanel.classList.add('edge-mode');
+    detailPanel.classList.remove('panel-compact');
     renderEdgePanel(edgeId);
     detailPanel.classList.add('open');
     isPanelLocked = true;
@@ -1167,7 +1211,8 @@ function buildLegend() {
   }, 1000);
 
   var btnSpan = document.querySelector('.legend-title .legend-close');
-  if (localStorage.getItem('legendCollapsed') === 'true') {
+  var isCollapsed = localStorage.getItem('legendCollapsed') !== 'false'; // default collapsed
+  if (isCollapsed) {
     document.querySelector('.legend').classList.add('collapsed');
   }
 }
@@ -2322,6 +2367,13 @@ function updateGraphHeights() {
         var pct = Math.round(panel.offsetHeight / totalH * 100);
         termHeightPercent = Math.max(30, Math.min(80, pct));
         if (termVisNetwork) setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 100);
+        // P0-4: Also fit ontology network if not in mini-mode
+        var ontologyContainer = document.getElementById('ontologyContainer');
+        if (ontologyContainer && !ontologyContainer.classList.contains('mini-mode')) {
+          setTimeout(function() {
+            if (window.network) window.network.fit({ animation: true });
+          }, 150);
+        }
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
       }
@@ -2669,10 +2721,8 @@ function loadTestData() {
 }
 
 function ensureTerminalExpanded() {
-  var term = document.getElementById('parseTerminal');
-  if (term && term.style.display !== 'flex') {
-    toggleParseTerminal();
-  }
+  // P0: No-op — terminal stays collapsed by default on page load.
+  // User must click the toggle button to expand.
 }
 
 function setTermStatus(msg, color) {
@@ -2979,6 +3029,7 @@ function renderTermVis(nodes, edges) {
       if (params.nodes.length > 0) {
         var nodeId = params.nodes[0];
         termPanel.classList.remove('edge-mode');
+        termPanel.classList.remove('panel-compact');
         window.__renderEntityPanel(nodeId);
         termPanel.classList.add('open');
         window.__panelLocked = true;
@@ -2986,6 +3037,7 @@ function renderTermVis(nodes, edges) {
       } else if (params.edges.length > 0) {
         var edgeId = params.edges[0];
         termPanel.classList.add('edge-mode');
+        termPanel.classList.remove('panel-compact');
         window.__renderEdgePanel(edgeId);
         termPanel.classList.add('open');
         window.__panelLocked = true;
