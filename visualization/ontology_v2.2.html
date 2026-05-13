@@ -2086,6 +2086,13 @@ var RELATION_DETAILS = {
 </script>
 <script>
 setTimeout(function() { console.log("[BOOT] delayed business code start");
+// DOM-DEBUG: scan for panelClose before anything else
+(function(){try{
+console.log('[DOM-DEBUG] panelClose=' + !!document.getElementById('panelClose'));
+console.log('[DOM-DEBUG] body.children=' + (document.body ? document.body.children.length : 'NO_BODY'));
+var ids = []; try { document.querySelectorAll('[id]').forEach(function(e){ids.push(e.id);}); } catch(e) {}
+console.log('[DOM-DEBUG] all_ids=[' + ids.join(',') + ']');
+}catch(e){console.error('[DOM-DEBUG] error:',e);}})();
 
 // ============================================================
 // 1. 类型定义 — is_a 继承关系 + 颜色分组 + 中文标注
