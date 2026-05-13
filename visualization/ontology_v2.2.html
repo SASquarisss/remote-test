@@ -1899,6 +1899,7 @@ window.__panelSelection = null;
 window.__hidePanel = hidePanel;
 window.__renderEntityPanel = renderEntityPanel;
 window.__renderEdgePanel = renderEdgePanel;
+window.__escapeHtml = escapeHtml;
 
 })();
 // END OF FIRST SCRIPT BLOCK — window.__* variables are set above
@@ -2327,6 +2328,7 @@ function renderNeighborTab() {
   console.log('[neighbor] nodeId:', nodeId, 'mode:', currentPanelMode, 'panelData:', window.currentPanelData);
   var usedNetwork = (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) ? termVisNetwork : (window.network || null);
   if (!usedNetwork) { el.innerHTML = '<div class="empty-hint">网络未就绪</div>'; return; }
+  var _esc = window.__escapeHtml || function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
   // For ontology nodes (typeName), getConnectedNodes works on the node's ID
   // which is the typeName itself in the ontology graph
   try {
@@ -2346,7 +2348,7 @@ function renderNeighborTab() {
       var cNode = usedNetwork.body.data.nodes.get(cid);
       var cLabel = cNode ? (cNode.label || cNode.title || cid) : cid;
       html += '<div class="rel-item" data-target="' + cid + '" style="cursor:pointer;">';
-      html += '<span class="rel-source">' + escapeHtml(String(cLabel)) + '</span>';
+      html += '<span class="rel-source">' + _esc(String(cLabel)) + '</span>';
       html += '<span class="rel-meta">' + (cNode && cNode.nodeType ? cNode.nodeType : '') + '</span>';
       html += '</div>';
     });
@@ -2374,7 +2376,7 @@ function renderRawTab() {
   var el = document.getElementById('panelTabRaw');
   if (!window.currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
   var raw = JSON.stringify(window.currentPanelData, null, 2);
-  el.innerHTML = '<pre style="font-size:11px;line-height:1.4;overflow:auto;max-height:50vh;background:#f8f9fa;padding:10px;border-radius:4px;font-family:monospace;white-space:pre-wrap;word-break:break-all;">' + escapeHtml(raw) + '</pre>';
+  el.innerHTML = '<pre style="font-size:11px;line-height:1.4;overflow:auto;max-height:50vh;background:#f8f9fa;padding:10px;border-radius:4px;font-family:monospace;white-space:pre-wrap;word-break:break-all;">' + (window.__escapeHtml || function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');})(raw) + '</pre>';
 }
 
 // Shape/color constants for terminal vis-network (mirrors ontology values)
