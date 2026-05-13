@@ -277,11 +277,11 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     node_set: set = set()
     edge_set: set = set()
 
-    def add_node(nid: str, label: str, ntype: str, group: str, level: int = 1, title: str = ""):
+    def add_node(nid: str, label: str, ntype: str, group: str, level: int = 1, title: str = "", extra: dict = None):
         if nid in node_set:
             return
         node_set.add(nid)
-        nodes.append({
+        node_entry = {
             "id": nid,
             "label": label,
             "title": title,
@@ -293,7 +293,10 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             "group": group,
             "nodeType": ntype,
             "level": level,
-        })
+        }
+        if extra:
+            node_entry.update(extra)
+        nodes.append(node_entry)
 
     def add_edge(fr: str, to: str, label: str):
         key = f"{fr}|{to}|{label}"
@@ -455,8 +458,14 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         content = e.get("content", f"证据_{i}")
         label = content[:40]
         nid = f"evid_{i}"
+        admission_status = e.get("admission_status", "")
+        admission_reason = e.get("admission_reason", "")
+        probative_force = e.get("probative_force", "")
         add_node(nid, label, "Evidence", "JudicialEntity", 1,
-                 f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}<br>关键证据: {'是' if e.get('is_key_evidence') else '否'}<br>采信: {e.get('admission_status', '')}<br>理由: {e.get('admission_reason', '')[:40]}<br>证明力: {e.get('probative_force', '')}")
+                 f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}<br>关键证据: {'是' if e.get('is_key_evidence') else '否'}<br>采信: {admission_status}<br>理由: {admission_reason[:40]}<br>证明力: {probative_force}",
+                 extra={"admission_status": admission_status,
+                        "admission_reason": admission_reason,
+                        "probative_force": probative_force})
         case_num = e.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "证据")

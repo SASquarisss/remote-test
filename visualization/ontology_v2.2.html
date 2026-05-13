@@ -1188,9 +1188,12 @@ window.toggleLegend = toggleLegend;
 function renderEntityPanel(typeName) {
   currentPanelMode = 'node';
   // Check if this is a parse graph node (from termVisNetwork)
-  if (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) {
+  // Use window.termVisNetwork because termVisNetwork is declared in the 2nd script block
+  // (after the IIFE that wraps this function), so bare 'termVisNetwork' is undefined here.
+  var _tvNet = (typeof window !== 'undefined') ? window.termVisNetwork : null;
+  if (_tvNet !== null && _tvNet !== undefined) {
     try {
-      var parseNode = termVisNetwork.body.data.nodes.get(typeName);
+      var parseNode = _tvNet.body.data.nodes.get(typeName);
       if (parseNode) {
         window.currentPanelData = parseNode;
         renderParseNode(parseNode);
@@ -2851,6 +2854,10 @@ function renderTermVis(nodes, edges) {
       identity: n.identity || '',
       case_name: n.case_name || '',
       score: n.score || '',
+      // ── Evidence 字段（新） ──
+      admission_status: n.admission_status || '',
+      admission_reason: n.admission_reason || '',
+      probative_force: n.probative_force || '',
     };
   }));
   var visEdges = new vis.DataSet(edges.map(function(e) {
