@@ -2027,6 +2027,7 @@ function darkenColor(hex, factor) {
           <div class="term-vis-placeholder" id="termVisPlaceholder">等待解析结果</div>
           <div class="term-tab-footer">
             <button class="btn-tab-regen" id="btnGraphRegen" onclick="regenGraph()" disabled style="display:none;">🔄 重新生成</button>
+            <button class="btn-tab-regen" id="btnResetLayout" onclick="resetGraphLayout()" disabled style="display:none;">↩ 恢复原始布局</button>
           </div>
         </div>
         <div class="term-issues-area" id="termIssuesArea" style="display:none;">
@@ -2287,6 +2288,26 @@ function renderTermVis(nodes, edges) {
   var shpMap = window.__TERM_SHAPES || {};
   var colMap = window.__TERM_COLORS || {};
   var sizeMap = window.__TERM_SIZES || {};
+
+  // ── 布局层级映射（瀑布流 Y 坐标） ──
+  var LEVEL_MAP = {
+    CaseType:        0,
+    CourtCase:       0,
+    GuidingCase:     1,
+    CaseSummary:     1,
+    JudgmentResult:  1,
+    Person:          2,
+    LegalRole:       2,
+    Judge:           2,
+    Attorney:        2,
+    Evidence:        3,
+    LegalSubject:    3,
+    LegalProvision:  4,
+    Law:             4,
+    LegalNorm:       4,
+  };
+  var DEFAULT_LEVEL = 5;
+  var __SKIP_LAYOUT_OPTIMIZE = window.__SKIP_LAYOUT_OPTIMIZE === true;
   var visNodes = new vis.DataSet(nodes.map(function(n) {
     var nc = colMap[n.nodeType] || colMap[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
     var styleSize = sizeMap[n.nodeType] || 18;
@@ -2335,13 +2356,49 @@ function renderTermVis(nodes, edges) {
   };
   termVisNetwork = new vis.Network(mynetwork, data, options);
   termVisNetwork.on('stabilizationIterationsDone', function() {
+    // Close physics first
     termVisNetwork.setOptions({ physics: { enabled: false } });
-    termVisNetwork.fit({ animation: true });
+
+    if (!__SKIP_LAYOUT_OPTIMIZE) {
+      // ── Step 1: 按 nodeType 固定 Y 坐标（瀑布流分层） ──
+      nodes.forEach(function(n) {
+        var level = LEVEL_MAP[n.nodeType] !== undefined ? LEVEL_MAP[n.nodeType] : DEFAULT_LEVEL;
+        var baseY = level * 130 + 30;
+        var yOffset = (Math.random() - 0.5) * 20;  // 层内微偏移
+        termVisNetwork.moveNode(n.id, null, baseY + yOffset);
+      });
+
+      // ── Step 2: 短暂启用 physics（repulsion 模式）让 X 方向自然展开 ──
+      termVisNetwork.setOptions({
+        physics: {
+          enabled: true,
+          solver: 'repulsion',
+          repulsion: { nodeDistance: 150, centralGravity: 0.05, springLength: 200, damping: 0.9 },
+          stabilization: { iterations: 30, fit: false },
+        }
+      });
+
+      // ── Step 3: 等待二次稳定后再冻结 ──
+      termVisNetwork.once('stabilizationIterationsDone', function() {
+        termVisNetwork.setOptions({ physics: { enabled: false } });
+        termVisNetwork.fit({ animation: true });
+        // ── Step 4: 应用聚类折叠 ──
+        applyClustering(termVisNetwork, nodes);
+      });
+    } else {
+      termVisNetwork.fit({ animation: true });
+    }
   });
   // Enable graph regen button
   var regenBtn = document.getElementById('btnGraphRegen');
   regenBtn.disabled = false;
   regenBtn.style.display = 'inline-block';
+  // Enable reset layout button
+  var resetBtn = document.getElementById('btnResetLayout');
+  resetBtn.disabled = false;
+  resetBtn.style.display = 'inline-block';
+  // Reset the flag for next render
+  window.__SKIP_LAYOUT_OPTIMIZE = false;
 
   // Show placeholder message in right-side tab
   var visArea = document.getElementById('termVisArea');
@@ -2395,6 +2452,48 @@ function renderTermVis(nodes, edges) {
       currentSelection = 'edge:' + params.edge;
     });
   }, 500);
+}
+
+// ── 恢复原始布局（跳过瀑布流优化，使用纯 barnesHut） ──
+function resetGraphLayout() {
+  if (!termLastResult) return;
+  var btn = document.getElementById('btnResetLayout');
+  btn.disabled = true;
+  window.__SKIP_LAYOUT_OPTIMIZE = true;
+  renderTermVis(termLastResult.nodes, termLastResult.edges);
+  setTimeout(function() { btn.disabled = false; }, 500);
+}
+
+// ── 聚类折叠：同类型节点 >= 3 个时自动折叠为组节点 ──
+function applyClustering(network, nodes) {
+  if (!network) return;
+  var clusterTypes = ['Judge', 'Attorney', 'Evidence'];
+  clusterTypes.forEach(function(type) {
+    var count = nodes.filter(function(n) {
+      return (n.nodeType || n.group) === type;
+    }).length;
+    if (count >= 3) {
+      try {
+        network.clustering.cluster({
+          joinCondition: function(nodeOpts) {
+            return nodeOpts.nodeType === type;
+          },
+          clusterNodeProperties: {
+            id: 'cluster_' + type,
+            label: type + '组 (' + count + ')',
+            shape: 'box',
+            color: { background: '#95a5a6', border: '#7f8c8d' },
+            font: { size: 12, color: '#fff' },
+          },
+          processProperties: function(clusterProps, childNodes) {
+            return clusterProps;
+          }
+        });
+      } catch(e) {
+        console.warn('聚类失败 [' + type + ']:', e);
+      }
+    }
+  });
 }
 
 function doSave() {
