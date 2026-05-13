@@ -2146,8 +2146,10 @@ function saveTestData(text, result) {
 function regenGraph() {
   if (!termLastResult) return;
   var btn = document.getElementById('btnGraphRegen');
+  if (!btn) return;
   btn.disabled = true; btn.classList.add('loading');
   setTimeout(function() {
+    window.__SKIP_LAYOUT_OPTIMIZE = false;
     renderTermVis(termLastResult.nodes, termLastResult.edges);
     btn.disabled = false; btn.classList.remove('loading');
   }, 100);
@@ -2437,8 +2439,11 @@ function renderTermVis(nodes, edges) {
       termVisNetwork.fit({ animation: true });
       // 应用聚类折叠
       applyClustering(termVisNetwork, nodes);
+      // 重置 SKIP 标志，使下次稳定后再次触发布局优化
+      window.__SKIP_LAYOUT_OPTIMIZE = false;
     } else {
       termVisNetwork.fit({ animation: true });
+      window.__SKIP_LAYOUT_OPTIMIZE = false;
     }
   });
   // Enable graph regen button
@@ -2449,8 +2454,9 @@ function renderTermVis(nodes, edges) {
   var resetBtn = document.getElementById('btnResetLayout');
   resetBtn.disabled = false;
   resetBtn.style.display = 'inline-block';
-  // Reset the flag for next render
-  window.__SKIP_LAYOUT_OPTIMIZE = false;
+  // Reset the flag for next render — inside stabilization callback to avoid race conditions
+  // Note: __SKIP_LAYOUT_OPTIMIZE reset now happens INSIDE the stabilizationIterationsDone callback
+  // (see the callback above) so it always resets AFTER layout optimization completes.
 
   // Show placeholder message in right-side tab
   var visArea = document.getElementById('termVisArea');
@@ -2510,10 +2516,21 @@ function renderTermVis(nodes, edges) {
 function resetGraphLayout() {
   if (!termLastResult) return;
   var btn = document.getElementById('btnResetLayout');
+  if (!btn) return;
   btn.disabled = true;
+  // Destroy old network if exists to prevent stale stabilization callbacks
+  if (termVisNetwork) {
+    termVisNetwork.destroy();
+    termVisNetwork = null;
+  }
+  // Clear any cached DOM state
+  var mynetwork = document.getElementById('mynetwork');
+  if (mynetwork) mynetwork.innerHTML = '';
   window.__SKIP_LAYOUT_OPTIMIZE = true;
-  renderTermVis(termLastResult.nodes, termLastResult.edges);
-  setTimeout(function() { btn.disabled = false; }, 500);
+  setTimeout(function() {
+    renderTermVis(termLastResult.nodes, termLastResult.edges);
+    btn.disabled = false;
+  }, 200);
 }
 
 // ── 聚类折叠：同类型节点 >= 3 个时自动折叠为组节点 ──
