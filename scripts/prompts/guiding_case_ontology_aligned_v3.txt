@@ -7,215 +7,216 @@
 4. 案件摘要必须结构化：关键事实、争议焦点、裁判结论
 5. 法条引用必须标注引用位置和引用目的
 6. 当事人角色必须映射到标准枚举值
-7. **所有缺失字段必须尽力从其他文本源推断，不能留空**（如filing_date从basic_facts推断，judges从judgment_reason推断）
-8. **必须输出 relations 数组**，描述实体间的显式关联（见输出格式）
-9. **证据采信意见为强制提取字段**，必须从裁判理由中分析法院对每份证据的认定意见
+7. **所有缺失字段必须尽力从其他文本源推断，不能留空**
+8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
+9. **必须输出 relations 数组**，描述实体间的显式关联（如证据与事实、事实与争议焦点、焦点与裁判结果等）
+10. **证据采信意见（admission_status、admission_reason、probative_force）为强制提取字段**，每份证据都必须填写，不可留空
 
-## 新增强制提取实体
-以下实体**必须全部提取**，不能遗漏：
+## 强制提取要点
+- **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
+- **证据提取（Evidence）必须从 basic_facts、judgment_reason 中全面提取**：包括当事人提交的证据名称、类型、证明目的、**法院是否采信（admission_status）**、**是否经质证（examination_status）**。平均每个案例应提取 2-5 条关键证据。
+- **案号提取**：一个指导性案例往往包含多个审级，你必须从 basic_facts、related_info、related_judgment_body 中找出所有案号，为每个案号生成一个 court_case。**注意多个审级的案号不同**。
+- **filing_date必须填写**：从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
+- **角色映射**：每个 party 的 role_code 和 role_name 都必须有值。遇到非标准角色，使用"other"+原文名称。
+- **法条article必须为纯数字**：如"第30条"→"30"，"第二百六十六条"→"266"，"第二十条之一"→"236之一"。
+- **法律关系定性（cause_of_action）必须提取**：从judgment_reason中提取法院认定的法律关系性质（如"买卖合同纠纷""侵权责任纠纷"），**不可留空**。
+- **裁判推理过程（reasoning）必须提取**：从judgment_reason中提取法院的推理链条——法院认定了哪些事实、引用了哪些法条、如何从事实推导出结论。
+- **证据采信状态（admission_status）和质证状态（examination_status）必须提取**：从judgment_reason中查找法院对每份证据的认定结论（"予以确认""不予采信"等）。**admission_status必须填写，不可留空**。
+- **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
+- **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 
-### Judge（法官/审判人员）
-从judgment_reason、related_judgment_body、basic_facts中提取所有审判人员：
-- `name`: 法官姓名
-- `role`: 角色。审判长→"presiding_judge"，审判员→"judge"，代理审判员→"acting_judge"，人民陪审员→"people_juror"，书记员→"clerk"
-- `case_number`: 关联案号
+## 枚举值约束（自动生成 - 必须严格遵守）
+以下枚举值用于本体的全部字段。**所有输出值必须严格匹配下表，不得自创值或使用中文作为输出。**
 
-### Attorney（律师/诉讼代理人）
-从文本中提取律师和诉讼代理人：
-- `name`: 律师姓名或代理人姓名
-- `law_firm`: 所属律所（如是律师）
-- `representation_for`: 代理哪一方当事人（如"原告"、"被告"、"再审申请人"）
-- `case_number`: 关联案号
+| 字段路径 | 允许值 | 中文说明 |
+|---|---|---|
+| `CaseParticipant.role_code` | `plaintiff`, `defendant`, `third_party`, `witness`, `agent`, `expert_witness`, `interpreter`, `prosecutor`, `applicant`, `respondent`, `relator`, `appellant`, `appellee`, `retrial_applicant`, `retrial_respondent`, `mediator`, `arbitrator`, `beneficiary`, `victim`, `criminal_defendant`, `enforcement_applicant`, `enforcement_respondent`, `judicial_review_applicant`, `insolvency_debtor`, `surety`, `class_representative` | `plaintiff` → 原告; `defendant` → 被告; `third_party` → 第三人; `witness` → 证人; `agent` → 诉讼代理人; `expert_witness` → 鉴定人; `interpreter` → 翻译人员; `prosecutor` → 公诉人/检察机关; `applicant` → 申请人; `respondent` → 被申请人; `relator` → 利害关系人; `appellant` → 上诉人; `appellee` → 被上诉人; `retrial_applicant` → 再审申请人; `retrial_respondent` → 再审被申请人; `mediator` → 调解员; `arbitrator` → 仲裁员; `beneficiary` → 受益人/被救助人; `victim` → 被害人; `criminal_defendant` → 刑事被告人; `enforcement_applicant` → 执行申请人; `enforcement_respondent` → 执行被申请人; `judicial_review_applicant` → 司法复核申请人; `insolvency_debtor` → 破产债务人; `surety` → 担保人; `class_representative` → 诉讼代表人 |
+| `CaseType.category` | `civil`, `criminal`, `administrative`, `ip`, `execution`, `state_compensation` | `civil` → 民事; `criminal` → 刑事; `administrative` → 行政; `ip` → 知识产权; `execution` → 执行; `state_compensation` → 国家赔偿 |
+| `Court.court_level` | `supreme`, `high`, `intermediate`, `basic`, `special` | `supreme` → 最高人民法院; `high` → 高级人民法院; `intermediate` → 中级人民法院; `basic` → 基层人民法院; `special` → 专门法院 |
+| `CourtCase.dispute_resolution_type` | `litigation`, `mediation`, `arbitration`, `judicial_aid`, `administrative_review` | `litigation` → 诉讼; `mediation` → 调解; `arbitration` → 仲裁; `judicial_aid` → 司法救助; `administrative_review` → 行政复议 |
+| `CourtCase.status` | `filing`, `trial`, `judged`, `effective`, `appealed`, `retried`, `executing`, `terminated` | `filing` → 立案中; `trial` → 审理中; `judged` → 已判决; `effective` → 已生效; `appealed` → 已上诉; `retried` → 再审中; `executing` → 执行中; `terminated` → 已终结 |
+| `CourtCase.trial_level` | `first_instance`, `second_instance`, `retrial` | `first_instance` → 一审; `second_instance` → 二审; `retrial` → 再审 |
+| `Evidence.admission_status` | `admitted`, `not_admitted` | `admitted` → 已采信; `not_admitted` → 未采信 |
+| `Evidence.evidence_type` | `documentary`, `physical`, `audio_visual`, `electronic_data`, `witness_testimony`, `party_statement`, `expert_opinion`, `inspection_record` | `documentary` → 书证; `physical` → 物证; `audio_visual` → 视听资料; `electronic_data` → 电子数据; `witness_testimony` → 证人证言; `party_statement` → 当事人陈述; `expert_opinion` → 鉴定意见; `inspection_record` → 勘验笔录 |
+| `Evidence.examination_status` | `not_examined`, `examined` | `not_examined` → 未经质证; `examined` → 已质证 |
+| `Fact.fact_type` | `undisputed`, `disputed`, `to_be_proven` | `undisputed` → 无争议事实; `disputed` → 有争议事实; `to_be_proven` → 待证事实 |
+| `GuidingCase.binding_force` | `mandatory`, `persuasive`, `reference` | `mandatory` → 强制参照（指导性案例）; `persuasive` → 参考效力（典型案例）; `reference` → 一般参考（其他案例） |
+| `JudgmentResult.result_type` | `guilty`, `not_guilty`, `liable`, `not_liable`, `dismissed`, `withdrawn`, `partially_upheld`, `remanded`, `punitive_damages`, `procedural_ruling`, `bankruptcy_declared`, `mediation_agreement`, `arbitration_award`, `administrative_decision` | `guilty` → 有罪判决（刑事）; `not_guilty` → 无罪判决（刑事）; `liable` → 承担责任（民事）; `not_liable` → 不承担责任（民事）; `dismissed` → 驳回起诉/上诉; `withdrawn` → 撤诉; `partially_upheld` → 部分维持; `remanded` → 发回重审; `punitive_damages` → 惩罚性赔偿; `procedural_ruling` → 程序性裁定; `bankruptcy_declared` → 宣告破产; `mediation_agreement` → 调解书; `arbitration_award` → 仲裁裁决; `administrative_decision` → 行政决定 |
+| `LegalProvision.status` | `effective`, `amended`, `repealed` | `effective` → 现行有效; `amended` → 已被修改; `repealed` → 已被废止 |
+| `LegalProvisionElement.element_type` | `subject_element`, `object_element`, `act_element`, `result_element`, `causality_element`, `subjective_element`, `legal_consequence`, `exception_clause` | `subject_element` → 主体要件（如：行为人具备完全民事行为能力）; `object_element` → 客体要件（如：合同标的物）; `act_element` → 行为要件（如：不履行合同义务）; `result_element` → 结果要件（如：造成他人损害）; `causality_element` → 因果关系（如：行为与损害之间有因果关系）; `subjective_element` → 主观要件（如：故意/过失）; `legal_consequence` → 法律后果（如：应当承担违约责任）; `exception_clause` → 免责/除外条款（如：不可抗力除外） |
+| `TrialOrganization.organization_type` | `sole_judge`, `collegiate_bench`, `judicial_committee` | `sole_judge` → 独任审判; `collegiate_bench` → 合议庭; `judicial_committee` → 审判委员会 |
 
-**注意**：律师和诉讼代理人不能仅作为普通当事人，必须提取到attorneys数组中。
 
-### ProsecutorInfo（出庭检察人员）
-从文本中提取公诉人/出庭检察员/抗诉机关：
-- `name`: 检察人员姓名
-- `role`: "public_prosecutor"（公诉人）、"procurator"（检察员）、"protest_organ"（抗诉机关）
-- `unit`: 所属检察院
-- `case_number`: 关联案号
+## 本体论实体映射（自动生成）
 
-### TrialOrganization（合议庭组成）
-从judgment_reason文本中提取合议庭：
-- `case_number`: 关联案号
-- `members`: 合议庭成员列表（含审判长、审判员、人民陪审员等）
-- `summary`: 合议庭组成描述原文
+### 指导性案例/典型案例（`GuidingCase`）
 
-### Evidence（关键证据）
-从basic_facts、judgment_reason中提取关键证据：
-- `content`: 证据内容摘要
-- `evidence_type`: 证据类型。基于《民事诉讼法》第63条法定证据类型：
-  "documentary"（书证）、"physical"（物证）、"audio_visual"（视听资料）、"electronic_data"（电子数据）、
-  "witness_testimony"（证人证言）、"party_statement"（当事人陈述）、"expert_opinion"（鉴定意见）、"inspection_record"（勘验笔录）
-- `submitted_by`: 提交方名称
-- `is_key_evidence`: 是否是关键定案证据（true/false）
-- **`examination_status`**: **必填**，质证状态。"examined"（已质证）、"not_examined"（未经质证）。从裁判理由中推断。
-- **`admission_status`**: **必填**，法院采信状态。"admitted"（采信）、"not_admitted"（未采信）、"partially_admitted"（部分采信）。从裁判理由中法院对证据的认定意见推断，如"本院予以确认"→"admitted"，"不予采信"→"not_admitted"。
-- **`admission_reason`**: 法院采信/不采信的理由。从裁判理由中摘录相关表述，如"证据真实、合法、与本案具有关联性"、"缺乏其他证据印证"等。
-- `probative_force`: 证明力。"valid"（有效）、"invalid"（无效）。从法院对证据的评价推断。
-- `case_number`: 关联案号
+| 字段 | 说明 |
+|---|---|
+| `guiding_case_number` | 如'指导案例XX号'，从storage_no或文本推断; 如无则留空 |
+| `guiding_case_name` | 必须填写，从web_name或当事人信息拼接生成 |
+| `publication_date` | 格式YYYY-MM-DD，从trial_year字段推断 |
+| `binding_force` | 指导性案例→mandatory，典型案例→persuasive，其他→reference [枚举值见参考表] |
+| `guiding_points` | 从judgment_essence提取 |
+| `key_words` | 字符串数组，从key_words字段提取（逗号分隔） |
+| `case_level` | 由输入字段【案例层级】直接映射：01→guiding_case，02→typical_case，其他→reference_case |
+| `trial_procedure` | 一审/二审/再审/执行等 |
+| `storage_no` | 直接使用输入字段【案例库编号】 |
+| `source_url` | 直接使用输入字段【来源URL】，原样传递 |
+| `judgment_mean` | 直接使用输入字段【裁判意义】 |
 
-### JudgmentResult（判决结果/裁判主文）
-从case_summary或judgment_reason中提取结构化判决结果：
-- `result_type`: 结果类型。
-  刑事："guilty"（有罪判决）、"not_guilty"（无罪判决）、"acquitted"（无罪释放）、"remanded"（发回重审）、"sentence_upheld"（维持原判）、"death_penalty_reviewed"（死刑复核）
-  民事："liable"（承担责任）、"not_liable"（不承担责任）、"partially_liable"（部分承担责任）、"dismissed"（驳回起诉/上诉）、"withdrawn"（撤诉）、"settled"（调解结案）、"partially_upheld"（部分维持）、"punitive_damages"（惩罚性赔偿）、"procedural_ruling"（程序性裁定）、"bankruptcy_declared"（宣告破产）
-  行政："upheld"（维持）、"revoked"（撤销）、"ordered_to_act"（责令履行）、"ordered_to_redo"（责令重做）、"confirmed_illegal"（确认违法）
-  执行："execution_upheld"（维持执行）、"execution_revoked"（撤销执行）、"execution_objection_upheld"（执行异议成立）、"added_executor"（追加被执行人）、"execution_terminated"（终结执行）
-  检察监督："procuratorial_suggestion_issued"（制发检察建议）、"procuratorial_appeal_lodged"（提起抗诉）
-  通用："mediation_agreement"（调解书）、"arbitration_award"（仲裁裁决）、"administrative_decision"（行政决定）
-- `specific_judgment`: 具体判决内容（如刑期、赔偿金额等）
-- **`reasoning`**: 裁判理由全文摘要（200字以内），即"本院认为"部分的核心说理逻辑。**必填**。
-- **`claim_amount`**: 诉讼标的额/涉案金额（如"335049元"）。如有则填写，无则留空。
-- **`effective_date`**: 裁判生效日期（格式YYYY-MM-DD）。从文本中推断，如"本判决为终审判决"也可推断生效日期与judgment_date相同。
-- `case_number`: 关联案号
+### 案件类型（`CaseType`）
 
-### LegalProvision.content（法条原文片段）
-每个法条引用增加：
-- `content`: 法条引用的原文片段（从文本中提取该法条被引用时的上下文，约50-100字左右）
-- `article`: **必填**，纯数字。如"第30条"→"30"，"第二百六十六条"→"266"，"第二十条之一"→"236之一"。不能留空。
-- `paragraph`: 款号，如"第1款"→"1"
-- `item`: 项号，如"第(一)项"→"1"
+| 字段 | 说明 |
+|---|---|
+| `category` | 见枚举值表映射 [枚举值见参考表] |
+| `level1` | case_type中'-'前的部分 |
+| `level2` | case_type中'-'后的部分 |
 
-### Fact（案件事实实体）
-从basic_facts和judgment_reason中提取独立案件事实，每个重要事实为一个独立实体：
-- `id`: 事实标识，如"fact_0"、"fact_1"
-- `content`: 事实描述
-- `fact_type`: 事实类型。"undisputed"（无争议事实）、"disputed"（有争议事实）、"to_be_proven"（待证事实）
-- `case_number`: 关联案号
+### 法院案件（`CourtCase`）
 
-### DisputeFocus（争议焦点实体）
-从judgment_reason中提取争议焦点，每个焦点为一个独立实体：
-- `id`: 焦点标识，如"focus_0"、"focus_1"
-- `content`: 争议焦点描述
-- `focus_type`: 焦点类型。"factual"（事实焦点）、"legal"（法律焦点）、"procedural"（程序焦点）、"evidence"（证据焦点）
-- `case_number`: 关联案号
+| 字段 | 说明 |
+|---|---|
+| `case_number` | 格式：(YYYY)地区简称+案由+第N号。**从basic_facts/related_info/related_judgment_body全面提取** |
+| `filing_date` | **必填**，格式YYYY-MM-DD。从案号年份或文本中'受理'/'立案'关键词推断 |
+| `judgment_date` | 格式YYYY-MM-DD |
+| `trial_level` | 一审→first_instance，二审→second_instance，再审→retrial [枚举值见参考表] |
+| `trial_procedure` | 中文名称，如'一审'、'二审'、'再审' |
+| `court` | 含name（法院完整名称）和court_level（法院层级，见枚举值表） |
+| `status` | 已判决且生效→effective，刚判决→judged，见枚举值表 [枚举值见参考表] |
+| `dispute_resolution_type` | **必填**。诉讼→litigation，调解→mediation，仲裁→arbitration。注意区分数据源来源：多元解纷案例库（web_name含'多元解纷'）→一律设为mediation [枚举值见参考表] |
+| `cause_of_action` | **必填**，从judgment_reason/basic_facts中推断本案的法律关系性质（如'买卖合同纠纷'、'侵权责任纠纷'、'婚姻家庭纠纷'等）。从judgment_reason中法律定性表述或case_type字段推断 |
+| `party_count` | 群体性案件填写，如'120户'、'18人'等，纯整数 |
 
-### relations（实体关系数组）
-描述上述各实体间的显式关联关系，每条关系包含：
-- `source_id`: 源实体ID（使用各数组中对应的id或实体标识字段）
-- `target_id`: 目标实体ID
-- `relation_type`: 关系类型。可用枚举值：
-  - "cites_guiding_case": CourtCase → GuidingCase（案件引用指导性案例）
-  - "applies_standard": CourtCase → SentencingStandard（案件适用量刑标准）
-  - "has_summary": CourtCase → CaseSummary（案件具有摘要）
-  - "tried_by": CourtCase → TrialOrganization（案件由审判组织审理）
-  - "has_case_type": CourtCase → CaseType（案件具有案由）
-  - "cites": CourtCase → LegalProvision（案件引用法条）
-  - "appeals_to": CourtCase → CourtCase（上诉关系）
-  - "retries_from": CourtCase → CourtCase（再审源自）
-  - "has_dispute_focus": CourtCase → DisputeFocus（案件具有争议焦点）
-  - "has_fact": CourtCase → Fact（案件具有事实）
-  - "judgment_cites": JudgmentResult → LegalProvision（裁判结果引用法条）
-  - "submitted_for": Evidence → CourtCase（证据提交给案件）
-  - "proves_fact": Evidence → Fact（证据证明事实）
-  - "proves_focus": Evidence → DisputeFocus（证据证明争议焦点）
-  - "leads_to_fact": Fact → JudgmentResult（事实推导出裁判结果）
-  - "leads_to_focus": DisputeFocus → JudgmentResult（争议焦点推导出裁判结果）
-  - "resolved_by": DisputeFocus → LegalProvision（争议焦点由法条解决）
-  - "matches_element": Fact → LegalProvision（事实匹配法条构成要件）
-  - "plays_role": LegalSubject → LegalRole（主体担任角色）
-  - "represents": Attorney → LegalSubject（律师代理当事人）
-  - "undertakes": Judge → CourtCase（法官承办案件）
-  - "presides_over": Judge → TrialOrganization（法官主持审判组织）
-  - "includes": TrialOrganization → Judge（审判组织包含法官）
-  - "includes_clerk": TrialOrganization → Clerk（审判组织配备书记员）
-  - "prosecutes": Procuratorate → CourtCase（检察院公诉案件）
-  - "employs_attorney": LawFirm → Attorney（律所雇佣律师）
-  - "has_jurisdiction_over": Court → District（法院管辖辖区）
-  - "signed_by": LegalDocument → Judge（文书由法官签署）
-  - "based_on": ExecutionInfo → JudgmentResult（执行依据裁判结果）
-  - "belongs_to": LegalProvision → Law（法条属于某部法律）
-- `label`: 关系中文标签（用于可视化显示）
+### 法律主体 + 法律角色（`LegalSubject`）
 
-**注意**：每条relation必须使用对应实体的ID或唯一标识字段。如CourtCase用case_number，Evidence用索引"evid_0"等。输出为relations数组，如果没有匹配的关系可以不输出对应条目，但已有的关联必须全部输出。
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `subject_type` | 自然人→natural_person，企业/机关/组织→organization [枚举值见参考表] |
+| `org_type` | 仅subject_type=organization时填写，见枚举值表 [枚举值见参考表] |
+| `credit_code` | 如有则填写，通常企业才有 |
+| `roles` | 每个角色含role_code（枚举值）、role_name（中文原词）、case_number（关联案号） |
 
-## 本体论实体映射
+### 法律条文引用（`LegalProvision`）
 
-### 1. GuidingCase（指导性案例/典型案例）
-从文本中提取：
-- `guiding_case_number`: 指导案例编号（如"指导案例XX号"），如无则留空
-- `guiding_case_name`: 案例名称（必须填写，从web_name或当事人信息拼接生成）
-- `publication_date`: 发布日期（从trial_year推断，格式YYYY-MM-DD）
-- `binding_force`: 约束力。"指导性案例"→"mandatory"，"典型案例"→"persuasive"，其他→"reference"。**注意：binding_force 使用自己的枚举值（mandatory/persuasive/reference），与 case_level 的枚举值（guiding_case/typical_case/reference_case）不同，不能混用。**
-- `guiding_points`: 裁判要旨/指导要点（从judgment_essence提取）
-- `key_words`: 关键词列表（从key_words字段提取，逗号分隔）
-- `case_level`: 案例层级。"01"→"guiding_case"（指导性案例），"02"→"typical_case"（典型案例），其他→"reference_case"（参考案例）。**注意：此字段由输入字段【案例层级】直接映射，严格按规则执行，不能自行推断。**
-- `trial_procedure`: 审判程序（一审/二审/再审/执行）
-- `storage_no`: 案例库内部编号
-- `source_url`: 来源URL（直接使用输入中的【来源URL】字段值，原样传递，不要修改或留空）
-- `judgment_mean`: 裁判意义（直接使用输入中的【裁判意义】字段值）
-- `key_words`: 关键词列表（直接使用输入中的【关键词】字段值，逗号分隔）
+| 字段 | 说明 |
+|---|---|
+| `case_number` | **必填**，该法条被哪个案号的案件引用 |
+| `statute` | 去掉书名号，保留核心名称，如'刑法'、'民法典' |
+| `article` | **必填**，纯数字。第30条→30，第二百六十六条→266，第二十条之一→236之一 |
+| `paragraph` | 第1款→1，如未明确提及则留空 |
+| `item` | 第(一)项→1，如未明确提及则留空 |
+| `content` | **必填**，从文本中找到该法条被引用上下文，提取50-100字 |
+| `citation_position` | basic_facts/judgment_reason/judgment_essence/related_info/related_law |
+| `citation_purpose` | 适用依据/说理依据/反驳依据 |
 
-### 2. CaseType（案件类型）
-从case_type字段解析：
-- `category`: 大类。"民事"→"civil"，"刑事"→"criminal"，"行政"→"administrative"，"执行"→"execution"，知识产权→"ip"，国家赔偿→"state_compensation"
-- `level1`: 一级案由（case_type中"-"前的部分）
-- `level2`: 二级案由（case_type中"-"后的部分）
+### 关键证据（`Evidence`）
 
-### 3. CourtCase（法院案件）
-**必须从以下源头全面提取案号**：basic_facts、related_info、related_judgment_body中的每一个案号都要提取，并匹配对应的法院：
-- `case_number`: 案号。常见格式：(YYYY)地区简称+案由+第N号。
-- `filing_date`: **必填**，立案日期。格式YYYY-MM-DD。从文本中推断（案号中的年份、basic_facts第一段中的时间信息）。如果文本没明确说"立案日期"，但提到了"受理日期"或案件事实中的最早时间节点，以此推断。
-- `judgment_date`: 判决日期（格式YYYY-MM-DD）
-- `trial_level`: 案件层级。"一审"→"first_instance"，"二审"→"second_instance"，"再审"→"retrial"，"执行"→"execution"。判断依据：案号中含"行初"或"民初"等初字→first_instance；含"终"字→second_instance；含"再"或"提审"→retrial；含"执"或"执恢"→execution。
-- `trial_procedure`: 审判程序（一审/二审/再审/执行）
-- `court`: 法院信息
-  - `name`: 法院完整名称
-  - `court_level`: 法院层级。"最高人民法院"→"supreme"，"高级人民法院"→"high"，"中级人民法院"→"intermediate"，"基层人民法院"→"basic"，"专门法院"→"special"
-- `status`: 案件状态。如已判决且生效→"effective"，刚判决→"judged"
-- **`claim_amount`**: 涉案金额/标的额（如有）
-- **`first_instance_case_number`**: 一审案号（仅二审/再审案件填写，引用被上诉/被再审案件的案号）
-- **`dispute_resolution_type`**: 争议解决方式。"litigation"（诉讼）、"mediation"（调解）、"arbitration"（仲裁）
+| 字段 | 说明 |
+|---|---|
+| `content` |  |
+| `evidence_type` | 见枚举值表，documentary/physical/audio_visual等 [枚举值见参考表] |
+| `submitted_by` |  |
+| `is_key_evidence` | true/false |
+| `admission_status` | admitted→已采信，not_admitted→未采信。**必填**，从judgment_reason中提取法院对该证据的认定结论 |
+| `examination_status` | examined→已质证，not_examined→未经质证。从文本中提取 |
+| `admission_reason` | 从judgment_reason中摘录法院对证据的认定意见，如'证据真实、合法、与本案具有关联性' |
+| `probative_force` | valid→有效，invalid→无效 [枚举值见参考表] |
+| `case_number` | 从court_cases中对应 |
+| `expert_institution` | 如evidence_type=expert_opinion时填写鉴定机构全称 |
+| `expert_conclusion` | 如evidence_type=expert_opinion时填写鉴定结论 |
 
-**注意**：当一个案件包含多个审级（如一审、二审、再审）时，每个案号和对应法院必须分别列出，不能遗漏。
-**filing_date必须填写**，可以从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
+### 判决结果/裁判主文（`JudgmentResult`）
 
-### 4. LegalSubject（法律主体）+ LegalRole（法律角色）
-从basic_facts、judgment_reason中提取所有当事人：
-- `name`: 当事人名称
-- `subject_type`: 主体类型。自然人→"natural_person"，企业/机关/组织→"organization"
-- `org_type`: 组织类型（仅subject_type="organization"时）。企业→"company"，政府机关/事业单位→"government_agency"，检察院→"procuratorate"，法院→"court"，律所→"law_firm"，NGO→"ngo"，鉴定机构→"expert_institution"
-- `credit_code`: 统一社会信用代码（如有，通常企业才有）
-- `roles`: 角色列表
-  - `role_code`: 角色编码。可用枚举值：
-    `"plaintiff", "defendant", "third_party", "defendant_criminal", "victim", "witness", "prosecutor", "agent", "attorney",
-     "applicant", "respondent", "appellant", "appellee", "retrial_applicant", "retrial_respondent", "judicial_review_applicant",
-     "enforcement_applicant", "enforcement_respondent", "executor", "execute_respondent", "objector",
-     "insolvency_debtor", "surety", "class_representative",
-     "mediator", "arbitrator", "beneficiary", "expert_witness", "interpreter"`
-    遇到非标准角色，使用"other"+原文名称。
-  - `role_name`: 原始角色名称（中文原词）
-  - `case_number`: 关联案号（该当事人在哪个案号下担任此角色）
+| 字段 | 说明 |
+|---|---|
+| `result_type` | 见枚举值表。刑事：guilty/not_guilty/remanded；民事：liable/dismissed/withdrawn等 [枚举值见参考表] |
+| `specific_judgment` | 如刑期、赔偿金额等 |
+| `reasoning` | **必填**，从judgment_reason提取法院的推理链条：事实认定→法律适用→结论推导的完整逻辑。300字以内，保留关键推理节点 |
+| `case_number` |  |
+| `cost_allocation` | 如'案件受理费12800元，由原告承担30%，被告承担70%' |
+| `claim_amount` | 原告起诉时的诉求金额 |
+| `effective_date` | 判决生效日期，格式YYYY-MM-DD |
 
-**特别提示**：
-- 辩护人/诉讼代理人→role_code用"agent"，role_name保留原文"辩护人"/"诉讼代理人"
-- 律师→同时提取到attorneys数组中（不只是legal_subjects）
-- 多个审级的同一个人可能角色不同，分别列出
+### 案件结构化摘要（`CaseSummary`）
 
-### 5. LegalProvision（法律条文引用）
-**必须从以下源头全面提取法条**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取：
-- `case_number`: **必填**，该法条被哪个案号的案件引用（从court_cases中对应）
-- `statute`: 法典名称（去掉《》《》等书名号，保留核心名称如"社会保险法"、"刑法"、"民法典"）
-- `article`: **必填**，条号。纯数字。如"第30条"→"30"，"第二百六十六条"→"266"，"第二十条之一"→"236之一"。不能留空。
-- `paragraph`: 款号（如"第1款"→"1"。如未明确提及则留空）
-- `item`: 项号（如"第(一)项"→"1"。如未明确提及则留空）
-- `content`: **必填**，法条引用原文片段。从文本中找到该法条被引用的上下文，提取50-100字左右。**如果文本中没有该法条的完整原文（仅有条文编号），则使用法条名称和条款号作为内容，如："《中华人民共和国企业破产法》第四十七条：……（根据上下文概括）"，不能为空。**
-- `citation_position`: 引用位置。"基本事实"→"basic_facts"，"裁判理由"→"judgment_reason"，"裁判要旨"→"judgment_essence"，"关联信息"→"related_info"，"相关法律"→"related_law"
-- `citation_purpose`: 引用目的。"适用依据"（作为判决依据），"说理依据"（用于论证说理），"反驳依据"（用于反驳对方观点）
+| 字段 | 说明 |
+|---|---|
+| `key_facts` | 200字以内，客观陈述，不含法院观点 |
+| `disputed_issues` | **必填**，100字以内，从judgment_reason提炼 |
+| `conclusion` | **必填**，100字以内，概述法院最终裁判结果 |
+| `amount_involved` | 如有则填写，如'335049元' |
+| `claim_amount` | 原告起诉时的诉求金额 |
+| `judgment_amount` | 法院最终判决的金额 |
+| `guiding_points` | 仅指导性案例填写 |
 
-**注意**：即使是地方性法规、司法解释、行政规章等，只要被引用作为判决依据，必须提取。不要遗漏。如果法条出现在裁判理由中但未标明具体案号，默认关联到主案号（通常为第一个court_case）。
+### 法官/审判人员（`Judge`）
 
-### 6. CaseSummary（案件结构化摘要）
-从全文提炼，**三个字段必须全部填写**：
-- `key_facts`: 关键事实（200字以内，客观陈述案件核心事实经过，不含法院观点）
-- `disputed_issues`: 争议焦点（100字以内，**必填**）。从judgment_reason中提炼双方当事人争论的核心法律问题。如果文本中未明确列出争议焦点，则根据基本事实和裁判理由推断。不能留空。
-- `conclusion`: 裁判结论（100字以内，**必填**）。概述法院最终裁判结果。如果是调解结案，说明调解内容；如果是判决，说明判决主文。不能留空。
-- `amount_involved`: 标的金额（如有，如"335049元"）
-- `guiding_points`: 指导要点（仅指导性案例填写，从judgment_essence提炼核心规则）
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `role` | 审判长→presiding_judge，审判员→judge，代理审判员→acting_judge，人民陪审员→people_juror，书记员→clerk |
+| `case_number` |  |
 
-## 输出格式
+### 律师/诉讼代理人（`Attorney`）
+
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `law_firm` | 如是律师则填写 |
+| `representation_for` | 如'原告'、'被告'、'再审申请人' |
+| `case_number` |  |
+
+### 出庭检察人员（`ProsecutorInfo`）
+
+| 字段 | 说明 |
+|---|---|
+| `name` |  |
+| `role` | public_prosecutor(公诉人)/procurator(检察员)/protest_organ(抗诉机关) |
+| `unit` |  |
+| `case_number` |  |
+
+### 合议庭组成（`TrialOrganization`）
+
+| 字段 | 说明 |
+|---|---|
+| `case_number` |  |
+| `members` | 含审判长、审判员、人民陪审员等 |
+| `summary` |  |
+
+### 案件事实实体（`Fact`）
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 如 'fact_0', 'fact_1' |
+| `content` |  |
+| `fact_type` | undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实 [枚举值见参考表] [枚举值见参考表] |
+| `case_number` |  |
+
+### 争议焦点实体（`DisputeFocus`）
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 如 'focus_0', 'focus_1' |
+| `content` |  |
+| `focus_type` | factual→事实焦点，legal→法律焦点，procedural→程序焦点，evidence→证据焦点 [枚举值见参考表] [枚举值见参考表] |
+| `case_number` |  |
+
+### 法条构成要件（`LegalProvisionElement`）
+
+| 字段 | 说明 |
+|---|---|
+| `provision_index` | **必填**，指明该构成要件属于legal_provisions数组中第几个法条（从0开始） |
+| `statute` | 如'民法典'、'刑法' |
+| `article` | 纯数字，如577 |
+| `element_type` | subject_element→主体要件，act_element→行为要件，result_element→结果要件，causality_element→因果关系，subjective_element→主观要件，legal_consequence→法律后果，见枚举值表 [枚举值见参考表] |
+| `content` | 该构成要件要素的具体法律描述，原文或摘要 |
+| `applicable_fact_pattern` | 哪些类型的事实会匹配该要件 |
+
+
+## 输出 JSON Schema（自动生成 — 严格遵循此结构）
+
 ```json
 {
   "guiding_case": {
@@ -241,27 +242,27 @@
       "case_number": "",
       "filing_date": "",
       "judgment_date": "",
-      "trial_level": "first_instance|second_instance|retrial|execution",
+      "trial_level": "first_instance|second_instance|retrial",
       "trial_procedure": "",
       "court": {
         "name": "",
         "court_level": "supreme|high|intermediate|basic|special"
       },
-      "status": "judged|effective|...",
-      "claim_amount": "",
-      "first_instance_case_number": "",
-      "dispute_resolution_type": "litigation|mediation|arbitration"
+      "status": "filing|trial|judged|effective|appealed|retried|executing|terminated",
+      "cause_of_action": "",
+      "dispute_resolution_type": "litigation|mediation|arbitration|judicial_aid|administrative_review",
+      "party_count": null
     }
   ],
   "legal_subjects": [
     {
       "name": "",
       "subject_type": "natural_person|organization",
-      "org_type": "company|government_agency|ngo|law_firm|expert_institution|court|procuratorate",
+      "org_type": "company|government_agency|ngo|law_firm|expert_institution|court|procuratorate|individual_business|partnership|sole_proprietorship",
       "credit_code": null,
       "roles": [
         {
-          "role_code": "plaintiff|defendant|third_party|defendant_criminal|victim|witness|prosecutor|agent|attorney|applicant|respondent|appellant|appellee|retrial_applicant|retrial_respondent|judicial_review_applicant|enforcement_applicant|enforcement_respondent|executor|execute_respondent|objector|insolvency_debtor|surety|class_representative|mediator|arbitrator|beneficiary|expert_witness|interpreter",
+          "role_code": "plaintiff|defendant|third_party|witness|agent|expert_witness|interpreter|prosecutor|applicant|respondent|relator|appellant|appellee|retrial_applicant|retrial_respondent|mediator|arbitrator|beneficiary|victim|criminal_defendant|enforcement_applicant|enforcement_respondent|judicial_review_applicant|insolvency_debtor|surety|class_representative",
           "role_name": "",
           "case_number": ""
         }
@@ -316,21 +317,19 @@
       "evidence_type": "documentary|physical|audio_visual|electronic_data|witness_testimony|party_statement|expert_opinion|inspection_record",
       "submitted_by": "",
       "is_key_evidence": true,
-      "examination_status": "examined|not_examined",
-      "admission_status": "admitted|not_admitted|partially_admitted",
-      "admission_reason": "",
-      "probative_force": "valid|invalid",
-      "case_number": ""
+      "admission_status": "admitted|not_admitted",
+      "examination_status": "not_examined|examined",
+      "expert_institution": "",
+      "expert_conclusion": ""
     }
   ],
   "judgment_results": [
     {
-      "result_type": "guilty|not_guilty|liable|not_liable|dismissed|withdrawn|partially_upheld|remanded|punitive_damages|procedural_ruling|bankruptcy_declared|settled|mediation_agreement|arbitration_award|administrative_decision|execution_upheld|execution_revoked|execution_terminated|added_executor",
+      "result_type": "guilty|not_guilty|liable|not_liable|dismissed|withdrawn|partially_upheld|remanded|punitive_damages|procedural_ruling|bankruptcy_declared|mediation_agreement|arbitration_award|administrative_decision",
       "specific_judgment": "",
       "reasoning": "",
-      "claim_amount": "",
-      "effective_date": "",
-      "case_number": ""
+      "case_number": "",
+      "cost_allocation": ""
     }
   ],
   "case_summary": {
@@ -338,8 +337,20 @@
     "disputed_issues": "",
     "conclusion": "",
     "amount_involved": "",
-    "guiding_points": ""
+    "guiding_points": "",
+    "claim_amount": "",
+    "judgment_amount": ""
   },
+  "legal_provision_elements": [
+    {
+      "provision_index": 0,
+      "statute": "",
+      "article": "",
+      "element_type": "subject_element|object_element|act_element|result_element|causality_element|subjective_element|legal_consequence|exception_clause",
+      "content": "",
+      "applicable_fact_pattern": ""
+    }
+  ]
   "facts": [
     {
       "id": "fact_0",
@@ -360,12 +371,248 @@
     {
       "source_id": "",
       "target_id": "",
-      "relation_type": "cites_guiding_case|applies_standard|has_summary|tried_by|has_case_type|cites|appeals_to|retries_from|has_dispute_focus|has_fact|judgment_cites|submitted_for|proves_fact|proves_focus|leads_to|resolved_by|matches_element|plays_role|represents|undertakes|presides_over|includes|includes_clerk|prosecutes|employs_attorney|has_jurisdiction_over|signed_by|based_on|belongs_to",
-      "label": ""
+      "relation_type": "",
+      "description": ""
     }
   ]
 }
 ```
+
+
+
+## Few-shot 示例（民事案）
+
+> 案由: 民事-环境污染责任纠纷 | 入库编号: 2024-11-2-377-002 | 来源: 历史最佳解析（score=95.0）
+
+### 输入案件文本
+```
+【案由分类】民事-环境污染责任纠纷
+
+【入库编号】2024-11-2-377-002
+
+【审判程序】再审
+
+【案例层级】02
+
+【基本案情】
+原告王某诉称：1.判决被告停止制造噪音、排放空气污染物等侵害，排除对原告正常居住和生活的妨碍；2.判决被告支付双方协议规定的每年赔偿款20000元；3.判令被告承担全部诉讼费用。　　被告临沂某公司辩称：对于原告诉讼请求均不予认可，且原告的事实与理由也与事实严重不符。公司自成立以来，一直严格按照相关规定进行合法经营，并没有原告所称的噪音与环境污染，也没有与原告签订任何所谓的赔偿协议。　　法院经审理查明，原告王某系莒南县壮岗镇某村村民。在本村村外建设养殖设施一处，后在该养殖设施处建设房屋并居住。2019年10月25日，被告临沂某公司成立，并在原告居住地东邻建设耐火材料生产车间等。被告未批先建、未验先投，被临沂市生态环境局处罚，原告也多次投诉。但在被告申请环境影响行政审批时，原告作为相邻关系人签字同意。2020年10月20日，原告收到被告的法定代表人王某宁银行转账20000元。2020年11月3日，临沂临港经济开发区行政审批服务局印发《关于临沂某公司年产耐火材料36000吨项目环境影响报告表的批复》，主要内容：“……在全面落实报告表及评估报告提出的环境保护措施后，污染物可达标排放，主要污染物排放总量符合临沂市生态环境局核定的总量控制要求。二、项目设计、建设和运行管理中应重点做好以下工作……（三）严格落实噪声污染防治措施。采用低噪音设备，采取隔声、消音、减振、增距、绿化等降噪措施后，厂界噪
+...（案情较长，已截断）
+
+【裁判理由】
+法院生效裁判认为：环境噪声是指在工业生产、建筑施工、交通运输和社会生活中所产生的干扰周围生活环境的声音。环境噪声污染，是指所产生的环境噪声超过国家规定的环境噪声排放标准，并干扰他人正常生活、工作和学习的现象。在环境污染侵权纠纷案件中，受害人对其所受损害及侵害人实施侵害行为承担举证责任，而侵害人对于不承担责任或减轻责任及其行为与损害之间不存在因果关系承担举证责任。双方当事人争议焦点：（一）被告的生产行为是否构成噪声环境污染；（二）被告的生产行为如造成噪声污染，给原告造成的损失的范围及大小。　　关于争议焦点一。原告主张被告的生产行为构成噪声污染，并提供了委托检测报告作为证据，被告辩称并不构成噪声污染，亦提供了多份委托检测报告作为证据，并对是否构成噪声污染申请进行司法鉴定，但法院委托进行司法鉴定未果。噪声在客观上存在不稳定性和不规律性，在原被告委托及法院委托检测时，一方面存在检测的具体位置并不一
+...（裁判理由较长，已截断）
+```
+
+### 期望输出（示例，仅展示字段格式）
+```json
+{
+  "guiding_case": {
+    "guiding_case_name": "王某诉临沂某公司环境污染责任纠纷案",
+    "publication_date": "2023-08-15",
+    "binding_force": "persuasive",
+    "guiding_points": "《最高人民法院关于生态环境侵权民事诉讼证据的若干规定》第二十五条规定，负有环境资源保护监督管理职责的部门及其所属或者委托的监测机构在行政执法过程中收集的监测数据、形成的事件调查报告、检验检测报告、评估报告等材料，以及公安机关单独或者会同负有环境资源保护监督管理职责的部门提取样品进行检测获取的数据，经当事人质证，可以作为认定案件事实的根据。在认定当事人的生产行为产生的声音是否超出了一般人的容忍度、侵害了相邻人的安宁权时，可以从环境侵权举证责任分配角度分析，并结合行政机关行政执法调查时委托检测的数值来综合评判。",
+    "case_level": "typical_case",
+    "storage_no": "2024-11-2-377-002"
+  },
+  "case_type": {
+    "category": "civil",
+    "level1": "民事",
+    "level2": "环境污染责任纠纷"
+  },
+  "court_cases": [
+    {
+      "case_number": "(2022)鲁1327民初633号",
+      "filing_date": "2022-01-01",
+      "trial_level": "first_instance",
+      "trial_procedure": "一审",
+      "dispute_resolution_type": "litigation",
+      "party_count": null
+    },
+    {
+      "case_number": "(2023)鲁13民终1516号",
+      "filing_date": "2023-01-01",
+      "trial_level": "second_instance",
+      "trial_procedure": "二审",
+      "dispute_resolution_type": "litigation",
+      "party_count": null
+    },
+    {
+      "case_number": "(2023)鲁民申8890号",
+      "filing_date": "2023-01-01",
+      "trial_level": "retrial",
+      "trial_procedure": "再审",
+      "dispute_resolution_type": "litigation",
+      "party_count": null
+    }
+  ],
+  "legal_subjects": [
+    {
+      "name": "王某",
+      "subject_type": "natural_person",
+      "roles": [
+        {
+          "role_code": "plaintiff",
+          "role_name": "原告",
+          "case_number": "(2022)鲁1327民初633号"
+        },
+        {
+          "role_code": "appellant",
+          "role_name": "上诉人",
+          "case_number": "(2023)鲁13民终1516号"
+        },
+        {
+          "role_code": "retrial_applicant",
+          "role_name": "再审申请人",
+          "case_number": "(2023)鲁民申8890号"
+        }
+      ]
+    },
+    {
+      "name": "临沂某公司",
+      "subject_type": "organization",
+      "roles": [
+        {
+          "role_code": "defendant",
+          "role_name": "被告",
+          "case_number": "(2022)鲁1327民初633号"
+        },
+        {
+          "role_code": "appellee",
+          "role_name": "被上诉人",
+          "case_number": "(2023)鲁13民终1516号"
+        },
+        {
+          "role_code": "retrial_respondent",
+          "role_name": "再审被申请人",
+          "case_number": "(2023)鲁民申8890号"
+        }
+      ]
+    }
+  ],
+  "legal_provisions": [
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "9",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_info",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1166",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_info",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1229",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_info",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1230",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_info",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "最高人民法院关于生态环境侵权民事诉讼证据的若干规定",
+      "article": "25",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_type": "expert_opinion",
+      "is_key_evidence": true,
+      "admission_status": "admitted",
+      "examination_status": "examined",
+      "expert_institution": "山东国某环境检测有限公司",
+      "expert_conclusion": "检测点位1、2、4噪声判定为不合格"
+    },
+    {
+      "evidence_type": "expert_opinion",
+      "is_key_evidence": true,
+      "admission_status": "admitted",
+      "examination_status": "examined",
+      "expert_institution": "临沂和某环境检测有限公司",
+      "expert_conclusion": "院内和卧室噪声值分别为昼间59.2/夜间55.6和昼间47.6/夜间43.7"
+    },
+    {
+      "evidence_type": "expert_opinion",
+      "is_key_evidence": true,
+      "admission_status": "admitted",
+      "examination_status": "examined",
+      "expert_institution": "山东某衡环境检测有限公司",
+      "expert_conclusion": "厂界噪声满足三类限值要求"
+    }
+  ],
+  "judgment_results": [
+    {
+      "result_type": "liable",
+      "specific_judgment": "一、被告临沂某公司于本判决生效后三日内支付原告王某2022年度精神损害赔偿金3600元；二、被告临沂某公司于本判决生效后，从2023年始至被告停止当前生产行为或者改进生产工艺，重新获得行政机关环境影响批复文件止，于每年12月31日前支付原告王某当年度精神损害赔偿金3600元；三、驳回原告王某的其他诉讼请求。",
+      "reasoning": "法院认为，被告的生产行为产生的噪声给原告正常生活造成一定困扰，侵害了原告的安宁权。综合考量被告获得环境影响批复文件时原告签字同意、被告法定代表人支付20000元、原告现居住原为养殖区等事实，酌情认定被告每年支付精神损害赔偿金3600元。",
+      "cost_allocation": ""
+    },
+    {
+      "result_type": "dismissed",
+      "specific_judgment": "驳回上诉，维持原判。",
+      "reasoning": "二审法院认为一审判决认定事实清楚，适用法律正确，应予维持。",
+      "cost_allocation": ""
+    }
+  ],
+  "case_summary": {
+    "key_facts": "王某系莒南县某村村民，在村外建设养殖设施并居住。2019年10月临沂某公司成立，在王某房屋东邻建设耐火材料生产车间，未批先建，被环保部门处罚。2020年10月王某收到公司法定代表人王某宁转账20000元，11月公司取得环境影响报告表批复。王某多次投诉噪声污染，各方多次委托检测。2022年王某起诉要求被告停止侵害并每年赔偿20000元。",
+    "disputed_issues": "1. 被告生产行为是否构成噪声环境污染，是否侵害原告安宁权；2. 若构成侵权，原告的损失范围及赔偿数额如何确定。",
+    "conclusion": "一审判决被告支付2022年度精神损害抚慰金3600元，并自2023年起每年支付3600元直至停止生产或改进工艺获批；二审维持；再审驳回王某申请。",
+    "claim_amount": "每年20000元",
+    "judgment_amount": "每年3600元"
+  },
+  "legal_provision_elements": [
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "9",
+      "element_type": "act_element",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1166",
+      "element_type": "subject_element",
+      "provision_index": 1
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1229",
+      "element_type": "act_element",
+      "provision_index": 2
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1230",
+      "element_type": "causality_element",
+      "provision_index": 3
+    },
+    {
+      "statute": "最高人民法院关于生态环境侵权民事诉讼证据的若干规定",
+      "article": "25",
+      "element_type": "act_element",
+      "provision_index": 4
+    }
+  ]
+}
+```
+
 
 ## 案件文本
 {case_text}

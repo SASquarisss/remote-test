@@ -133,11 +133,18 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
                         if cc.get("party_count"): quality += 10
                     for e in (out.get("evidence") or []):
                         if e.get("expert_institution"): quality += 5
+                        if e.get("admission_status"): quality += 3
                     for jr in (out.get("judgment_results") or []):
                         if jr.get("cost_allocation"): quality += 5
+                        if jr.get("reasoning"): quality += 3
                     cs = out.get("case_summary") or {}
                     if cs.get("claim_amount"): quality += 5
                     if cs.get("judgment_amount"): quality += 5
+                    # v3: 新实体加分
+                    facts = len(out.get("facts") or [])
+                    focuses = len(out.get("dispute_focuses") or [])
+                    rels = len(out.get("relations") or [])
+                    quality += facts * 2 + focuses * 3 + rels
 
                     candidates[cat].append({
                         "quality": quality, "score": raw,

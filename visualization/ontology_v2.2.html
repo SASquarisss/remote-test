@@ -375,6 +375,8 @@ var ENTITY_STYLES = {
   Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法律' },
   // 证据/争议标的 — 圆柱体
   Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 6, note: '证据' },
+  Fact:        { shape: 'ellipse', color: '#8E44AD', border: '#6C3483', size: 14, note: '案件事实' },
+  DisputeFocus:{ shape: 'star', color: '#E67E22', border: '#CA6F1E', size: 18, note: '争议焦点' },
   // 诉讼角色/关系 — 菱形
   LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', size: 16, note: '诉讼角色' },
   // 案件核心争议/焦点 — 五角星
@@ -1415,6 +1417,32 @@ function renderParseNode(node) {
         html += '<div class="field-row"><span class="field-name">' + k + '</span><span style="margin-left:8px;color:#555;word-break:break-all;">' + escapeHtml(String(v)) + '</span></div>';
       }
     });
+    html += '</div>';
+  }
+
+  // ── 证据采信状态卡片（Evidence 类型优先展示） ──
+  if (nodeType === 'Evidence' || node.nodeType === 'Evidence') {
+    var admissionStatus = node.admission_status || '';
+    var admissionReason = node.admission_reason || '';
+    var probativeForce = node.probative_force || '';
+    var isAccepted = admissionStatus === 'admitted';
+    var isRejected = admissionStatus === 'not_admitted';
+    var statusIcon = isAccepted ? '✅' : (isRejected ? '❌' : '❓');
+    var statusColor = isAccepted ? '#27ae60' : (isRejected ? '#e74c3c' : '#f39c12');
+    var statusLabel = isAccepted ? '已采信' : (isRejected ? '未采信' : '待确定');
+
+    html += '<div style="margin:12px 0;padding:10px 12px;background:' + statusColor + '15;border:2px solid ' + statusColor + ';border-radius:8px;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;">';
+    html += '<span style="font-size:28px;">' + statusIcon + '</span>';
+    html += '<div><div style="font-weight:700;font-size:16px;color:' + statusColor + ';">' + escapeHtml(statusLabel) + '</div>';
+    html += '<div style="font-size:11px;color:#888;">法院采信意见</div></div></div>';
+    if (admissionReason) {
+      html += '<div style="margin-top:6px;font-size:12px;color:#555;border-top:1px solid ' + statusColor + '30;padding-top:6px;">📝 ' + escapeHtml(admissionReason) + '</div>';
+    }
+    if (probativeForce) {
+      var pfLabel = probativeForce === 'valid' ? '证明力有效' : '证明力无效';
+      html += '<div style="margin-top:4px;"><span class="badge" style="background:' + (probativeForce === 'valid' ? '#e8f5e9' : '#fbe9e7') + ';color:' + (probativeForce === 'valid' ? '#2e7d32' : '#bf360c') + ';">' + pfLabel + '</span></div>';
+    }
     html += '</div>';
   }
 
@@ -2512,6 +2540,7 @@ var TERM_SHAPES = {
   GuidingCase: 'hexagon', CourtCase: 'box', CaseType: 'diamond',
   LegalProvision: 'hexagon', LegalSubject: 'ellipse', Evidence: 'database',
   Judge: 'ellipse', Attorney: 'ellipse', JudgmentResult: 'box', CaseSummary: 'box',
+  Fact: 'ellipse', DisputeFocus: 'star',
 };
 
 function toggleParseTerminal() {
@@ -2751,6 +2780,8 @@ function renderTermVis(nodes, edges) {
   var ZONE_MAP = {
     // 左侧：证据
     Evidence:      'left',
+    Fact:          'center',
+    DisputeFocus:  'center',
     // 中间：案件核心
     CourtCase:     'center',
     GuidingCase:   'center',
@@ -2777,6 +2808,8 @@ function renderTermVis(nodes, edges) {
     CaseSummary:   1,
     JudgmentResult:1,
     Evidence:      0,
+    Fact:          1,
+    DisputeFocus:  1,
     Judge:         0,
     Attorney:      1,
     LegalRole:     1,

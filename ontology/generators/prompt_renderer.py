@@ -153,6 +153,16 @@ ENUM_ZH_MAP: Dict[str, Dict[str, str]] = {
         "admitted": "已采信",
         "not_admitted": "未采信",
     },
+    "Evidence.probative_force": {
+        "valid": "有效",
+        "invalid": "无效",
+    },
+    "DisputeFocus.focus_type": {
+        "factual": "事实焦点",
+        "legal": "法律焦点",
+        "procedural": "程序焦点",
+        "evidence": "证据焦点",
+    },
     # TrialOrganization
     "TrialOrganization.organization_type": {
         "sole_judge": "独任审判",
@@ -372,6 +382,9 @@ EXTRACTION_ENTITY_CONFIG = [
             ("is_key_evidence", "是否关键定案证据", "true/false"),
             ("admission_status", "法院采信状态", "admitted→已采信，not_admitted→未采信。**必填**，从judgment_reason中提取法院对该证据的认定结论"),
             ("examination_status", "质证状态", "examined→已质证，not_examined→未经质证。从文本中提取"),
+            ("admission_reason", "法院采信/不采信的理由", "从judgment_reason中摘录法院对证据的认定意见，如'证据真实、合法、与本案具有关联性'"),
+            ("probative_force", "证明力", "valid→有效，invalid→无效 [枚举值见参考表]"),
+            ("case_number", "关联案号", "从court_cases中对应"),
             ("expert_institution", "鉴定机构名称", "如evidence_type=expert_opinion时填写鉴定机构全称"),
             ("expert_conclusion", "鉴定结论摘要", "如evidence_type=expert_opinion时填写鉴定结论"),
         ],
@@ -385,6 +398,8 @@ EXTRACTION_ENTITY_CONFIG = [
             ("reasoning", "裁判推理过程", "**必填**，从judgment_reason提取法院的推理链条：事实认定→法律适用→结论推导的完整逻辑。300字以内，保留关键推理节点"),
             ("case_number", "关联案号", ""),
             ("cost_allocation", "诉讼费分担", "如'案件受理费12800元，由原告承担30%，被告承担70%'"),
+            ("claim_amount", "诉请金额", "原告起诉时的诉求金额"),
+            ("effective_date", "生效日期", "判决生效日期，格式YYYY-MM-DD"),
         ],
     },
     {
@@ -436,6 +451,26 @@ EXTRACTION_ENTITY_CONFIG = [
             ("case_number", "关联案号", ""),
             ("members", "合议庭成员列表", "含审判长、审判员、人民陪审员等"),
             ("summary", "合议庭组成描述原文", ""),
+        ],
+    },
+    {
+        "name": "Fact",
+        "display_name": "案件事实实体",
+        "fields": [
+            ("id", "事实标识", "如 'fact_0', 'fact_1'"),
+            ("content", "事实描述", ""),
+            ("fact_type", "事实类型", "undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实 [枚举值见参考表]"),
+            ("case_number", "关联案号", ""),
+        ],
+    },
+    {
+        "name": "DisputeFocus",
+        "display_name": "争议焦点实体",
+        "fields": [
+            ("id", "焦点标识", "如 'focus_0', 'focus_1'"),
+            ("content", "争议焦点描述", ""),
+            ("focus_type", "焦点类型", "factual→事实焦点，legal→法律焦点，procedural→程序焦点，evidence→证据焦点 [枚举值见参考表]"),
+            ("case_number", "关联案号", ""),
         ],
     },
     {
@@ -636,6 +671,30 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append('      "applicable_fact_pattern": ""')
     lines.append('    }')
     lines.append('  ]')
+    lines.append('  "facts": [')
+    lines.append('    {')
+    lines.append('      "id": "fact_0",')
+    lines.append('      "content": "",')
+    lines.append('      "fact_type": "undisputed|disputed|to_be_proven",')
+    lines.append('      "case_number": ""')
+    lines.append('    }')
+    lines.append('  ],')
+    lines.append('  "dispute_focuses": [')
+    lines.append('    {')
+    lines.append('      "id": "focus_0",')
+    lines.append('      "content": "",')
+    lines.append('      "focus_type": "factual|legal|procedural|evidence",')
+    lines.append('      "case_number": ""')
+    lines.append('    }')
+    lines.append('  ],')
+    lines.append('  "relations": [')
+    lines.append('    {')
+    lines.append('      "source_id": "",')
+    lines.append('      "target_id": "",')
+    lines.append('      "relation_type": "",')
+    lines.append('      "description": ""')
+    lines.append('    }')
+    lines.append('  ]')
 
     lines.append("}")
     lines.append("```")
@@ -657,6 +716,8 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 6. 当事人角色必须映射到标准枚举值
 7. **所有缺失字段必须尽力从其他文本源推断，不能留空**
 8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
+9. **必须输出 relations 数组**，描述实体间的显式关联（如证据与事实、事实与争议焦点、焦点与裁判结果等）
+10. **证据采信意见（admission_status、admission_reason、probative_force）为强制提取字段**，每份证据都必须填写，不可留空
 
 ## 强制提取要点
 - **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**

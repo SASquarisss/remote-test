@@ -148,6 +148,9 @@ ENTITY_FIELD_MAP = [
             {"key": "evidence_type", "label": "证据类型", "required": True},
             {"key": "submitted_by", "label": "提交方", "required": False},
             {"key": "is_key_evidence", "label": "是否关键证据", "required": False},
+            {"key": "admission_status", "label": "采信状态", "required": False},
+            {"key": "admission_reason", "label": "采信/不采信理由", "required": False},
+            {"key": "probative_force", "label": "证明力", "required": False},
         ],
         "relations": [
             {"key": "submitted_for", "label": "提交给案件", "target": "CourtCase"},
@@ -612,6 +615,15 @@ def _analyze_entity(json_result: Dict[str, Any], entity_def: Dict[str, Any]) -> 
     }
 
 
+def _compute_evidence_admission_fill_rate(json_result: Dict[str, Any]) -> float:
+    """Compute the fill rate of admission_status across all evidence items."""
+    evidence_list = _get_field_value(json_result, "evidence") or []
+    if not evidence_list:
+        return 0.0
+    filled = sum(1 for e in evidence_list if e.get("admission_status"))
+    return round(filled / len(evidence_list), 2)
+
+
 def parse_quality(json_result: Dict[str, Any]) -> Dict[str, Any]:
     """
     Analyze parse quality of a json_result against the ontology structure.
@@ -690,4 +702,10 @@ def parse_quality(json_result: Dict[str, Any]) -> Dict[str, Any]:
         "categories": category_list,
         "entities": entity_results,
         "issues": all_issues,
+        "summary": {
+            "facts_count": len(_get_field_value(json_result, "case_summary.key_facts")) if isinstance(_get_field_value(json_result, "case_summary"), dict) and isinstance(_get_field_value(json_result, "case_summary.key_facts"), list) else 0,
+            "dispute_focuses_count": len(_get_field_value(json_result, "case_summary.disputed_issues")) if isinstance(_get_field_value(json_result, "case_summary"), dict) and isinstance(_get_field_value(json_result, "case_summary.disputed_issues"), list) else 0,
+            "relations_count": len(json_result.get("relations", [])),
+            "evidence_admission_fill_rate": _compute_evidence_admission_fill_rate(json_result),
+        },
     }

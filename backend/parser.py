@@ -456,7 +456,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         label = content[:40]
         nid = f"evid_{i}"
         add_node(nid, label, "Evidence", "JudicialEntity", 1,
-                 f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}<br>关键证据: {'是' if e.get('is_key_evidence') else '否'}")
+                 f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}<br>关键证据: {'是' if e.get('is_key_evidence') else '否'}<br>采信: {e.get('admission_status', '')}<br>理由: {e.get('admission_reason', '')[:40]}<br>证明力: {e.get('probative_force', '')}")
         case_num = e.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "证据")
@@ -495,6 +495,44 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             add_edge(cn_to_cc[case_num], nid, "裁判")
         elif court_cases:
             add_edge(first_cc_id, nid, "裁判")
+
+    # ── Facts ─────────────────────────────────────────────────────────────
+    facts = output.get("facts") or []
+    for i, f in enumerate(facts):
+        fid = f.get("id", f"fact_{i}")
+        label = f.get("content", "")[:40]
+        add_node(fid, label, "Fact", "JudicialEntity", 1,
+                 f"类型: {f.get('fact_type', '')}<br>案号: {f.get('case_number', '')}")
+        case_num = f.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], fid, "事实")
+        elif court_cases:
+            add_edge(first_cc_id, fid, "事实")
+
+    # ── DisputeFocuses ─────────────────────────────────────────────────────
+    focuses = output.get("dispute_focuses") or []
+    for i, df in enumerate(focuses):
+        dfid = df.get("id", f"focus_{i}")
+        label = df.get("content", "")[:40]
+        add_node(dfid, label, "DisputeFocus", "JudicialEntity", 0,
+                 f"类型: {df.get('focus_type', '')}<br>案号: {df.get('case_number', '')}")
+        case_num = df.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], dfid, "争议焦点")
+        elif court_cases:
+            add_edge(first_cc_id, dfid, "争议焦点")
+
+    # ── Relations — 显式关系边 ──────────────────────────────────────────
+    rels = output.get("relations") or []
+    for r in rels:
+        src = r.get("source_id", "")
+        tgt = r.get("target_id", "")
+        rtype = r.get("relation_type", "")
+        rlabel = r.get("label", rtype)
+        if src and tgt:
+            source_id = cn_to_cc.get(src, src)
+            target_id = cn_to_cc.get(tgt, tgt)
+            add_edge(str(source_id), str(target_id), rlabel)
 
     # ── CaseSummary — 如果有多个审级，优先关联到终审案 ──────────────────
     cs = output.get("case_summary") or {}
@@ -540,6 +578,8 @@ ADMIN_SHAPES = {
     "Attorney": "ellipse",
     "JudgmentResult": "box",
     "CaseSummary": "box",
+    "Fact": "ellipse",
+    "DisputeFocus": "star",
 }
 
 
@@ -589,6 +629,21 @@ def evaluate_output(output: Dict[str, Any], row_id: str) -> Dict[str, Any]:
     if not evidence:
         issues.append("evidence 为空")
         score -= 2
+    else:
+        for i, e in enumerate(evidence):
+            if not e.get("admission_status"):
+                issues.append(f"evidence[{i}].admission_status 为空")
+                score -= 2
+
+    facts = output.get("facts") or []
+    if not facts:
+        issues.append("facts 为空")
+        score -= 5
+
+    dispute_focuses = output.get("dispute_focuses") or []
+    if not dispute_focuses:
+        issues.append("dispute_focuses 为空")
+        score -= 5
 
     judgment_results = output.get("judgment_results") or []
     if not judgment_results:
