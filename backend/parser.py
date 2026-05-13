@@ -456,7 +456,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         label = content[:40]
         nid = f"evid_{i}"
         add_node(nid, label, "Evidence", "JudicialEntity", 1,
-                 f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}")
+                 f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}<br>关键证据: {'是' if e.get('is_key_evidence') else '否'}")
         case_num = e.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "证据")

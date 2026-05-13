@@ -2325,22 +2325,102 @@ function renderNeighborTab() {
   var el = document.getElementById('panelTabNeighbors');
   if (!window.currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
   var nodeId = window.currentPanelData.id || '';
-  console.log('[neighbor] nodeId:', nodeId, 'mode:', currentPanelMode, 'panelData:', window.currentPanelData);
   var usedNetwork = (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) ? termVisNetwork : (window.network || null);
   if (!usedNetwork) { el.innerHTML = '<div class="empty-hint">网络未就绪</div>'; return; }
   var _esc = window.__escapeHtml || function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-  // For ontology nodes (typeName), getConnectedNodes works on the node's ID
-  // which is the typeName itself in the ontology graph
+
+  // ── 收集数据 ──
+  var connected, connectedEdges;
   try {
-    var connected = usedNetwork.getConnectedNodes(nodeId) || [];
-    var connectedEdges = usedNetwork.getConnectedEdges(nodeId) || [];
-    console.log('[neighbor] connected:', connected.length, connected);
+    connected = usedNetwork.getConnectedNodes(nodeId) || [];
+    connectedEdges = usedNetwork.getConnectedEdges(nodeId) || [];
   } catch(e) {
-    console.warn('[neighbor] getConnectedNodes failed:', e);
-    var connected = [];
-    var connectedEdges = [];
+    connected = []; connectedEdges = [];
   }
-  var html = '<div class="panel-section"><div class="panel-section-title">🔗 一跳邻居 (' + connected.length + ')</div>';
+
+  // label for the center node
+  var centerNode = usedNetwork.body.data.nodes.get(nodeId);
+  var centerLabel = centerNode ? (centerNode.label || centerNode.title || nodeId) : nodeId;
+
+  // Build edgeId → {from, to, label} map
+  var edgeMap = {};
+  connectedEdges.forEach(function(eid) {
+    var eData = usedNetwork.body.data.edges.get(eid);
+    if (eData) {
+      edgeMap[eid] = { from: eData.from, to: eData.to, label: eData.label || '' };
+    }
+  });
+
+  // Build paths: for each neighbor, find the connecting edge
+  var paths = [];
+  connected.forEach(function(cid) {
+    var neighborNode = usedNetwork.body.data.nodes.get(cid);
+    var neighborLabel = neighborNode ? (neighborNode.label || neighborNode.title || cid) : cid;
+    var neighborType = (neighborNode && neighborNode.nodeType) || '';
+    // Find the edge that connects nodeId ↔ cid
+    var relLabel = '';
+    var relEdgeId = '';
+    Object.keys(edgeMap).forEach(function(eid) {
+      var e = edgeMap[eid];
+      // direction: center → neighbor or neighbor → center
+      if ((e.from === nodeId && e.to === cid) || (e.from === cid && e.to === nodeId)) {
+        relLabel = e.label;
+        relEdgeId = eid;
+      }
+    });
+    paths.push({
+      neighborId: cid,
+      neighborLabel: neighborLabel,
+      neighborType: neighborType,
+      relLabel: relLabel || '关联',
+      relEdgeId: relEdgeId,
+    });
+  });
+
+  // ── 渲染：路径区（置顶） ──
+  var html = '';
+  html += '<div class="panel-section"><div class="panel-section-title">🛤️ 关联路径 (' + paths.length + ')</div>';
+  if (paths.length === 0) {
+    html += '<div class="empty-hint">无关联路径</div>';
+  } else {
+    paths.forEach(function(p) {
+      var direction = '→';
+      // Check actual direction from edge data
+      var actualFrom = '', actualTo = '';
+      if (p.relEdgeId) {
+        var eData = usedNetwork.body.data.edges.get(p.relEdgeId);
+        if (eData) { actualFrom = eData.from; actualTo = eData.to; }
+      }
+      var fromLabel = (actualFrom === nodeId) ? centerLabel : p.neighborLabel;
+      var toLabel = (actualTo === nodeId) ? centerLabel : p.neighborLabel;
+
+      html += '<div class="path-item" data-path-edge="' + _esc(String(p.relEdgeId)) + '"';
+      html += ' data-path-from="' + _esc(String(p.neighborId)) + '" data-path-to="' + _esc(String(p.neighborId)) + '"';
+      html += ' style="cursor:pointer;padding:4px 0;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:4px;font-size:12px;">';
+      // Direction arrow with actual direction
+      if (actualFrom === nodeId) {
+        // center → neighbor
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(fromLabel)) + '">' + _esc(String(fromLabel)) + '</span>';
+        html += '<span style="color:#2980b9;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="border:1px solid #2980b9;border-radius:3px;padding:0 4px;font-size:10px;color:#2980b9;flex-shrink:0;">' + _esc(p.relLabel) + '</span>';
+        html += '<span style="color:#2980b9;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(toLabel)) + '">' + _esc(String(toLabel)) + '</span>';
+      } else {
+        // neighbor → center
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(fromLabel)) + '">' + _esc(String(fromLabel)) + '</span>';
+        html += '<span style="color:#e74c3c;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="border:1px solid #e74c3c;border-radius:3px;padding:0 4px;font-size:10px;color:#e74c3c;flex-shrink:0;">' + _esc(p.relLabel) + '</span>';
+        html += '<span style="color:#e74c3c;font-weight:bold;flex-shrink:0;"> → </span>';
+        html += '<span style="flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(String(toLabel)) + '">' + _esc(String(toLabel)) + '</span>';
+      }
+      html += '<span style="margin-left:auto;font-size:10px;color:#999;flex-shrink:0;">' + _esc(p.neighborType) + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // ── 邻居列表（下方） ──
+  html += '<div class="panel-section"><div class="panel-section-title">🔗 邻居节点 (' + connected.length + ')</div>';
   if (connected.length === 0) {
     html += '<div class="empty-hint">无关联节点</div>';
   } else {
@@ -2354,9 +2434,48 @@ function renderNeighborTab() {
     });
   }
   html += '</div>';
-  html += '<div class="panel-section"><div class="panel-section-title">🔗 关系边 (' + connectedEdges.length + ')</div></div>';
+
+  html += '<div class="panel-section"><div class="panel-section-title">🔗 关系边 (' + connectedEdges.length + ')</div>';
+  if (connectedEdges.length === 0) {
+    html += '<div class="empty-hint">无关系边</div>';
+  } else {
+    connectedEdges.forEach(function(eid) {
+      var eData = usedNetwork.body.data.edges.get(eid);
+      if (!eData) return;
+      var fromNode = usedNetwork.body.data.nodes.get(eData.from);
+      var toNode = usedNetwork.body.data.nodes.get(eData.to);
+      var fromLabel = fromNode ? (fromNode.label || eData.from) : eData.from;
+      var toLabel = toNode ? (toNode.label || eData.to) : eData.to;
+      html += '<div class="rel-item" data-edge="' + eid + '" style="cursor:pointer;font-size:11px;">';
+      html += '<span class="rel-source">' + _esc(String(fromLabel)) + '</span>';
+      html += ' <span style="color:#999;">→[' + _esc(eData.label || '') + ']→</span> ';
+      html += '<span class="rel-source">' + _esc(String(toLabel)) + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
   el.innerHTML = html;
-  el.querySelectorAll('.rel-item').forEach(function(item) {
+
+  // ── 点击路径：高亮图中节点和边 ──
+  el.querySelectorAll('.path-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var edgeId = this.getAttribute('data-path-edge');
+      var nid = this.getAttribute('data-path-to');
+      // Clear previous highlighting
+      usedNetwork.setOptions({ edges: { smooth: { type: 'curvedCW', roundness: 0.12 } } });
+      // Highlight: focus on the neighbor, optionally highlight the edge
+      if (edgeId) {
+        usedNetwork.selectEdges([edgeId]);
+      }
+      if (nid) {
+        usedNetwork.focus(nid, { scale: 1.3, animation: true });
+      }
+    });
+  });
+
+  // ── 点击邻居节点：聚焦 + 切换面板 ──
+  el.querySelectorAll('.rel-item[data-target]').forEach(function(item) {
     item.addEventListener('click', function() {
       var tid = this.getAttribute('data-target');
       if (usedNetwork.getNode(tid)) {
@@ -2543,6 +2662,18 @@ function displayResult(result) {
   }
   renderTermVis(result.nodes, result.edges);
 
+  // ── 在解析图上方显示案件名称 ──
+  var caseName = result.case_name || '';
+  var banner = document.getElementById('caseNameBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'caseNameBanner';
+    banner.style.cssText = 'position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:998;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:8px 20px;border-radius:8px;font-size:15px;font-weight:600;text-align:center;max-width:80%;box-shadow:0 2px 12px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);';
+    document.body.appendChild(banner);
+  }
+  banner.textContent = caseName;
+  banner.style.display = 'block';
+
   // ── Call parse quality analysis & render into issues tab ──
   fetchParseQuality(result.json_result);
 }
@@ -2679,6 +2810,14 @@ function renderTermVis(nodes, edges) {
       font: { color: '#333', size: shapeType === 'database' ? 8 : 11, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
       borderWidth: 2, group: n.group,
       margin: 10,
+      // ── 透传额外字段用于右侧面板 ──
+      case_number: n.case_number || n.title || '',
+      role_name: n.role_name || '',
+      evidence_type: n.evidence_type || '',
+      party_type: n.party_type || '',
+      identity: n.identity || '',
+      case_name: n.case_name || '',
+      score: n.score || '',
     };
   }));
   var visEdges = new vis.DataSet(edges.map(function(e) {
