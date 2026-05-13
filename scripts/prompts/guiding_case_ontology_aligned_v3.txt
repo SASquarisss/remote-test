@@ -8,6 +8,8 @@
 5. 法条引用必须标注引用位置和引用目的
 6. 当事人角色必须映射到标准枚举值
 7. **所有缺失字段必须尽力从其他文本源推断，不能留空**（如filing_date从basic_facts推断，judges从judgment_reason推断）
+8. **必须输出 relations 数组**，描述实体间的显式关联（见输出格式）
+9. **证据采信意见为强制提取字段**，必须从裁判理由中分析法院对每份证据的认定意见
 
 ## 新增强制提取实体
 以下实体**必须全部提取**，不能遗漏：
@@ -48,6 +50,11 @@
   "witness_testimony"（证人证言）、"party_statement"（当事人陈述）、"expert_opinion"（鉴定意见）、"inspection_record"（勘验笔录）
 - `submitted_by`: 提交方名称
 - `is_key_evidence`: 是否是关键定案证据（true/false）
+- **`examination_status`**: **必填**，质证状态。"examined"（已质证）、"not_examined"（未经质证）。从裁判理由中推断。
+- **`admission_status`**: **必填**，法院采信状态。"admitted"（采信）、"not_admitted"（未采信）、"partially_admitted"（部分采信）。从裁判理由中法院对证据的认定意见推断，如"本院予以确认"→"admitted"，"不予采信"→"not_admitted"。
+- **`admission_reason`**: 法院采信/不采信的理由。从裁判理由中摘录相关表述，如"证据真实、合法、与本案具有关联性"、"缺乏其他证据印证"等。
+- `probative_force`: 证明力。"valid"（有效）、"invalid"（无效）。从法院对证据的评价推断。
+- `case_number`: 关联案号
 
 ### JudgmentResult（判决结果/裁判主文）
 从case_summary或judgment_reason中提取结构化判决结果：
@@ -59,6 +66,9 @@
   检察监督："procuratorial_suggestion_issued"（制发检察建议）、"procuratorial_appeal_lodged"（提起抗诉）
   通用："mediation_agreement"（调解书）、"arbitration_award"（仲裁裁决）、"administrative_decision"（行政决定）
 - `specific_judgment`: 具体判决内容（如刑期、赔偿金额等）
+- **`reasoning`**: 裁判理由全文摘要（200字以内），即"本院认为"部分的核心说理逻辑。**必填**。
+- **`claim_amount`**: 诉讼标的额/涉案金额（如"335049元"）。如有则填写，无则留空。
+- **`effective_date`**: 裁判生效日期（格式YYYY-MM-DD）。从文本中推断，如"本判决为终审判决"也可推断生效日期与judgment_date相同。
 - `case_number`: 关联案号
 
 ### LegalProvision.content（法条原文片段）
@@ -67,6 +77,59 @@
 - `article`: **必填**，纯数字。如"第30条"→"30"，"第二百六十六条"→"266"，"第二十条之一"→"236之一"。不能留空。
 - `paragraph`: 款号，如"第1款"→"1"
 - `item`: 项号，如"第(一)项"→"1"
+
+### Fact（案件事实实体）
+从basic_facts和judgment_reason中提取独立案件事实，每个重要事实为一个独立实体：
+- `id`: 事实标识，如"fact_0"、"fact_1"
+- `content`: 事实描述
+- `fact_type`: 事实类型。"undisputed"（无争议事实）、"disputed"（有争议事实）、"to_be_proven"（待证事实）
+- `case_number`: 关联案号
+
+### DisputeFocus（争议焦点实体）
+从judgment_reason中提取争议焦点，每个焦点为一个独立实体：
+- `id`: 焦点标识，如"focus_0"、"focus_1"
+- `content`: 争议焦点描述
+- `focus_type`: 焦点类型。"factual"（事实焦点）、"legal"（法律焦点）、"procedural"（程序焦点）、"evidence"（证据焦点）
+- `case_number`: 关联案号
+
+### relations（实体关系数组）
+描述上述各实体间的显式关联关系，每条关系包含：
+- `source_id`: 源实体ID（使用各数组中对应的id或实体标识字段）
+- `target_id`: 目标实体ID
+- `relation_type`: 关系类型。可用枚举值：
+  - "cites_guiding_case": CourtCase → GuidingCase（案件引用指导性案例）
+  - "applies_standard": CourtCase → SentencingStandard（案件适用量刑标准）
+  - "has_summary": CourtCase → CaseSummary（案件具有摘要）
+  - "tried_by": CourtCase → TrialOrganization（案件由审判组织审理）
+  - "has_case_type": CourtCase → CaseType（案件具有案由）
+  - "cites": CourtCase → LegalProvision（案件引用法条）
+  - "appeals_to": CourtCase → CourtCase（上诉关系）
+  - "retries_from": CourtCase → CourtCase（再审源自）
+  - "has_dispute_focus": CourtCase → DisputeFocus（案件具有争议焦点）
+  - "has_fact": CourtCase → Fact（案件具有事实）
+  - "judgment_cites": JudgmentResult → LegalProvision（裁判结果引用法条）
+  - "submitted_for": Evidence → CourtCase（证据提交给案件）
+  - "proves_fact": Evidence → Fact（证据证明事实）
+  - "proves_focus": Evidence → DisputeFocus（证据证明争议焦点）
+  - "leads_to_fact": Fact → JudgmentResult（事实推导出裁判结果）
+  - "leads_to_focus": DisputeFocus → JudgmentResult（争议焦点推导出裁判结果）
+  - "resolved_by": DisputeFocus → LegalProvision（争议焦点由法条解决）
+  - "matches_element": Fact → LegalProvision（事实匹配法条构成要件）
+  - "plays_role": LegalSubject → LegalRole（主体担任角色）
+  - "represents": Attorney → LegalSubject（律师代理当事人）
+  - "undertakes": Judge → CourtCase（法官承办案件）
+  - "presides_over": Judge → TrialOrganization（法官主持审判组织）
+  - "includes": TrialOrganization → Judge（审判组织包含法官）
+  - "includes_clerk": TrialOrganization → Clerk（审判组织配备书记员）
+  - "prosecutes": Procuratorate → CourtCase（检察院公诉案件）
+  - "employs_attorney": LawFirm → Attorney（律所雇佣律师）
+  - "has_jurisdiction_over": Court → District（法院管辖辖区）
+  - "signed_by": LegalDocument → Judge（文书由法官签署）
+  - "based_on": ExecutionInfo → JudgmentResult（执行依据裁判结果）
+  - "belongs_to": LegalProvision → Law（法条属于某部法律）
+- `label`: 关系中文标签（用于可视化显示）
+
+**注意**：每条relation必须使用对应实体的ID或唯一标识字段。如CourtCase用case_number，Evidence用索引"evid_0"等。输出为relations数组，如果没有匹配的关系可以不输出对应条目，但已有的关联必须全部输出。
 
 ## 本体论实体映射
 
@@ -102,6 +165,9 @@
   - `name`: 法院完整名称
   - `court_level`: 法院层级。"最高人民法院"→"supreme"，"高级人民法院"→"high"，"中级人民法院"→"intermediate"，"基层人民法院"→"basic"，"专门法院"→"special"
 - `status`: 案件状态。如已判决且生效→"effective"，刚判决→"judged"
+- **`claim_amount`**: 涉案金额/标的额（如有）
+- **`first_instance_case_number`**: 一审案号（仅二审/再审案件填写，引用被上诉/被再审案件的案号）
+- **`dispute_resolution_type`**: 争议解决方式。"litigation"（诉讼）、"mediation"（调解）、"arbitration"（仲裁）
 
 **注意**：当一个案件包含多个审级（如一审、二审、再审）时，每个案号和对应法院必须分别列出，不能遗漏。
 **filing_date必须填写**，可以从案号年份、文本中"受理"、"立案"等关键词推断。实在无法推断则使用案号年份的第一天（如案号(2020)xxx则filing_date为"2020-01-01"）。
@@ -181,7 +247,10 @@
         "name": "",
         "court_level": "supreme|high|intermediate|basic|special"
       },
-      "status": "judged|effective|..."
+      "status": "judged|effective|...",
+      "claim_amount": "",
+      "first_instance_case_number": "",
+      "dispute_resolution_type": "litigation|mediation|arbitration"
     }
   ],
   "legal_subjects": [
@@ -246,13 +315,21 @@
       "content": "",
       "evidence_type": "documentary|physical|audio_visual|electronic_data|witness_testimony|party_statement|expert_opinion|inspection_record",
       "submitted_by": "",
-      "is_key_evidence": true
+      "is_key_evidence": true,
+      "examination_status": "examined|not_examined",
+      "admission_status": "admitted|not_admitted|partially_admitted",
+      "admission_reason": "",
+      "probative_force": "valid|invalid",
+      "case_number": ""
     }
   ],
   "judgment_results": [
     {
       "result_type": "guilty|not_guilty|liable|not_liable|dismissed|withdrawn|partially_upheld|remanded|punitive_damages|procedural_ruling|bankruptcy_declared|settled|mediation_agreement|arbitration_award|administrative_decision|execution_upheld|execution_revoked|execution_terminated|added_executor",
       "specific_judgment": "",
+      "reasoning": "",
+      "claim_amount": "",
+      "effective_date": "",
       "case_number": ""
     }
   ],
@@ -262,7 +339,31 @@
     "conclusion": "",
     "amount_involved": "",
     "guiding_points": ""
-  }
+  },
+  "facts": [
+    {
+      "id": "fact_0",
+      "content": "",
+      "fact_type": "undisputed|disputed|to_be_proven",
+      "case_number": ""
+    }
+  ],
+  "dispute_focuses": [
+    {
+      "id": "focus_0",
+      "content": "",
+      "focus_type": "factual|legal|procedural|evidence",
+      "case_number": ""
+    }
+  ],
+  "relations": [
+    {
+      "source_id": "",
+      "target_id": "",
+      "relation_type": "cites_guiding_case|applies_standard|has_summary|tried_by|has_case_type|cites|appeals_to|retries_from|has_dispute_focus|has_fact|judgment_cites|submitted_for|proves_fact|proves_focus|leads_to|resolved_by|matches_element|plays_role|represents|undertakes|presides_over|includes|includes_clerk|prosecutes|employs_attorney|has_jurisdiction_over|signed_by|based_on|belongs_to",
+      "label": ""
+    }
+  ]
 }
 ```
 
