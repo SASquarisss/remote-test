@@ -361,7 +361,7 @@ var ENTITY_STYLES = {
   LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法条/法律依据' },
   Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法律' },
   // 证据/争议标的 — 圆柱体
-  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 18, note: '证据' },
+  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 14, note: '证据' },
   // 诉讼角色/关系 — 菱形
   LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', size: 16, note: '诉讼角色' },
   // 案件核心争议/焦点 — 五角星
@@ -2068,7 +2068,7 @@ var TERM_COLORS = {
 };
 var TERM_SHAPES = {
   GuidingCase: 'hexagon', CourtCase: 'box', CaseType: 'diamond',
-  LegalProvision: 'hexagon', LegalSubject: 'ellipse', Evidence: 'diamond',
+  LegalProvision: 'hexagon', LegalSubject: 'ellipse', Evidence: 'database',
   Judge: 'ellipse', Attorney: 'ellipse', JudgmentResult: 'box', CaseSummary: 'box',
 };
 
@@ -2323,9 +2323,9 @@ function renderTermVis(nodes, edges) {
   var data = { nodes: visNodes, edges: visEdges };
   var options = {
     physics: {
-      enabled: true, solver: 'forceAtlas2Based',
-      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.005, springLength: 180, springConstant: 0.08, damping: 0.4 },
-      stabilization: { iterations: 150, fit: true }, minVelocity: 0.5,
+      enabled: true, solver: 'barnesHut',
+      barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 180, springConstant: 0.04, damping: 0.5, avoidOverlap: 0.5 },
+      stabilization: { iterations: 200, fit: true }, minVelocity: 0.5,
     },
     interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
     edges: { smooth: { type: 'continuous' }, font: { size: 10, color: '#555' } },
