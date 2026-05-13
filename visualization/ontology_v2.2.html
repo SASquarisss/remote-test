@@ -808,7 +808,11 @@ network.on('stabilizationIterationsDone', function() {
   // 稳定后关闭物理引擎，防止持续浮动
   network.setOptions({ physics: { enabled: false } });
   // 构建继承树图例
-  buildLegend();
+  if (document.querySelector('.legend')) {
+    buildLegend();
+  } else {
+    console.warn('[DOM] .legend element not found, skipping buildLegend()');
+  }
   // 自适应视口
   network.fit({ animation: true, nodes: TYPE_NAMES });
 });
@@ -839,6 +843,25 @@ var isPanelLocked = false;
 var currentSelection = null; // 'node:TypeName' or 'edge:EdgeId'
 var panelCompact = false; // P0-2: compact mode (220px, title only)
 
+// DOM 保护：防御性检查，防止 Edge 等浏览器在 DOM 未就绪时执行
+if (!panelClose || !panelShrink || !detailPanel) {
+  console.error('[DOM] panel elements missing (panelClose=' + !!panelClose + ' panelShrink=' + !!panelShrink + ' detailPanel=' + !!detailPanel + ')');
+  console.error('[DOM] document.readyState=' + document.readyState);
+  // Retry on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', function() {
+    panelClose = document.getElementById('panelClose');
+    panelShrink = document.getElementById('panelShrink');
+    detailPanel = document.getElementById('detailPanel');
+    panelTitle = document.getElementById('panelTitle');
+    panelBody = document.getElementById('panelBody');
+    console.log('[DOM] retry: panelClose=' + !!panelClose + ' panelShrink=' + !!panelShrink + ' detailPanel=' + !!detailPanel);
+    if (panelClose) bindPanelEvents();
+  });
+} else {
+  bindPanelEvents();
+}
+
+function bindPanelEvents() {
 // Close button — closes panel completely
 panelClose.addEventListener('click', function(e) {
   e.stopPropagation();
@@ -906,6 +929,7 @@ function hidePanel() {
   isPanelLocked = false;
   currentSelection = null;
 }
+} // end bindPanelEvents
 
 // Node hover → 预览，不锁定
 network.on('hoverNode', function(params) {
@@ -2786,6 +2810,10 @@ function renderTermVis(nodes, edges) {
   // Hide ontology container (keep network alive in background)
   var ontologyContainer = document.getElementById('ontologyContainer');
   var mynetwork = document.getElementById('mynetwork');
+  if (!mynetwork) {
+    console.error('[DOM] #mynetwork not found in renderTermVis, aborting');
+    return;
+  }
   ontologyContainer.classList.add('hidden');
   // Adjust ontology network if it exists (keep alive)
   if (window.network) {
