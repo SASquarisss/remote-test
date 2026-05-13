@@ -294,9 +294,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         if cn:
             add_node("gc_num", cn, "GuidingCase", "LegalNorm", 1)
             add_edge("gc", "gc_num", "案号")
-        # Connect guiding case to main court case even without case number
-        if court_cases and not cn:
-            add_edge(court_cases[0].get('case_number', f'cc_0'), 'gc', '关联')
+        # 关联边在 CourtCases 循环之后设置（见 gc_rel 标记）
 
     # CaseType
     ct = output.get("case_type") or {}
@@ -309,16 +307,32 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
                 add_node(nid, val, "CaseType", "JudicialEntity", 1)
                 add_edge("ct", nid, lv_label)
 
-    # CourtCases
+    # CourtCases — 从 LLM 提取的 case_number 只作为 label，节点的 id 始终用 cc_{i}
     court_cases = output.get("court_cases") or []
+    first_cc_id = None
     for i, cc in enumerate(court_cases):
         cn = cc.get("case_number", f"case_{i}")
         nid = f"cc_{i}"
+        if first_cc_id is None:
+            first_cc_id = nid
         label = cn[:60]
         add_node(nid, label, "CourtCase", "JudicialEntity", 0,
                  f"案号: {cn}<br>立案日期: {cc.get('filing_date', '')}")
         if ct.get("category"):
             add_edge("ct", nid, "案由")
+
+    # 如果有指导案例的 gc 节点且没有 case_number，关联到主案
+    # gc_rel: needs first_cc_id from the court cases loop above
+    if first_cc_id and 'gc' in node_set:
+        cn = (output.get("guiding_case") or {}).get("guiding_case_number", "")
+        if not cn:
+            edges.append({
+                "from": first_cc_id, "to": "gc", "label": "关联",
+                "color": {"color": "#7f8c8d", "highlight": "#333", "hover": "#333", "opacity": 0.7},
+                "font": {"size": 10, "color": "#555", "strokeWidth": 2, "strokeColor": "#fff"},
+                "width": 1.5, "smooth": {"type": "continuous"},
+                "arrows": {"to": {"enabled": True, "scaleFactor": 0.6}},
+            })
 
     # LegalSubjects
     subjects = output.get("legal_subjects") or output.get("parties") or []
@@ -327,7 +341,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         nid = f"subj_{i}"
         add_node(nid, name[:40], "LegalSubject", "LegalSubject", 0)
         if court_cases:
-            add_edge(court_cases[0].get("case_number", f"cc_0"), nid, "当事人")
+            add_edge(first_cc_id, nid, "当事人")
 
     # Judges
     judges = output.get("judges") or []
@@ -336,7 +350,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         nid = f"judge_{i}"
         add_node(nid, name, "Judge", "LegalSubject", 1)
         if court_cases:
-            add_edge(court_cases[0].get("case_number", f"cc_0"), nid, "审判")
+            add_edge(first_cc_id, nid, "审判")
 
     # Attorneys
     attorneys = output.get("attorneys") or []
@@ -345,7 +359,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         nid = f"atty_{i}"
         add_node(nid, name, "Attorney", "LegalSubject", 1)
         if court_cases:
-            add_edge(court_cases[0].get("case_number", f"cc_0"), nid, "代理")
+            add_edge(first_cc_id, nid, "代理")
 
     # LegalProvisions
     provisions = output.get("legal_provisions") or []
@@ -357,7 +371,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         add_node(nid, label[:60], "LegalProvision", "LegalNorm", 1,
                  p.get("content", ""))
         if court_cases:
-            add_edge(court_cases[0].get("case_number", f"cc_0"), nid, "引用")
+            add_edge(first_cc_id, nid, "引用")
 
     # Evidence
     evids = output.get("evidence") or []
@@ -368,7 +382,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         add_node(nid, label, "Evidence", "JudicialEntity", 1,
                  f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}")
         if court_cases:
-            add_edge(court_cases[0].get("case_number", f"cc_0"), nid, "证据")
+            add_edge(first_cc_id, nid, "证据")
 
     # JudgmentResults
     jrs = output.get("judgment_results") or []
@@ -377,7 +391,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         nid = f"jr_{i}"
         add_node(nid, rtype, "JudgmentResult", "JudicialEntity", 0)
         if court_cases:
-            add_edge(court_cases[0].get("case_number", f"cc_0"), nid, "裁判")
+            add_edge(first_cc_id, nid, "裁判")
 
     # CaseSummary
     cs = output.get("case_summary") or {}
@@ -388,7 +402,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         add_node("summary", issues[:60], "CaseSummary", "JudicialEntity", 1,
                  issues)
         if court_cases:
-            add_edge(court_cases[0].get("case_number", f"cc_0"), "summary", "审理")
+            add_edge(first_cc_id, "summary", "审理")
 
     return {"nodes": nodes, "edges": edges}
 

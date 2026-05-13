@@ -1140,6 +1140,19 @@ function toggleLegend() {
 window.toggleLegend = toggleLegend;
 
 function renderEntityPanel(typeName) {
+  // Check if this is a parse graph node (from termVisNetwork)
+  if (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) {
+    try {
+      var parseNode = termVisNetwork.body.data.nodes.get(typeName);
+      if (parseNode) {
+        renderParseNode(parseNode);
+        return;
+      }
+    } catch(e) {
+      // fall through to ontology logic
+    }
+  }
+
   var data = ENTITY_DATA[typeName];
   if (!data) {
     panelBody.innerHTML = '<div class="empty-hint">未找到实体数据: ' + typeName + '</div>';
@@ -1297,7 +1310,89 @@ function renderEntityPanel(typeName) {
   });
 }
 
+// ── Render a parse graph node (from TermVis) into the detail panel ──
+function renderParseNode(node) {
+  var label = node.label || node.id;
+  var nodeType = node.nodeType || node.group || '未知类型';
+  panelTitle.textContent = '📋 解析节点: ' + label;
+
+  var html = '';
+
+  // Basic info
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">📌 基本信息</div>';
+  html += '<div class="field-row"><span class="field-name">Label</span><span style="margin-left:8px;">' + escapeHtml(label) + '</span></div>';
+  html += '<div class="field-row"><span class="field-name">类型</span><span style="margin-left:8px;">' + escapeHtml(nodeType) + '</span></div>';
+  if (node.group) {
+    html += '<div class="field-row"><span class="field-name">Group</span><span style="margin-left:8px;">' + escapeHtml(node.group) + '</span></div>';
+  }
+  html += '<div class="field-row"><span class="field-name">ID</span><span style="margin-left:8px;font-family:monospace;font-size:11px;color:#666;">' + escapeHtml(node.id) + '</span></div>';
+  html += '</div>';
+
+  // Title (extra info from parser)
+  var title = node.title || '';
+  if (title) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">📄 详细信息</div>';
+    html += '<div class="desc-text">' + escapeHtml(title) + '</div>';
+    html += '</div>';
+  }
+
+  // Properties from title (try to parse as JSON)
+  if (title && title.charAt(0) === '{') {
+    try {
+      var props = JSON.parse(title);
+      var propKeys = Object.keys(props);
+      if (propKeys.length > 0) {
+        html += '<div class="panel-section">';
+        html += '<div class="panel-section-title">📊 结构化属性 (' + propKeys.length + ')</div>';
+        propKeys.forEach(function(k) {
+          var v = props[k];
+          if (typeof v === 'object') v = JSON.stringify(v);
+          html += '<div class="field-row"><span class="field-name">' + escapeHtml(k) + '</span><span style="margin-left:8px;color:#555;">' + escapeHtml(String(v)) + '</span></div>';
+        });
+        html += '</div>';
+      }
+    } catch(e) {}
+  }
+
+  // Shape/Style info
+  var shpName = (window.__TERM_SHAPES && window.__TERM_SHAPES[nodeType]) ? window.__TERM_SHAPES[nodeType] : (node.shape || 'ellipse');
+  var colInfo = (window.__TERM_COLORS && window.__TERM_COLORS[nodeType]) ? window.__TERM_COLORS[nodeType] : null;
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">🎨 样式</div>';
+  html += '<div class="field-row"><span class="field-name">形状</span><span style="margin-left:8px;">' + escapeHtml(shpName) + '</span></div>';
+  if (colInfo) {
+    html += '<div class="field-row" style="align-items:center;"><span class="field-name">颜色</span>';
+    html += '<span style="display:inline-block;width:20px;height:20px;border-radius:4px;background:' + colInfo.bg + ';border:1px solid ' + colInfo.border + ';margin-left:8px;vertical-align:middle;"></span>';
+    html += '<span style="margin-left:6px;font-family:monospace;font-size:11px;">' + colInfo.bg + '</span></div>';
+  }
+  html += '</div>';
+
+  panelBody.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return String(str);
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
 function renderEdgePanel(edgeId) {
+  // Check if this is a parse graph edge (from termVisNetwork)
+  if (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) {
+    try {
+      var parseEdge = termVisNetwork.body.data.edges.get(edgeId);
+      if (parseEdge) {
+        renderParseEdge(parseEdge);
+        return;
+      }
+    } catch(e) {
+      // fall through to ontology logic
+    }
+  }
+
   var allEdges = data.edges.get(edgeId);
   if (!allEdges) return;
 
@@ -1401,6 +1496,43 @@ function renderEdgePanel(edgeId) {
     html += '<div><span class="badge badge-acyclic">🔄 无环 (acyclic)</span></div>';
     html += '</div>';
   }
+
+  panelBody.innerHTML = html;
+}
+
+// ── Render a parse graph edge into the detail panel ──
+function renderParseEdge(edge) {
+  var fromLabel = edge.from;
+  var toLabel = edge.to;
+  // Try to get labels from nodes
+  if (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) {
+    try {
+      var fromNode = termVisNetwork.body.data.nodes.get(edge.from);
+      var toNode = termVisNetwork.body.data.nodes.get(edge.to);
+      if (fromNode) fromLabel = fromNode.label || fromNode.id;
+      if (toNode) toLabel = toNode.label || toNode.id;
+    } catch(e) {}
+  }
+
+  var edgeLabel = edge.label || '关系';
+  panelTitle.textContent = '🔗 ' + edgeLabel;
+
+  var html = '';
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">📌 关系</div>';
+  html += '<div class="field-row" style="font-size:14px;">';
+  html += '<span style="font-weight:500;">' + escapeHtml(fromLabel) + '</span>';
+  html += ' <span style="color:#888;font-size:18px;">→</span> ';
+  html += '<span style="font-weight:500;">' + escapeHtml(toLabel) + '</span>';
+  html += '</div>';
+  html += '<div class="desc-text" style="font-size:12px;color:#888;margin-top:4px;">' + escapeHtml(edgeLabel) + '</div>';
+  html += '</div>';
+
+  // Edge ID
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">📌 边信息</div>';
+  html += '<div class="field-row"><span class="field-name">ID</span><span style="margin-left:8px;font-family:monospace;font-size:11px;color:#666;">' + escapeHtml(edge.id) + '</span></div>';
+  html += '</div>';
 
   panelBody.innerHTML = html;
 }
@@ -2104,14 +2236,22 @@ function renderTermVis(nodes, edges) {
   var visNodes = new vis.DataSet(nodes.map(function(n) {
     var nc = colMap[n.nodeType] || colMap[n.group] || { bg: '#7f8c8d', border: '#5d6d7e' };
     var styleSize = sizeMap[n.nodeType] || 18;
+    // Determine font size based on shape: box/square get larger text
+    var shapeType = shpMap[n.nodeType] || n.shape || 'ellipse';
+    var fontSize = 10;
+    if (shapeType === 'box' || shapeType === 'square') {
+      fontSize = 12;
+    } else if (shapeType === 'ellipse') {
+      fontSize = 8;
+    }
     return {
       id: n.id,
       label: n.label,
       title: n.title || '',
-      shape: shpMap[n.nodeType] || n.shape || 'ellipse',
+      shape: shapeType,
       size: styleSize,
       color: { background: nc.bg, border: nc.border },
-      font: { color: '#fff', size: 8 },
+      font: { color: '#fff', size: fontSize },
       borderWidth: 2, group: n.group,
     };
   }));
@@ -2153,6 +2293,52 @@ function renderTermVis(nodes, edges) {
   var placeholder = document.getElementById('termVisPlaceholder');
   if (container) container.innerHTML = '';
   if (placeholder) placeholder.textContent = '⚡ 解析后的知识图谱已渲染至页面中央，请查看主区域';
+
+  // ── Bind click/hover events for parse graph → detail panel ──
+  setTimeout(function() {
+    var mynetworkEl = document.getElementById('mynetwork');
+    var termPanel = document.getElementById('detailPanel');
+
+    termVisNetwork.on('click', function(params) {
+      if (params.nodes.length > 0) {
+        var nodeId = params.nodes[0];
+        termPanel.classList.remove('edge-mode');
+        renderEntityPanel(nodeId);
+        termPanel.classList.add('open');
+        isPanelLocked = true;
+        currentSelection = 'node:' + nodeId;
+      } else if (params.edges.length > 0) {
+        var edgeId = params.edges[0];
+        termPanel.classList.add('edge-mode');
+        renderEdgePanel(edgeId);
+        termPanel.classList.add('open');
+        isPanelLocked = true;
+        currentSelection = 'edge:' + edgeId;
+      } else {
+        if (isPanelLocked) hidePanel();
+      }
+    });
+
+    termVisNetwork.on('hoverNode', function(params) {
+      if (isPanelLocked) return;
+      var hoverKey = 'node:' + params.node;
+      if (hoverKey === currentSelection) return;
+      termPanel.classList.remove('edge-mode');
+      renderEntityPanel(params.node);
+      termPanel.classList.add('open');
+      currentSelection = 'node:' + params.node;
+    });
+
+    termVisNetwork.on('hoverEdge', function(params) {
+      if (isPanelLocked) return;
+      var hoverKey = 'edge:' + params.edge;
+      if (hoverKey === currentSelection) return;
+      termPanel.classList.add('edge-mode');
+      renderEdgePanel(params.edge);
+      termPanel.classList.add('open');
+      currentSelection = 'edge:' + params.edge;
+    });
+  }, 500);
 }
 
 function doSave() {
