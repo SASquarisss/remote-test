@@ -2306,8 +2306,9 @@ function renderTermVis(nodes, edges) {
       size: styleSize,
       nodeType: n.nodeType || n.group || '',
       color: { background: nc.bg, border: nc.border },
-      font: { color: '#fff', size: fontSize },
+      font: { color: '#333', size: 11, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
       borderWidth: 2, group: n.group,
+      margin: 10,
     };
   }));
   var visEdges = new vis.DataSet(edges.map(function(e) {

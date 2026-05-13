@@ -247,9 +247,9 @@
     {
       "id": "gc",
       "label": "张某伟、上海某医学数据科技有限公司发明专利发明人署名权纠纷二审民事判决书",
-      "title": "案号: <br>效力: reference",
+      "title": "案号: <br>效力: 参考案例",
       "shape": "hexagon",
-      "size": 22,
+      "size": 35,
       "color": {
         "bg": "#2980b9",
         "border": "#1a5276"
@@ -265,7 +265,7 @@
     },
     {
       "id": "ct",
-      "label": "civil",
+      "label": "民事",
       "title": "",
       "shape": "diamond",
       "size": 35,
@@ -648,7 +648,7 @@
       "label": "张某伟与王某晟之间的企业微信聊天记录，显示王某晟发送专利申请文件给张某伟，张某伟",
       "title": "类型: electronic_data<br>提交: 上海某医学数据科技有限公司",
       "shape": "database",
-      "size": 14,
+      "size": 26,
       "color": {
         "bg": "#d35400",
         "border": "#a04000"
@@ -667,7 +667,7 @@
       "label": "《大专家算法应用初步思路》PPT，张某伟主张为涉案专利申请的技术来源。",
       "title": "类型: electronic_data<br>提交: 张某伟",
       "shape": "database",
-      "size": 14,
+      "size": 26,
       "color": {
         "bg": "#d35400",
         "border": "#a04000"
@@ -686,7 +686,7 @@
       "label": "涉案专利申请文件（申请号202211696280.5），权利要求书和说明书。",
       "title": "类型: documentary<br>提交: 上海某医学数据科技有限公司",
       "shape": "database",
-      "size": 14,
+      "size": 26,
       "color": {
         "bg": "#d35400",
         "border": "#a04000"
@@ -702,7 +702,7 @@
     },
     {
       "id": "jr_0",
-      "label": "dismissed",
+      "label": "驳回",
       "title": "",
       "shape": "box",
       "size": 35,
@@ -721,7 +721,7 @@
     },
     {
       "id": "jr_1",
-      "label": "dismissed",
+      "label": "驳回",
       "title": "",
       "shape": "box",
       "size": 35,
@@ -759,6 +759,33 @@
     }
   ],
   "edges": [
+    {
+      "from": "cc_1",
+      "to": "gc",
+      "label": "关联",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
     {
       "from": "ct",
       "to": "ct_level1_知识产权与竞争纠纷",
@@ -869,8 +896,89 @@
     },
     {
       "from": "cc_0",
+      "to": "cc_1",
+      "label": "上诉",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "cc_1",
       "to": "subj_0",
-      "label": "当事人",
+      "label": "上诉人",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "cc_0",
+      "to": "subj_0",
+      "label": "一审原告",
+      "color": {
+        "color": "#7f8c8d",
+        "highlight": "#333",
+        "hover": "#333",
+        "opacity": 0.7
+      },
+      "font": {
+        "size": 10,
+        "color": "#555",
+        "strokeWidth": 2,
+        "strokeColor": "#fff"
+      },
+      "width": 1.5,
+      "smooth": {
+        "type": "continuous"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 0.6
+        }
+      }
+    },
+    {
+      "from": "cc_1",
+      "to": "subj_1",
+      "label": "被上诉人",
       "color": {
         "color": "#7f8c8d",
         "highlight": "#333",
@@ -897,7 +1005,7 @@
     {
       "from": "cc_0",
       "to": "subj_1",
-      "label": "当事人",
+      "label": "一审被告",
       "color": {
         "color": "#7f8c8d",
         "highlight": "#333",
@@ -922,9 +1030,9 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "subj_2",
-      "label": "当事人",
+      "label": "法定代表人",
       "color": {
         "color": "#7f8c8d",
         "highlight": "#333",
@@ -951,7 +1059,7 @@
     {
       "from": "cc_0",
       "to": "subj_3",
-      "label": "当事人",
+      "label": "证人",
       "color": {
         "color": "#7f8c8d",
         "highlight": "#333",
@@ -976,7 +1084,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "judge_0",
       "label": "审判",
       "color": {
@@ -1003,7 +1111,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "judge_1",
       "label": "审判",
       "color": {
@@ -1030,7 +1138,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "judge_2",
       "label": "审判",
       "color": {
@@ -1057,7 +1165,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "judge_3",
       "label": "审判",
       "color": {
@@ -1084,7 +1192,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "judge_4",
       "label": "审判",
       "color": {
@@ -1111,7 +1219,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "judge_5",
       "label": "审判",
       "color": {
@@ -1138,7 +1246,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "atty_0",
       "label": "代理",
       "color": {
@@ -1165,7 +1273,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "atty_1",
       "label": "代理",
       "color": {
@@ -1246,7 +1354,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "prov_2",
       "label": "引用",
       "color": {
@@ -1273,7 +1381,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "evid_0",
       "label": "证据",
       "color": {
@@ -1300,7 +1408,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "evid_1",
       "label": "证据",
       "color": {
@@ -1327,7 +1435,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "evid_2",
       "label": "证据",
       "color": {
@@ -1354,7 +1462,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "jr_0",
       "label": "裁判",
       "color": {
@@ -1408,7 +1516,7 @@
       }
     },
     {
-      "from": "cc_0",
+      "from": "cc_1",
       "to": "summary",
       "label": "审理",
       "color": {

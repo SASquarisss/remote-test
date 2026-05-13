@@ -248,7 +248,30 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     """
     Convert LLM output JSON into vis-network nodes/edges.
     Reuses the same shape/color scheme as admin_instances.html.
+    Entities are correctly associated to their court instance via case_number.
+    Labels use Chinese.
     """
+    # ── Chinese label mapping tables ──────────────────────────────────────
+    CASE_TYPE_MAP = {
+        "civil": "民事",
+        "criminal": "刑事",
+        "administrative": "行政",
+    }
+    BINDING_FORCE_MAP = {
+        "reference": "参考案例",
+        "mandatory": "指导性案例",
+        "persuasive": "典型案例",
+    }
+    RESULT_TYPE_MAP = {
+        "dismissed": "驳回",
+        "upheld": "维持",
+        "reversed": "撤销",
+        "partially_upheld": "部分维持",
+        "remanded": "发回重审",
+        "accepted": "支持",
+        "rejected": "驳回",
+    }
+
     nodes: List[Dict] = []
     edges: List[Dict] = []
     node_set: set = set()
@@ -285,21 +308,56 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             "arrows": {"to": {"enabled": True, "scaleFactor": 0.6}},
         })
 
-    # GuidingCase
+    # ── Build case_number → cc_id mapping ────────────────────────────────
+    court_cases = output.get("court_cases") or []
+    cn_to_cc = {}  # "(2024)沪73知民初164号" -> "cc_0"
+    first_cc_id = None
+    for i, cc in enumerate(court_cases):
+        cn = cc.get("case_number", "")
+        nid = f"cc_{i}"
+        if first_cc_id is None:
+            first_cc_id = nid
+        if cn:
+            cn_to_cc[cn] = nid
+
+    # ── GuidingCase ──────────────────────────────────────────────────────
     gc = output.get("guiding_case") or {}
     if gc.get("guiding_case_name"):
+        # Translate binding_force to Chinese
+        bf_raw = gc.get("binding_force", "")
+        bf_cn = BINDING_FORCE_MAP.get(bf_raw, bf_raw)
         add_node("gc", gc["guiding_case_name"], "GuidingCase", "LegalNorm", 0,
-                 f"案号: {gc.get('guiding_case_number', '')}<br>效力: {gc.get('binding_force', '')}")
+                 f"案号: {gc.get('guiding_case_number', '')}<br>效力: {bf_cn}")
         cn = gc.get("guiding_case_number", "")
         if cn:
             add_node("gc_num", cn, "GuidingCase", "LegalNorm", 1)
             add_edge("gc", "gc_num", "案号")
-        # 关联边在 CourtCases 循环之后设置（见 gc_rel 标记）
 
-    # CaseType
+        # GuidingCase 关联边 — 如果有 trial_procedure="二审" 或无 case_number，关联到 cc_1
+        gc_cn = gc.get("guiding_case_number", "")
+        gc_trial = gc.get("trial_procedure", "")
+        gc_target = first_cc_id  # default to first cc
+        if not gc_cn or gc_trial == "二审":
+            # 优先找二审案 (cc_1)
+            for i, cc in enumerate(court_cases):
+                if cc.get("trial_level") == "second_instance" or cc.get("trial_procedure") == "二审":
+                    gc_target = f"cc_{i}"
+                    break
+            if not gc_cn:
+                add_edge(gc_target, "gc", "关联")
+            else:
+                add_edge(gc_target, "gc", "关联")
+        else:
+            # 有 guiding_case_number，找匹配
+            matched = cn_to_cc.get(gc_cn, first_cc_id)
+            add_edge(matched, "gc", "关联")
+
+    # ── CaseType ─────────────────────────────────────────────────────────
     ct = output.get("case_type") or {}
-    if ct.get("category"):
-        add_node("ct", ct["category"], "CaseType", "JudicialEntity", 0)
+    ct_category_raw = ct.get("category", "")
+    ct_category_cn = CASE_TYPE_MAP.get(ct_category_raw, ct_category_raw)
+    if ct_category_raw:
+        add_node("ct", ct_category_cn, "CaseType", "JudicialEntity", 0)
         for lv_key, lv_label in [("level1", "一级案由"), ("level2", "二级案由")]:
             val = ct.get(lv_key)
             if val:
@@ -307,61 +365,76 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
                 add_node(nid, val, "CaseType", "JudicialEntity", 1)
                 add_edge("ct", nid, lv_label)
 
-    # CourtCases — 从 LLM 提取的 case_number 只作为 label，节点的 id 始终用 cc_{i}
-    court_cases = output.get("court_cases") or []
-    first_cc_id = None
+    # ── CourtCases — 创建审级节点 ───────────────────────────────────────
     for i, cc in enumerate(court_cases):
         cn = cc.get("case_number", f"case_{i}")
         nid = f"cc_{i}"
-        if first_cc_id is None:
-            first_cc_id = nid
         label = cn[:60]
         add_node(nid, label, "CourtCase", "JudicialEntity", 0,
                  f"案号: {cn}<br>立案日期: {cc.get('filing_date', '')}")
+        # CaseType 关联到所有 court_cases
         if ct.get("category"):
             add_edge("ct", nid, "案由")
 
-    # 如果有指导案例的 gc 节点且没有 case_number，关联到主案
-    # gc_rel: needs first_cc_id from the court cases loop above
-    if first_cc_id and 'gc' in node_set:
-        cn = (output.get("guiding_case") or {}).get("guiding_case_number", "")
-        if not cn:
-            edges.append({
-                "from": first_cc_id, "to": "gc", "label": "关联",
-                "color": {"color": "#7f8c8d", "highlight": "#333", "hover": "#333", "opacity": 0.7},
-                "font": {"size": 10, "color": "#555", "strokeWidth": 2, "strokeColor": "#fff"},
-                "width": 1.5, "smooth": {"type": "continuous"},
-                "arrows": {"to": {"enabled": True, "scaleFactor": 0.6}},
-            })
+    # ── 审级间关联边 ────────────────────────────────────────────────────
+    if len(court_cases) >= 2:
+        # 按 trial_level 排序：一审在前，二审在后
+        # 简单地按顺序连接：cc_0 → cc_1 → cc_2...
+        for i in range(len(court_cases) - 1):
+            fr = f"cc_{i}"
+            to = f"cc_{i+1}"
+            add_edge(fr, to, "上诉")
 
-    # LegalSubjects
+    # ── LegalSubjects — 按 role 中的 case_number 关联 ────────────────────
     subjects = output.get("legal_subjects") or output.get("parties") or []
+    # First pass: create all subject nodes
     for i, subj in enumerate(subjects):
         name = subj.get("name", f"当事人_{i}")
         nid = f"subj_{i}"
         add_node(nid, name[:40], "LegalSubject", "LegalSubject", 0)
-        if court_cases:
+
+    # Second pass: create edges per role with correct cc
+    for i, subj in enumerate(subjects):
+        nid = f"subj_{i}"
+        roles = subj.get("roles") or []
+        if roles:
+            for role in roles:
+                case_num = role.get("case_number", "")
+                role_name = role.get("role_name", "当事人")
+                if case_num and case_num in cn_to_cc:
+                    add_edge(cn_to_cc[case_num], nid, role_name)
+                elif court_cases:
+                    # fallback to first cc
+                    add_edge(first_cc_id, nid, role_name)
+        elif court_cases:
+            # No roles at all — fallback
             add_edge(first_cc_id, nid, "当事人")
 
-    # Judges
+    # ── Judges — 按 case_number 关联 ────────────────────────────────────
     judges = output.get("judges") or []
     for i, j in enumerate(judges):
         name = j.get("name", f"法官_{i}")
         nid = f"judge_{i}"
         add_node(nid, name, "Judge", "LegalSubject", 1)
-        if court_cases:
+        case_num = j.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], nid, "审判")
+        elif court_cases:
             add_edge(first_cc_id, nid, "审判")
 
-    # Attorneys
+    # ── Attorneys — 按 case_number 关联 ─────────────────────────────────
     attorneys = output.get("attorneys") or []
     for i, a in enumerate(attorneys):
         name = a.get("name", f"律师_{i}")
         nid = f"atty_{i}"
         add_node(nid, name, "Attorney", "LegalSubject", 1)
-        if court_cases:
+        case_num = a.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], nid, "代理")
+        elif court_cases:
             add_edge(first_cc_id, nid, "代理")
 
-    # LegalProvisions
+    # ── LegalProvisions — 按 case_number 关联 ───────────────────────────
     provisions = output.get("legal_provisions") or []
     for i, p in enumerate(provisions):
         statute = p.get("statute", "法规")
@@ -370,10 +443,13 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         nid = f"prov_{i}"
         add_node(nid, label[:60], "LegalProvision", "LegalNorm", 1,
                  p.get("content", ""))
-        if court_cases:
+        case_num = p.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], nid, "引用")
+        elif court_cases:
             add_edge(first_cc_id, nid, "引用")
 
-    # Evidence
+    # ── Evidence — 按 case_number 或 submitted_by 关联 ──────────────────
     evids = output.get("evidence") or []
     for i, e in enumerate(evids):
         content = e.get("content", f"证据_{i}")
@@ -381,19 +457,46 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         nid = f"evid_{i}"
         add_node(nid, label, "Evidence", "JudicialEntity", 1,
                  f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}")
-        if court_cases:
-            add_edge(first_cc_id, nid, "证据")
+        case_num = e.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], nid, "证据")
+        elif court_cases:
+            # Try to find via submitted_by — look for a subject with that name
+            submitted_by = e.get("submitted_by", "")
+            if submitted_by and len(court_cases) > 1:
+                # Find subject with matching name, get their first role's cc
+                target_cc = None
+                for subj in subjects:
+                    if subj.get("name") == submitted_by:
+                        roles = subj.get("roles") or []
+                        # Get the first role's case_number
+                        for role in roles:
+                            rcn = role.get("case_number", "")
+                            if rcn and rcn in cn_to_cc:
+                                target_cc = cn_to_cc[rcn]
+                                break
+                        break
+                if target_cc:
+                    add_edge(target_cc, nid, "证据")
+                else:
+                    add_edge(first_cc_id, nid, "证据")
+            else:
+                add_edge(first_cc_id, nid, "证据")
 
-    # JudgmentResults
+    # ── JudgmentResults — 按 case_number 关联 ───────────────────────────
     jrs = output.get("judgment_results") or []
     for i, jr in enumerate(jrs):
-        rtype = jr.get("result_type", "裁判结果")
+        rtype_raw = jr.get("result_type", "裁判结果")
+        rtype_cn = RESULT_TYPE_MAP.get(rtype_raw, rtype_raw)
         nid = f"jr_{i}"
-        add_node(nid, rtype, "JudgmentResult", "JudicialEntity", 0)
-        if court_cases:
+        add_node(nid, rtype_cn, "JudgmentResult", "JudicialEntity", 0)
+        case_num = jr.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], nid, "裁判")
+        elif court_cases:
             add_edge(first_cc_id, nid, "裁判")
 
-    # CaseSummary
+    # ── CaseSummary — 如果有多个审级，优先关联到终审案 ──────────────────
     cs = output.get("case_summary") or {}
     if cs.get("disputed_issues"):
         issues = cs["disputed_issues"]
@@ -402,7 +505,17 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         add_node("summary", issues[:60], "CaseSummary", "JudicialEntity", 1,
                  issues)
         if court_cases:
-            add_edge(first_cc_id, "summary", "审理")
+            if len(court_cases) == 1:
+                add_edge(first_cc_id, "summary", "审理")
+            else:
+                # Multiple instances: try to find final (终审) instance
+                summary_target = first_cc_id
+                for i, cc in enumerate(court_cases):
+                    tl = cc.get("trial_level", "")
+                    if tl in ("second_instance", "retrial", "final"):
+                        summary_target = f"cc_{i}"
+                        break
+                add_edge(summary_target, "summary", "审理")
 
     return {"nodes": nodes, "edges": edges}
 
