@@ -1190,13 +1190,29 @@ function renderEntityPanel(typeName) {
     try {
       var parseNode = termVisNetwork.body.data.nodes.get(typeName);
       if (parseNode) {
-        currentPanelData = parseNode;
+        window.currentPanelData = parseNode;
         renderParseNode(parseNode);
         return;
       }
     } catch(e) {
       // fall through to ontology logic
     }
+  }
+
+  // Set currentPanelData for ontology node — use the network node data if available
+  if (window.network) {
+    try {
+      var ontoNode = window.network.body.data.nodes.get(typeName);
+      if (ontoNode) {
+        window.currentPanelData = ontoNode;
+      } else {
+        window.currentPanelData = { id: typeName, label: typeName, nodeType: typeName };
+      }
+    } catch(e) {
+      window.currentPanelData = { id: typeName, label: typeName, nodeType: typeName };
+    }
+  } else {
+    window.currentPanelData = { id: typeName, label: typeName, nodeType: typeName };
   }
 
   var data = ENTITY_DATA[typeName];
@@ -1476,7 +1492,7 @@ function renderEdgePanel(edgeId) {
     try {
       var parseEdge = termVisNetwork.body.data.edges.get(edgeId);
       if (parseEdge) {
-        currentPanelData = parseEdge;
+        window.currentPanelData = parseEdge;
         renderParseEdge(parseEdge);
         return;
       }
@@ -2289,7 +2305,7 @@ function updateGraphHeights() {
 })();
 
 // ── 右侧面板 Tab 切换 ──
-var currentPanelData = null;
+var currentPanelData = null; // accessed via window.currentPanelData across script blocks
 var currentPanelMode = 'node';
 function switchPanelTab(tab) {
   document.querySelectorAll('#panelTabs .panel-tab').forEach(function(t) {
@@ -2298,20 +2314,30 @@ function switchPanelTab(tab) {
   document.querySelectorAll('#panelBody .panel-tab-content').forEach(function(c) {
     c.classList.toggle('active', c.id === 'panelTab' + tab.charAt(0).toUpperCase() + tab.slice(1));
   });
-  if (tab === 'neighbors' && currentPanelData) {
+  if (tab === 'neighbors' && window.currentPanelData) {
     renderNeighborTab();
-  } else if (tab === 'raw' && currentPanelData) {
+  } else if (tab === 'raw' && window.currentPanelData) {
     renderRawTab();
   }
 }
 function renderNeighborTab() {
   var el = document.getElementById('panelTabNeighbors');
-  if (!currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
-  var nodeId = currentPanelData.id || '';
+  if (!window.currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
+  var nodeId = window.currentPanelData.id || '';
+  console.log('[neighbor] nodeId:', nodeId, 'mode:', currentPanelMode, 'panelData:', window.currentPanelData);
   var usedNetwork = (typeof termVisNetwork !== 'undefined' && termVisNetwork !== null) ? termVisNetwork : (window.network || null);
   if (!usedNetwork) { el.innerHTML = '<div class="empty-hint">网络未就绪</div>'; return; }
-  var connected = usedNetwork.getConnectedNodes(nodeId) || [];
-  var connectedEdges = usedNetwork.getConnectedEdges(nodeId) || [];
+  // For ontology nodes (typeName), getConnectedNodes works on the node's ID
+  // which is the typeName itself in the ontology graph
+  try {
+    var connected = usedNetwork.getConnectedNodes(nodeId) || [];
+    var connectedEdges = usedNetwork.getConnectedEdges(nodeId) || [];
+    console.log('[neighbor] connected:', connected.length, connected);
+  } catch(e) {
+    console.warn('[neighbor] getConnectedNodes failed:', e);
+    var connected = [];
+    var connectedEdges = [];
+  }
   var html = '<div class="panel-section"><div class="panel-section-title">🔗 一跳邻居 (' + connected.length + ')</div>';
   if (connected.length === 0) {
     html += '<div class="empty-hint">无关联节点</div>';
@@ -2335,9 +2361,9 @@ function renderNeighborTab() {
         usedNetwork.focus(tid, { scale: 1.2, animation: true });
         if (usedNetwork === termVisNetwork) {
           var n = usedNetwork.body.data.nodes.get(tid);
-          if (n) { currentPanelData = n; renderParseNode(n); switchPanelTab('info'); }
+          if (n) { window.currentPanelData = n; renderParseNode(n); switchPanelTab('info'); }
         } else {
-          currentPanelData = { id: tid };
+          window.currentPanelData = { id: tid };
           showEntityDetail(tid);
         }
       }
@@ -2346,8 +2372,8 @@ function renderNeighborTab() {
 }
 function renderRawTab() {
   var el = document.getElementById('panelTabRaw');
-  if (!currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
-  var raw = JSON.stringify(currentPanelData, null, 2);
+  if (!window.currentPanelData) { el.innerHTML = '<div class="empty-hint">无数据</div>'; return; }
+  var raw = JSON.stringify(window.currentPanelData, null, 2);
   el.innerHTML = '<pre style="font-size:11px;line-height:1.4;overflow:auto;max-height:50vh;background:#f8f9fa;padding:10px;border-radius:4px;font-family:monospace;white-space:pre-wrap;word-break:break-all;">' + escapeHtml(raw) + '</pre>';
 }
 
