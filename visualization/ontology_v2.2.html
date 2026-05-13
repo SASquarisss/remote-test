@@ -2085,6 +2085,21 @@ var RELATION_DETAILS = {
 };
 </script>
 <script>
+// ⚡ Pre-capture all DOM references before any other script runs
+window.__DOM = {};
+(function() {
+  var ids = ['detailPanel','panelTitle','panelBody','panelClose','panelShrink',
+    'ontologyContainer','mynetwork','nodeCount','edgeCount'];
+  for (var i = 0; i < ids.length; i++) {
+    window.__DOM[ids[i]] = document.getElementById(ids[i]);
+  }
+  // Also save legend selector
+  window.__DOM._legend = document.querySelector('.legend');
+  console.log('[PRECAPTURE] panelClose=' + !!window.__DOM.panelClose);
+  console.log('[PRECAPTURE] body.children=' + (document.body ? document.body.children.length : -1));
+})();
+</script>
+<script>
 setTimeout(function() { console.log("[BOOT] delayed business code start");
 // DOM-DEBUG: scan for panelClose before anything else
 (function(){try{
@@ -2503,7 +2518,7 @@ RELATION_EDGES.forEach(function(e) {
 // ============================================================
 // 6. 渲染
 // ============================================================
-var container = document.getElementById('ontologyContainer');
+var container = window.__DOM.ontologyContainer;
 var data = {
   nodes: new vis.DataSet(nodes),
   edges: new vis.DataSet(edges)
@@ -2584,7 +2599,7 @@ network.on('stabilizationIterationsDone', function() {
 window.addEventListener('resize', function() {
   network.fit({ animation: true });
   // Also fit parse network if visible
-  if (termVisNetwork && document.getElementById('mynetwork').style.display !== 'none') {
+  if (termVisNetwork && window.__DOM.mynetwork.style.display !== 'none') {
     termVisNetwork.fit({ animation: true });
   }
 });
@@ -2597,11 +2612,11 @@ container.style.height = 'calc(100vh - 44px)';
 // 7. Detail Panel Logic
 // ============================================================
 
-var detailPanel = document.getElementById('detailPanel');
-var panelTitle = document.getElementById('panelTitle');
-var panelBody = document.getElementById('panelBody');
-var panelClose = document.getElementById('panelClose');
-var panelShrink = document.getElementById('panelShrink');
+var detailPanel = window.__DOM.detailPanel;
+var panelTitle = window.__DOM.panelTitle;
+var panelBody = window.__DOM.panelBody;
+var panelClose = window.__DOM.panelClose;
+var panelShrink = window.__DOM.panelShrink;
 var isPanelLocked = false;
 var currentSelection = null; // 'node:TypeName' or 'edge:EdgeId'
 var panelCompact = false; // P0-2: compact mode (220px, title only)
@@ -2936,7 +2951,7 @@ function buildLegend() {
   html += '<span>LegalProvisionElement</span></div>';
   html += '</div>';
   html += '<div style="margin-top:8px;font-size:10px;color:#aaa;">&#x1F5B2; 悬停高亮同类型节点，点击聚焦</div>';
-  document.querySelector('.legend').innerHTML = '<div class="legend-title"><span>📋 继承树</span><span class="legend-close" onclick="toggleLegend()">⭕−</span></div>' + html;
+  window.__DOM._legend.innerHTML = '<div class="legend-title"><span>📋 继承树</span><span class="legend-close" onclick="toggleLegend()">⭕−</span></div>' + html;
 
   // ── 图例悬停高亮对应节点 ──
   setTimeout(function() {
@@ -4085,8 +4100,8 @@ function setTerminalHeight(pct) {
   }
 }
 function updateGraphHeights() {
-  var mynetwork = document.getElementById('mynetwork');
-  var ontologyContainer = document.getElementById('ontologyContainer');
+  var mynetwork = window.__DOM.mynetwork;
+  var ontologyContainer = window.__DOM.ontologyContainer;
   if (mynetwork) mynetwork.style.height = 'calc(100vh - 44px - ' + termHeightPercent + 'vh)';
   if (ontologyContainer && ontologyContainer.classList.contains('mini-mode')) {
     ontologyContainer.style.height = 'calc(100vh - 44px - ' + termHeightPercent + 'vh)';
@@ -4111,8 +4126,8 @@ function updateGraphHeights() {
         var dy = startY - ev.clientY;
         var newH = Math.max(200, Math.min(totalH - 100, startH + dy));
         panel.style.height = newH + 'px';
-        var mynetwork = document.getElementById('mynetwork');
-        var ontologyContainer = document.getElementById('ontologyContainer');
+        var mynetwork = window.__DOM.mynetwork;
+        var ontologyContainer = window.__DOM.ontologyContainer;
         if (mynetwork) mynetwork.style.height = (totalH - 44 - newH) + 'px';
         if (ontologyContainer && ontologyContainer.classList.contains('mini-mode')) {
           ontologyContainer.style.height = (totalH - 44 - newH) + 'px';
@@ -4130,7 +4145,7 @@ function updateGraphHeights() {
         termHeightPercent = Math.max(30, Math.min(80, pct));
         if (termVisNetwork) setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 100);
         // P0-4: Also fit ontology network if not in mini-mode
-        var ontologyContainer = document.getElementById('ontologyContainer');
+        var ontologyContainer = window.__DOM.ontologyContainer;
         if (ontologyContainer && !ontologyContainer.classList.contains('mini-mode')) {
           setTimeout(function() {
             if (window.network) window.network.fit({ animation: true });
@@ -4364,8 +4379,8 @@ function toggleParseTerminal() {
   termExpanded = !termExpanded;
   var panel = document.getElementById('parseTerminal');
   panel.classList.toggle('expanded', termExpanded);
-  var mynetwork = document.getElementById('mynetwork');
-  var ontologyContainer = document.getElementById('ontologyContainer');
+  var mynetwork = window.__DOM.mynetwork;
+  var ontologyContainer = window.__DOM.ontologyContainer;
   var isMini = ontologyContainer.classList.contains('mini-mode');
   if (termExpanded) {
     var h = termHeightPercent + 'vh';
@@ -4573,8 +4588,8 @@ function renderTermVis(nodes, edges) {
     return;
   }
   // Hide ontology container (keep network alive in background)
-  var ontologyContainer = document.getElementById('ontologyContainer');
-  var mynetwork = document.getElementById('mynetwork');
+  var ontologyContainer = window.__DOM.ontologyContainer;
+  var mynetwork = window.__DOM.mynetwork;
   if (!mynetwork) {
     console.error('[DOM] #mynetwork not found in renderTermVis, aborting');
     return;
@@ -4803,7 +4818,7 @@ function renderTermVis(nodes, edges) {
 
   // ── Bind click/hover events for parse graph → detail panel ──
   setTimeout(function() {
-    var mynetworkEl = document.getElementById('mynetwork');
+    var mynetworkEl = window.__DOM.mynetwork;
     var termPanel = document.getElementById('detailPanel');
 
     termVisNetwork.on('click', function(params) {
@@ -4862,7 +4877,7 @@ function resetGraphLayout() {
     termVisNetwork = null;
   }
   // Clear any cached DOM state
-  var mynetwork = document.getElementById('mynetwork');
+  var mynetwork = window.__DOM.mynetwork;
   if (mynetwork) mynetwork.innerHTML = '';
   window.__SKIP_LAYOUT_OPTIMIZE = true;
   setTimeout(function() {
@@ -5247,8 +5262,8 @@ document.addEventListener('click', function(e) {
 // 用户可通过终端面板的toggle按钮控制本体论的显示/隐藏。
 var ontologyVisible = false;
 function toggleOntologyView() {
-  var container = document.getElementById('ontologyContainer');
-  var mynetwork = document.getElementById('mynetwork');
+  var container = window.__DOM.ontologyContainer;
+  var mynetwork = window.__DOM.mynetwork;
   ontologyVisible = !ontologyVisible;
   if (ontologyVisible) {
     // Show ontology, hide parse graph
