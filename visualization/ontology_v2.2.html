@@ -1774,6 +1774,13 @@ function darkenColor(hex, factor) {
 }
 
 })();
+
+// ── 暴露 IIFE 内部函数到全局，供第二个 <script> 块的 renderTermVis 使用 ──
+window.__panelLocked = false;
+window.__panelSelection = null;
+window.__hidePanel = hidePanel;
+window.__renderEntityPanel = renderEntityPanel;
+window.__renderEdgePanel = renderEdgePanel;
 </script>
 
 <!-- ============================================================
@@ -2061,6 +2068,9 @@ var termVisNetwork = null;
 var API_BASE = '';
 
 // Shape/color constants for terminal vis-network (mirrors ontology values)
+// ⚠ 以下变量与第一个 <script> 块的 IIFE 作用域隔离，需自行定义
+var PANEL_LOCKED = false;
+var PANEL_SELECTION = null;
 var TERM_COLORS = {
   LegalNorm:      { bg: '#2980b9', border: '#1a5276' },
   JudicialEntity: { bg: '#d35400', border: '#a04000' },
@@ -2474,40 +2484,40 @@ function renderTermVis(nodes, edges) {
       if (params.nodes.length > 0) {
         var nodeId = params.nodes[0];
         termPanel.classList.remove('edge-mode');
-        renderEntityPanel(nodeId);
+        window.__renderEntityPanel(nodeId);
         termPanel.classList.add('open');
-        isPanelLocked = true;
-        currentSelection = 'node:' + nodeId;
+        window.__panelLocked = true;
+        window.__panelSelection = 'node:' + nodeId;
       } else if (params.edges.length > 0) {
         var edgeId = params.edges[0];
         termPanel.classList.add('edge-mode');
-        renderEdgePanel(edgeId);
+        window.__renderEdgePanel(edgeId);
         termPanel.classList.add('open');
-        isPanelLocked = true;
-        currentSelection = 'edge:' + edgeId;
+        window.__panelLocked = true;
+        window.__panelSelection = 'edge:' + edgeId;
       } else {
-        if (isPanelLocked) hidePanel();
+        if (window.__panelLocked) window.__hidePanel();
       }
     });
 
     termVisNetwork.on('hoverNode', function(params) {
-      if (isPanelLocked) return;
+      if (window.__panelLocked) return;
       var hoverKey = 'node:' + params.node;
-      if (hoverKey === currentSelection) return;
+      if (hoverKey === window.__panelSelection) return;
       termPanel.classList.remove('edge-mode');
-      renderEntityPanel(params.node);
+      window.__renderEntityPanel(params.node);
       termPanel.classList.add('open');
-      currentSelection = 'node:' + params.node;
+      window.__panelSelection = 'node:' + params.node;
     });
 
     termVisNetwork.on('hoverEdge', function(params) {
-      if (isPanelLocked) return;
+      if (window.__panelLocked) return;
       var hoverKey = 'edge:' + params.edge;
-      if (hoverKey === currentSelection) return;
+      if (hoverKey === window.__panelSelection) return;
       termPanel.classList.add('edge-mode');
-      renderEdgePanel(params.edge);
+      window.__renderEdgePanel(params.edge);
       termPanel.classList.add('open');
-      currentSelection = 'edge:' + params.edge;
+      window.__panelSelection = 'edge:' + params.edge;
     });
   }, 500);
 }
