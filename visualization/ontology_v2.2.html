@@ -2090,6 +2090,8 @@ setTimeout(function() { console.log("[BOOT] delayed business code start");
 (function(){try{
 console.log('[DOM-DEBUG] panelClose=' + !!document.getElementById('panelClose'));
 console.log('[DOM-DEBUG] body.children=' + (document.body ? document.body.children.length : 'NO_BODY'));
+console.log('[DOM-DEBUG] doc===window.document: ' + (document === window.document));
+console.log('[DOM-DEBUG] docFrameElement: ' + (document.defaultView === window));
 var ids = []; try { document.querySelectorAll('[id]').forEach(function(e){ids.push(e.id);}); } catch(e) {}
 console.log('[DOM-DEBUG] all_ids=[' + ids.join(',') + ']');
 }catch(e){console.error('[DOM-DEBUG] error:',e);}})();
