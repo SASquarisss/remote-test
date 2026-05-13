@@ -66,29 +66,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   font-size: 11px; color: #999; margin-top: 2px;
 }
 
-/* ── Ontology Mini Module (small draggable ontology view) ── */
-#ontologyContainer.mini-mode {
-  position: fixed; bottom: 12px; left: 12px; z-index: 1000;
-  width: 300px; height: 400px;
-  resize: both; overflow: hidden;
-  border-radius: 8px; box-shadow: 0 2px 16px rgba(0,0,0,0.2);
-  background: #fff; border: 1px solid #ddd;
-  cursor: grab;
-}
-#ontologyContainer.mini-mode:active { cursor: grabbing; }
-#ontologyContainer.mini-mode .vis-network { width: 100% !important; height: 100% !important; }
-#ontologyContainer .ontology-mini-header {
-  display: none; position: absolute; top: 0; left: 0; right: 0;
-  background: rgba(255,255,255,0.95); padding: 4px 8px;
-  font-size: 11px; font-weight: 600; color: #333;
-  border-bottom: 1px solid #eee; z-index: 2;
-  align-items: center; justify-content: space-between;
-}
-#ontologyContainer.mini-mode .ontology-mini-header { display: flex; }
-#ontologyContainer .ontology-mini-close {
-  cursor: pointer; color: #999; font-size: 12px; padding: 0 4px;
-}
-#ontologyContainer .ontology-mini-close:hover { color: #333; }
+/* ── Hidden state for ontology container (hidden by default when term vis shows) ── */
+.hidden { display: none !important; }
 
 /* ===== 图结构配置弹窗 ===== */
 .btn-config-header {
@@ -295,12 +274,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
   </div>
 </div>
 
-<div id="ontologyContainer">
-  <div class="ontology-mini-header">
-    <span>📋 本体论</span>
-    <span class="ontology-mini-close" onclick="restoreOntologyFromMini()">✕</span>
-  </div>
-</div>
+<div id="ontologyContainer" class="hidden">
 <div id="mynetwork"></div>
 
 <div class="legend">
@@ -365,10 +339,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Microsof
 
 // 分组颜色表（基于根父类）
 var ROOT_COLORS = {
-  LegalNorm:      { bg: '#2980b9', border: '#1a5276', group: 'LegalNorm系' },
-  JudicialEntity: { bg: '#d35400', border: '#a04000', group: 'JudicialEntity系' },
-  LegalSubject:   { bg: '#27ae60', border: '#1e8449', group: 'LegalSubject系' },
-  Person:         { bg: '#16a085', border: '#0e6655', group: 'Person系' }
+  LegalNorm:      { bg: '#2980b9', border: '#154360', group: 'LegalNorm系' },
+  JudicialEntity: { bg: '#d35400', border: '#7e2e00', group: 'JudicialEntity系' },
+  LegalSubject:   { bg: '#8e44ad', border: '#512e5c', group: 'LegalSubject系' },
+  Person:         { bg: '#16a085', border: '#0b5345', group: 'Person系' }
 };
 var DEFAULT_COLOR = { bg: '#7f8c8d', border: '#5d6d7e', group: '其他' };
 
@@ -380,7 +354,7 @@ var ENTITY_STYLES = {
   // 二审/再审用浅蓝色
   // 最高法用深蓝色
   // 法律主体类 — 正方形
-  Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B', size: 18, note: '原告/申请人' },
+  Person:     { shape: 'square', color: '#90EE90', border: '#65A765', size: 18, note: '原告/申请人' },
   // 被告/被申请人用红色
   // 法院/审理机构用深蓝色
   // 代理律师用紫色
@@ -396,7 +370,7 @@ var ENTITY_STYLES = {
   // 案件核心争议/焦点 — 五角星
   CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428', size: 20, note: '争议焦点' },
   // 其他辅助 — 三角形
-  LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', size: 16, note: '辅助主体' },
+  LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#7B899B', size: 16, note: '辅助主体' },
   LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', size: 16, note: '辅助规范' },
   GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C', size: 22, note: '指导性案例' },
 };
@@ -2274,6 +2248,7 @@ window.__escapeHtml = escapeHtml;
           <div class="term-tab-footer">
             <button class="btn-tab-regen" id="btnGraphRegen" onclick="regenGraph()" disabled style="display:none;">🔄 重新生成</button>
             <button class="btn-tab-regen" id="btnResetLayout" onclick="resetGraphLayout()" disabled style="display:none;">↩ 恢复原始布局</button>
+            <button class="btn-tab-regen" id="btnToggleOntology" onclick="toggleOntologyView()" style="margin-left:8px;">📋 本体论</button>
           </div>
         </div>
         <div class="term-issues-area" id="termIssuesArea" style="display:none;">
@@ -2808,11 +2783,11 @@ function renderTermVis(nodes, edges) {
   if (!nodes || nodes.length === 0) {
     return;
   }
-  // Do NOT destroy the ontology network — shrink ontologyContainer to mini-mode instead
+  // Hide ontology container (keep network alive in background)
   var ontologyContainer = document.getElementById('ontologyContainer');
   var mynetwork = document.getElementById('mynetwork');
-  ontologyContainer.classList.add('mini-mode');
-  // Adjust ontology network to its new small container if it exists
+  ontologyContainer.classList.add('hidden');
+  // Adjust ontology network if it exists (keep alive)
   if (window.network) {
     setTimeout(function() {
       window.network.fit({ animation: false });
@@ -2909,22 +2884,37 @@ function renderTermVis(nodes, edges) {
       probative_force: n.probative_force || '',
     };
   }));
-  var visEdges = new vis.DataSet(edges.map(function(e) {
-    return {
-      from: e.from, to: e.to, label: e.label,
-      color: { color: '#7f8c8d', highlight: '#333', opacity: 0.7 },
-      font: { size: 10, color: '#555', strokeWidth: 2, strokeColor: '#fff' },
-      width: 1.5, smooth: { type: 'curvedCW', roundness: 0.12 },
-      arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-    };
-  }));
+  // ── Build visEdges with multi-edge roundness handling ──
+  var edgePairCount = {};
+  edges.forEach(function(e) {
+    var key = e.from + '|' + e.to;
+    if (!edgePairCount[key]) edgePairCount[key] = [];
+    edgePairCount[key].push(e);
+  });
+  var visEdges = new vis.DataSet();
+  Object.keys(edgePairCount).forEach(function(key) {
+    var group = edgePairCount[key];
+    group.forEach(function(e, idx) {
+      var count = group.length;
+      var roundness = count > 1 ? 0.05 + (idx * 0.08) : 0.08;
+      var edgeStrokeWidth = count > 2 ? 4 : 2;
+      var edgeFontSize = count > 1 ? 9 : 10;
+      visEdges.add({
+        from: e.from, to: e.to, label: e.label,
+        color: { color: '#7f8c8d', highlight: '#333', opacity: count > 1 ? 0.65 : 0.7 },
+        font: { size: edgeFontSize, color: '#555', strokeWidth: edgeStrokeWidth, strokeColor: '#fff' },
+        width: count > 1 ? 1.2 : 1.5, smooth: { type: 'curvedCW', roundness: roundness },
+        arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+      });
+    });
+  });
   mynetwork.innerHTML = '';
   var data = { nodes: visNodes, edges: visEdges };
   var options = {
     physics: {
       enabled: true, solver: 'barnesHut',
-      barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 200, springConstant: 0.04, damping: 0.6, avoidOverlap: 0.5 },
-      stabilization: { iterations: 200, fit: true }, minVelocity: 0.5,
+      barnesHut: { gravitationalConstant: -4000, centralGravity: 0.15, springLength: 250, springConstant: 0.03, damping: 0.6, avoidOverlap: 0.8 },
+      stabilization: { iterations: 300, fit: true }, minVelocity: 0.5,
     },
     interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
     edges: { smooth: { type: 'curvedCW', roundness: 0.12 }, font: { size: 10, color: '#555' } },
@@ -2956,32 +2946,32 @@ function renderTermVis(nodes, edges) {
 
       // 各区域的 X 偏移量（负=左侧，正=右侧）
       var zoneXOffset = {
-        left:   -500,
+        left:   -600,
         center: 0,
-        right:  500,
+        right:  600,
         bottom: 0,     // 法条在正下方，与中间同X区域
       };
 
       // 各区域的 Y 基准（bottom 区域在更下方，与 center 错开）
       var zoneYBase = {
-        left:   30,
-        center: 30,
-        right:  30,
-        bottom: 550,   // 法条在底部显示
+        left:   50,
+        center: 50,
+        right:  50,
+        bottom: 650,   // 法条在底部显示
       };
 
       nodes.forEach(function(n) {
         var zone = ZONE_MAP[n.nodeType] || 'center';
         var yLvl = Y_LEVEL_MAP[n.nodeType] !== undefined ? Y_LEVEL_MAP[n.nodeType] : DEFAULT_Y_LEVEL;
         var xBase = zoneXOffset[zone] || 0;
-        var yBase = (zoneYBase[zone] || 30) + yLvl * 120;
+        var yBase = (zoneYBase[zone] || 50) + yLvl * 150;
 
         // X 方向分散：同 zone 同 yLevel 的节点均匀分布
         var key = zone + '|' + yLvl;
         var bucket = zoneBuckets[key] || [];
         var idx = bucket.indexOf(n);
         var bucketSize = bucket.length;
-        var spacing = 180; // 两个同区节点间距
+        var spacing = 250; // 两个同区节点间距
         var startX = xBase - (bucketSize - 1) * spacing / 2;
         var targetX = startX + idx * spacing;
 
@@ -3459,55 +3449,31 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// ── Restore ontology from mini-mode ──
-function restoreOntologyFromMini() {
+// ── 在终端面板“图”tab中添加本体论缩略图切换 ──
+// 本页面已将本体论图改为隐藏模式（不再用mini-mode覆盖层），
+// 用户可通过终端面板的toggle按钮控制本体论的显示/隐藏。
+var ontologyVisible = false;
+function toggleOntologyView() {
   var container = document.getElementById('ontologyContainer');
-  container.classList.remove('mini-mode');
-  // Hide the parse network, show ontology full-screen
   var mynetwork = document.getElementById('mynetwork');
-  mynetwork.style.display = 'none';
-  container.style.display = 'block';
-  container.style.height = 'calc(100vh - 44px)';
-  container.style.width = '100%';
-  container.style.position = 'relative';
-  container.style.bottom = ''; container.style.left = '';
-  container.style.zIndex = '';
-  container.style.resize = ''; container.style.cursor = '';
-  if (window.network) {
+  ontologyVisible = !ontologyVisible;
+  if (ontologyVisible) {
+    // Show ontology, hide parse graph
+    container.classList.remove('hidden');
+    mynetwork.style.display = 'none';
     setTimeout(function() {
-      window.network.fit({ animation: true });
+      if (window.network) window.network.fit({ animation: true });
     }, 100);
+  } else {
+    // Hide ontology, show parse graph
+    container.classList.add('hidden');
+    mynetwork.style.display = '';
+    if (typeof termVisNetwork !== 'undefined' && termVisNetwork) {
+      setTimeout(function() { termVisNetwork.fit({ animation: true }); }, 100);
+    }
   }
 }
-window.restoreOntologyFromMini = restoreOntologyFromMini;
-
-// ── Make mini-mode ontology draggable ──
-(function() {
-  var container = document.getElementById('ontologyContainer');
-  var isDragging = false, startX, startY, origX, origY;
-  container.addEventListener('mousedown', function(e) {
-    if (!container.classList.contains('mini-mode')) return;
-    if (e.target.closest('.ontology-mini-close')) return;
-    isDragging = true;
-    startX = e.clientX; startY = e.clientY;
-    var rect = container.getBoundingClientRect();
-    origX = rect.left; origY = rect.top;
-    container.style.cursor = 'grabbing';
-  });
-  document.addEventListener('mousemove', function(e) {
-    if (!isDragging) return;
-    var dx = e.clientX - startX, dy = e.clientY - startY;
-    container.style.left = (origX + dx) + 'px';
-    container.style.top = (origY + dy) + 'px';
-    container.style.bottom = 'auto';
-    container.style.right = 'auto';
-  });
-  document.addEventListener('mouseup', function() {
-    if (!isDragging) return;
-    isDragging = false;
-    container.style.cursor = 'grab';
-  });
-})();
+window.toggleOntologyView = toggleOntologyView;
 
 // ── Load test data on page init ──
 loadTestData();
