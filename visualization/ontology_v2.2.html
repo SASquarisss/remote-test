@@ -361,7 +361,7 @@ var ENTITY_STYLES = {
   LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法条/法律依据' },
   Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E', size: 16, note: '法律' },
   // 证据/争议标的 — 圆柱体
-  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 10, note: '证据' },
+  Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32', size: 6, note: '证据' },
   // 诉讼角色/关系 — 菱形
   LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400', size: 16, note: '诉讼角色' },
   // 案件核心争议/焦点 — 五角星
@@ -1329,12 +1329,27 @@ function renderParseNode(node) {
   html += '<div class="field-row"><span class="field-name">ID</span><span style="margin-left:8px;font-family:monospace;font-size:11px;color:#666;">' + escapeHtml(node.id) + '</span></div>';
   html += '</div>';
 
-  // Title (extra info from parser)
+  // Title (extra info from parser) — structured display with <br> splitting
   var title = node.title || '';
   if (title) {
     html += '<div class="panel-section">';
     html += '<div class="panel-section-title">📄 详细信息</div>';
-    html += '<div class="desc-text">' + escapeHtml(title) + '</div>';
+    // Split by <br> for structured row display
+    var lines = title.split(/<br\s*\/?>/i);
+    lines.forEach(function(line) {
+      line = line.trim();
+      if (!line) return;
+      // Try to split on first colon or Chinese colon to show field-name/field-value
+      var colonIdx = line.indexOf('：');
+      if (colonIdx === -1) colonIdx = line.indexOf(':');
+      if (colonIdx > 0 && colonIdx < line.length - 1) {
+        var fieldName = line.substring(0, colonIdx).trim();
+        var fieldValue = line.substring(colonIdx + 1).trim();
+        html += '<div class="field-row"><span class="field-name">' + escapeHtml(fieldName) + '</span><span style="margin-left:8px;color:#555;">' + escapeHtml(fieldValue) + '</span></div>';
+      } else {
+        html += '<div class="field-row"><span style="color:#555;">' + escapeHtml(line) + '</span></div>';
+      }
+    });
     html += '</div>';
   }
 
@@ -1691,22 +1706,22 @@ function renderShapePreview(containerId, shape, color, border, sizeVal) {
   switch (shape) {
     case 'box':
     case 'square':
-      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'ellipse':
     case 'circle':
-      svg += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + r + '" ry="' + r + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + r + '" ry="' + r + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'database':
-      svg += '<ellipse cx="' + cx + '" cy="8" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
-      svg += '<path d="M 4 8 L 4 20 C 4 22.76 9.37 24 14 24 C 18.63 24 24 22.76 24 20 L 24 8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
-      svg += '<ellipse cx="' + cx + '" cy="20" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<ellipse cx="' + cx + '" cy="8" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+      svg += '<path d="M 4 8 L 4 20 C 4 22.76 9.37 24 14 24 C 18.63 24 24 22.76 24 20 L 24 8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
+      svg += '<ellipse cx="' + cx + '" cy="20" rx="10" ry="5" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'diamond':
-      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + cy + ' ' + cx + ',' + (size - 2) + ' 2,' + cy + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + cy + ' ' + cx + ',' + (size - 2) + ' 2,' + cy + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'dot':
-      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'star':
       var pts = [];
@@ -1716,7 +1731,7 @@ function renderShapePreview(containerId, shape, color, border, sizeVal) {
         angle += Math.PI / 5;
         pts.push((cx + r * 0.45 * Math.cos(angle)).toFixed(1) + ',' + (cy + r * 0.45 * Math.sin(angle)).toFixed(1));
       }
-      svg += '<polygon points="' + pts.join(' ') + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<polygon points="' + pts.join(' ') + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'hexagon':
       var pts = [];
@@ -1724,16 +1739,16 @@ function renderShapePreview(containerId, shape, color, border, sizeVal) {
         var angle = -Math.PI / 2 + (i * 2 * Math.PI / 6);
         pts.push((cx + r * Math.cos(angle)).toFixed(1) + ',' + (cy + r * Math.sin(angle)).toFixed(1));
       }
-      svg += '<polygon points="' + pts.join(' ') + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<polygon points="' + pts.join(' ') + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'triangle':
-      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + (size - 2) + ' 2,' + (size - 2) + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<polygon points="' + cx + ',2 ' + (size - 2) + ',' + (size - 2) + ' 2,' + (size - 2) + '" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     case 'triangleDown':
-      svg += '<polygon points="' + cx + ',' + (size - 2) + ' 2,2 ' + (size - 2) + ',2" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<polygon points="' + cx + ',' + (size - 2) + ' 2,2 ' + (size - 2) + ',2" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
       break;
     default:
-      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5"/>';
+      svg += '<rect x="2" y="2" width="' + (size - 4) + '" height="' + (size - 4) + '" rx="3" fill="' + color + '" stroke="' + border + '" stroke-width="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>';
   }
   svg += '</svg>';
   el.innerHTML = svg;
@@ -2362,7 +2377,7 @@ function renderTermVis(nodes, edges) {
       size: styleSize,
       nodeType: n.nodeType || n.group || '',
       color: { background: nc.bg, border: nc.border },
-      font: { color: '#333', size: 11, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
+      font: { color: '#333', size: shapeType === 'database' ? 8 : 11, face: 'Microsoft YaHei, PingFang SC, sans-serif' },
       borderWidth: 2, group: n.group,
       margin: 10,
     };
@@ -2372,7 +2387,7 @@ function renderTermVis(nodes, edges) {
       from: e.from, to: e.to, label: e.label,
       color: { color: '#7f8c8d', highlight: '#333', opacity: 0.7 },
       font: { size: 10, color: '#555', strokeWidth: 2, strokeColor: '#fff' },
-      width: 1.5, smooth: { type: 'continuous' },
+      width: 1.5, smooth: { type: 'curvedCW', roundness: 0.12 },
       arrows: { to: { enabled: true, scaleFactor: 0.6 } },
     };
   }));
@@ -2381,11 +2396,11 @@ function renderTermVis(nodes, edges) {
   var options = {
     physics: {
       enabled: true, solver: 'barnesHut',
-      barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 180, springConstant: 0.04, damping: 0.5, avoidOverlap: 0.5 },
+      barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 200, springConstant: 0.04, damping: 0.6, avoidOverlap: 0.5 },
       stabilization: { iterations: 200, fit: true }, minVelocity: 0.5,
     },
     interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
-    edges: { smooth: { type: 'continuous' }, font: { size: 10, color: '#555' } },
+    edges: { smooth: { type: 'curvedCW', roundness: 0.12 }, font: { size: 10, color: '#555' } },
     nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }, borderWidth: 2, shadow: { enabled: true, size: 3 } },
     layout: { improvedLayout: false, randomSeed: 42 },
   };
@@ -2439,7 +2454,7 @@ function renderTermVis(nodes, edges) {
         var bucket = zoneBuckets[key] || [];
         var idx = bucket.indexOf(n);
         var bucketSize = bucket.length;
-        var spacing = 160; // 两个同区节点间距
+        var spacing = 180; // 两个同区节点间距
         var startX = xBase - (bucketSize - 1) * spacing / 2;
         var targetX = startX + idx * spacing;
 
@@ -2564,6 +2579,7 @@ function applyClustering(network, nodes) {
             shape: 'box',
             color: { background: '#95a5a6', border: '#7f8c8d' },
             font: { size: 12, color: '#fff' },
+            title: '双击展开查看详情',
           },
           processProperties: function(clusterProps, childNodes) {
             return clusterProps;
@@ -2572,6 +2588,12 @@ function applyClustering(network, nodes) {
       } catch(e) {
         console.warn('聚类失败 [' + type + ']:', e);
       }
+    }
+  });
+  // 双击聚类节点展开
+  network.on('doubleClick', function(params) {
+    if (params.nodes.length && params.nodes[0] && params.nodes[0].indexOf && params.nodes[0].indexOf('cluster_') === 0) {
+      network.clustering.openCluster(params.nodes[0]);
     }
   });
 }
