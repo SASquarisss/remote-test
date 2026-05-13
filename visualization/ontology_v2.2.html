@@ -2085,6 +2085,8 @@ var RELATION_DETAILS = {
 };
 </script>
 <script>
+setTimeout(function() { console.log("[BOOT] delayed business code start");
+
 // ============================================================
 // 1. 类型定义 — is_a 继承关系 + 颜色分组 + 中文标注
 // ============================================================
@@ -3726,6 +3728,7 @@ window.__renderEdgePanel = renderEdgePanel;
 window.__escapeHtml = escapeHtml;
 
 // END OF FIRST SCRIPT BLOCK — window.__* variables are set above
+}, 200);
 </script>
 
 <!-- ============================================================
@@ -4050,6 +4053,8 @@ window.__escapeHtml = escapeHtml;
 </div>
 
 <script>
+setTimeout(function() {
+console.log("[BOOT] delayed terminal code start");
 // ── Terminal State ─────────────────────────────────────────────────────────
 var termExpanded = false;
 var termLastResult = null;
@@ -5256,6 +5261,7 @@ window.toggleOntologyView = toggleOntologyView;
 
 // ── Load test data on page init ──
 loadTestData();
+}, 200);
 </script>
 
 </body>
