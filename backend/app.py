@@ -75,10 +75,13 @@ def _load_test_data() -> dict:
             pass
     return {"text": "", "json_result": {}}
 
-def _save_test_data(text: str, json_result: dict):
+def _save_test_data(text: str, json_result: dict, extra: dict = None):
     TEST_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"text": text, "json_result": json_result}
+    if extra:
+        payload.update(extra)
     with open(TEST_DATA_PATH, "w", encoding="utf-8") as f:
-        json.dump({"text": text, "json_result": json_result}, f, ensure_ascii=False, indent=2)
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
 @app.route("/api/health", methods=["GET"])
@@ -111,6 +114,9 @@ def api_parse():
 
     try:
         result = parse_text(text)
+        # 自动保存解析结果作为测试数据，刷新页面后依然可见
+        _save_test_data(text, result.get("json_result", {}),
+                       extra={k: result.get(k) for k in ("nodes", "edges", "score", "issues", "case_name", "row_id")})
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

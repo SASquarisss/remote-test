@@ -2645,8 +2645,9 @@ function loadTestData() {
   fetch(API_BASE + '/api/test-data')
   .then(function(r) { return r.json(); })
   .then(function(data) {
-    if (data.text && data.json_result && Object.keys(data.json_result).length > 0) {
-      document.getElementById('termInput').value = data.text;
+    var inputText = data.text || data.raw_text || '';
+    if (inputText && data.json_result && Object.keys(data.json_result).length > 0) {
+      document.getElementById('termInput').value = inputText;
       document.getElementById('btnParse').textContent = '⚡ 重新解析';
       // Expand terminal panel first so all DOM elements are visible
       ensureTerminalExpanded();
