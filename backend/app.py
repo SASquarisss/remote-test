@@ -255,7 +255,11 @@ if __name__ == "__main__":
 
         @app.route("/<path:filename>")
         def serve_static(filename):
-            return send_from_directory(VIS_DIR, filename)
+            resp = send_from_directory(VIS_DIR, filename)
+            resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            resp.headers['Pragma'] = 'no-cache'
+            resp.headers['Expires'] = '0'
+            return resp
 
     print(f"Starting parse API on {args.host}:{args.port}", flush=True)
     app.run(host=args.host, port=args.port, debug=args.debug)
