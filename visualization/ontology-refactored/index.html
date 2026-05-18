@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>法律本体论 (Refactored)</title>
+  <script>
+    window.addEventListener('error', function(e) {
+      if (e.message && e.message.includes('ResizeObserver')) return;
+      const div = document.createElement('div');
+      div.style.cssText = 'position:fixed;top:0;left:0;z-index:9999;background:red;color:white;padding:20px;';
+      div.textContent = e.error ? e.error.stack : e.message;
+      document.body.appendChild(div);
+      fetch('http://localhost:8888/?msg=' + encodeURIComponent(e.error ? e.error.stack : e.message), {mode: 'no-cors'}).catch(()=>console.log('fetch failed'));
+    });
+  </script>
+  <link rel="stylesheet" href="/src/styles/main.css">
+  <link rel="stylesheet" href="/src/styles/panels.css">
+  <style>
+    /* Parse Graph Zone Overlays */
+    .term-zone-overlay {
+      position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    }
+    .term-zone-badge {
+      position: absolute; transform: translate(-50%, -50%);
+      display: inline-flex; flex-direction: column; gap: 2px;
+      padding: 6px 10px; border-radius: 10px;
+      background: rgba(255,255,255,0.84); border: 1px solid rgba(148,163,184,0.32);
+      box-shadow: 0 10px 24px rgba(15,23,42,0.08); backdrop-filter: blur(2px);
+      max-width: 140px; transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    .term-zone-badge.zone-hidden { opacity: 0; }
+    .term-zone-title { font-size: 11px; line-height: 1.2; font-weight: 700; color: #334155; }
+    .term-zone-desc { font-size: 10px; line-height: 1.2; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Main View (For Parse Graph) -->
+    <div id="kgMainView" style="position: absolute; top: 0; left: 0; width: 100%; height: 50vh; z-index: 1;"></div>
+
+    <!-- Ontology Graph Container (Floating/Main toggle) -->
+    <div id="ontologyContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 2; transition: all 0.3s ease;">
+      <!-- Floating Header (visible only in mini-mode) -->
+      <div class="ontology-header" id="ontologyHeader" style="display: none; padding: 0 12px; background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; cursor: move; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; height: 35px;">
+        <div style="display: flex; gap: 16px; align-items: center; height: 100%;">
+          <div class="onto-tab active" data-target="ontologyNetworkHost" style="font-size: 13px; font-weight: 600; cursor: pointer; height: 100%; display: flex; align-items: center; border-bottom: 2px solid #3b82f6;">📋 本体图谱</div>
+          <div class="onto-tab" data-target="ontologyInheritanceTab" style="font-size: 13px; font-weight: 600; cursor: pointer; height: 100%; display: flex; align-items: center; border-bottom: 2px solid transparent; color: #94a3b8;">🌳 继承树</div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="ohToggleFull" style="background: none; border: none; color: #fff; cursor: pointer;">⛶</button>
+          <button id="ohClose" style="background: none; border: none; color: #fff; cursor: pointer;">✕</button>
+        </div>
+      </div>
+      <div id="ontologyNetworkHost" class="onto-tab-content active" style="width: 100%; height: 100%;"></div>
+      <div id="ontologyInheritanceTab" class="onto-tab-content" style="display: none; width: 100%; height: 100%; background: #fff; overflow-y: auto; padding: 16px;">
+        <div id="legendBody"></div>
+      </div>
+    </div>
+    
+    <!-- Detail Panel -->
+    <div id="detailPanel">
+      <div class="panel-header">
+        <h2 id="panelTitle">📋 详细信息</h2>
+        <div class="panel-actions">
+          <button id="panelShrink" class="panel-btn" title="缩略模式">◁</button>
+          <button id="panelClose" class="panel-btn" title="关闭面板">×</button>
+        </div>
+      </div>
+      <div class="panel-tabs" id="panelTabs" style="display: none;">
+        <div class="panel-tab active" data-target="panelTabInfo">基本信息</div>
+        <div class="panel-tab" data-target="panelTabNeighbors">关联路径</div>
+        <div class="panel-tab" data-target="panelTabRaw">原始数据</div>
+      </div>
+      <div class="panel-body" id="panelBody">
+        <div class="panel-tab-content active" id="panelTabInfo">
+          <div class="empty-hint">点击节点或关系边查看详细信息</div>
+        </div>
+        <div class="panel-tab-content" id="panelTabNeighbors"></div>
+        <div class="panel-tab-content" id="panelTabRaw"></div>
+      </div>
+    </div>
+
+  <!-- Terminal (Parse Graph) -->
+  <div id="parseTerminal" class="expanded" style="bottom: 0px; position: fixed; z-index: 10; width: 100%; height: 50vh;">
+    <div class="collapsed-bar" id="termCollapsedBar" style="display: none;" title="点击展开解析终端">
+      📋 法律文本解析终端 | 点击展开
+    </div>
+    <div class="terminal-panel">
+      <div class="term-header">
+        <span>📋 法律文本解析终端</span>
+        <span class="term-height-btns">
+          <button class="term-height-btn active" data-height="50" id="btnHeight50" title="50% 高度">50%</button>
+          <button class="term-height-btn" data-height="70" id="btnHeight70" title="70% 高度">70%</button>
+        </span>
+        <button class="term-close" id="btnTermClose" title="收起终端">▼ 收起</button>
+      </div>
+      <div class="term-resize-handle" id="termDragHandle" title="拖拽调整高度"></div>
+      <div class="terminal-body term-body" id="termBody">
+        <div id="termVisContainer" style="flex:1; position:relative; background:#0f172a;">
+          <div id="termVisCanvasHost" style="width:100%; height:100%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="term-footer" id="termFooter">
+      <select id="termSaveTarget" style="margin-right:8px; height:30px; border-radius:8px; border:1px solid #d0d7de; background:#fff; color:#334155; padding:0 8px;">
+        <option value="manual">保存到 manual</option>
+        <option value="extracted_candidate">保存到 extracted_candidate</option>
+      </select>
+      <button class="btn-save" id="btnTermSaveBottom" disabled>💾 保存</button>
+      <span id="termScore" class="term-footer-score"></span>
+      <span id="termIssues" class="term-footer-issues"></span>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

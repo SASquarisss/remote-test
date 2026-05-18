@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>test vis</title></head>
+<body>
+<div id="mynetwork" style="width:100%;height:600px;border:1px solid #ccc;"></div>
+<script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
+<script>
+var nodes = new vis.DataSet([
+  {id: 'LegalNorm', label: '规范层', shape: 'ellipse', color:{background:'#2980b9',border:'#1a5276'}},
+  {id: 'Law', label: '法律', shape: 'hexagon', color:{background:'#483D8B',border:'#3A2D6E'}},
+  {id: 'JudicialEntity', label: '司法实体', shape: 'ellipse', color:{background:'#d35400',border:'#a04000'}},
+  {id: 'Evidence', label: '证据', shape: 'database', color:{background:'#CD853F',border:'#A06B32'}},
+  {id: 'Fact', label: '案件事实', shape: 'ellipse', color:{background:'#8E44AD',border:'#6C3483'}},
+  {id: 'CourtCase', label: '案件', shape: 'box', color:{background:'#FFA07A',border:'#E8875A'}},
+  {id: 'LegalSubject', label: '主体', shape: 'ellipse', color:{background:'#27ae60',border:'#1e8449'}},
+  {id: 'Organization', label: '组织', shape: 'triangle', color:{background:'#B0C4DE',border:'#7B899B'}},
+]);
+var edges = new vis.DataSet([
+  {from:'Law', to:'LegalNorm', dashes:true, label:'is_a'},
+  {from:'Evidence', to:'JudicialEntity', dashes:true, label:'is_a'},
+  {from:'Fact', to:'JudicialEntity', dashes:true, label:'is_a'},
+  {from:'CourtCase', to:'JudicialEntity', dashes:true, label:'is_a'},
+  {from:'Organization', to:'LegalSubject', dashes:true, label:'is_a'},
+  {from:'CourtCase', to:'Evidence', label:'has_evidence'},
+  {from:'Fact', to:'Evidence', label:'proves'},
+]);
+var container = document.getElementById('mynetwork');
+var network = new vis.Network(container, {nodes,edges}, {
+  physics:{barnesHut:{gravitationalConstant:-2000,springLength:150},stabilization:{iterations:200}},
+  edges:{smooth:{type:'curvedCW',roundness:0.12}},
+  interaction:{hover:true}
+});
+network.on('click', function(p) {
+  if(p.nodes.length) {
+    var n = network.body.data.nodes.get(p.nodes[0]);
+    document.getElementById('info').innerHTML = '<b>'+n.label+'</b> shape='+n.shape+' id='+n.id;
+  }
+});
+network.on('hoverNode', function(p) {
+  if(!document.getElementById('info').innerHTML.includes('LOCK')) {
+    var n = network.body.data.nodes.get(p.node);
+    document.getElementById('info').innerHTML = '<b>'+n.label+'</b> shape='+n.shape+' id='+n.id;
+  }
+});
+network.on('doubleClick', function(p) {
+  if(p.nodes.length && p.nodes[0].indexOf && p.nodes[0].indexOf('cluster_')===0) {
+    network.clustering.openCluster(p.nodes[0]);
+  }
+});
+</script>
+<div id="info" style="margin-top:10px;padding:10px;background:#f0f0f0;">点击节点查看信息</div>
+</body>
+</html>
