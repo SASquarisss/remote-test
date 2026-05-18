@@ -1,0 +1,56 @@
+{
+  "prompt_file": "ontology/prompts/auto_v5_criminal.txt",
+  "prompt_sha1": "a01e2d29495814e0613542e72814fa651244bd85",
+  "few_shot": {
+    "row_id": "23127",
+    "score": 90.0,
+    "quality": 232.0,
+    "case_type": "刑事-虐待罪",
+    "file": "extracted_candidate_structured_v1.jsonl",
+    "details": {
+      "provisions": 5,
+      "cases": 1,
+      "subjects": 3,
+      "evidence": 1,
+      "results": 1,
+      "key_facts": true,
+      "disputed": true,
+      "conclusion": true,
+      "facts": 3,
+      "focuses": 2,
+      "relations": 7,
+      "relation_types": 4,
+      "graph_ready": true,
+      "rich_graph": true
+    },
+    "overall_coverage": {
+      "present_entities": [
+        "CaseSummary",
+        "CaseType",
+        "CourtCase",
+        "DisputeFocus",
+        "Evidence",
+        "Fact",
+        "GuidingCase",
+        "JudgmentResult",
+        "LegalProvision",
+        "LegalProvisionElement",
+        "LegalSubject",
+        "Prosecutor"
+      ],
+      "relation_types": [
+        "based_on",
+        "has_dispute_focus",
+        "proves_fact",
+        "resolved_by"
+      ]
+    },
+    "change_coverage": {
+      "covered_entities": [],
+      "missing_entities": [],
+      "covered_relations": [],
+      "missing_relations": [],
+      "field_status": {}
+    }
+  }
+}

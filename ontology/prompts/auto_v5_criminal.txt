@@ -9,6 +9,10 @@
 6. 当事人角色必须映射到标准枚举值
 7. **所有缺失字段必须尽力从其他文本源推断，不能留空**
 8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
+9. **必须输出 relations 数组**，描述实体间的显式关联（如证据与事实、事实与争议焦点、焦点与裁判结果等）
+10. **证据采信意见（admission_status、admission_reason、probative_force）为强制提取字段**，每份证据都必须填写，不可留空
+11. **facts / dispute_focuses / relations 不是可选增强项，而是图谱主链的必填层；不能只写 case_summary 而把三者留空**
+12. **如果已抽到 evidence、judgment_results、legal_provisions、case_summary 中的关键事实/争议焦点，就必须继续补出对应 facts / dispute_focuses / relations**
 
 ## 强制提取要点
 - **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
@@ -21,6 +25,10 @@
 - **裁判推理过程（reasoning）必须提取**：从judgment_reason中提取法院的推理链条——法院认定了哪些事实、引用了哪些法条、如何从事实推导出结论。
 - **证据采信状态（admission_status）和质证状态（examination_status）必须提取**：从judgment_reason中查找法院对每份证据的认定结论（"予以确认""不予采信"等）。**admission_status必须填写，不可留空**。
 - **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
+- **事实节点（facts）必须显式输出**：至少提取 1-3 条可以独立成立的关键事实，每条事实应保持客观表述，并填写 `content`、`fact_type`、`case_number`；不要只把事实塞进 `case_summary.key_facts`。
+- **争议焦点节点（dispute_focuses）必须显式输出**：至少提取 1 条焦点，填写 `content`、`case_number`；不要只把焦点塞进 `case_summary.disputed_issues`。
+- **关系边（relations）不得空置**：若已抽到证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`based_on`、`submitted_for`。
+- **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
 - **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 
 ## 枚举值约束（自动生成 - 必须严格遵守）
@@ -119,6 +127,9 @@
 | `is_key_evidence` | true/false |
 | `admission_status` | admitted→已采信，not_admitted→未采信。**必填**，从judgment_reason中提取法院对该证据的认定结论 |
 | `examination_status` | examined→已质证，not_examined→未经质证。从文本中提取 |
+| `admission_reason` | 从judgment_reason中摘录法院对证据的认定意见，如'证据真实、合法、与本案具有关联性' |
+| `probative_force` | valid→有效，invalid→无效 [枚举值见参考表] |
+| `case_number` | 从court_cases中对应 |
 | `expert_institution` | 如evidence_type=expert_opinion时填写鉴定机构全称 |
 | `expert_conclusion` | 如evidence_type=expert_opinion时填写鉴定结论 |
 
@@ -131,6 +142,8 @@
 | `reasoning` | **必填**，从judgment_reason提取法院的推理链条：事实认定→法律适用→结论推导的完整逻辑。300字以内，保留关键推理节点 |
 | `case_number` |  |
 | `cost_allocation` | 如'案件受理费12800元，由原告承担30%，被告承担70%' |
+| `claim_amount` | 原告起诉时的诉求金额 |
+| `effective_date` | 判决生效日期，格式YYYY-MM-DD |
 
 ### 案件结构化摘要（`CaseSummary`）
 
@@ -178,6 +191,24 @@
 | `members` | 含审判长、审判员、人民陪审员等 |
 | `summary` |  |
 
+### 案件事实实体（`Fact`）
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 如 'fact_0', 'fact_1' |
+| `content` |  |
+| `fact_type` | undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实 [枚举值见参考表] [枚举值见参考表] |
+| `case_number` |  |
+
+### 争议焦点实体（`DisputeFocus`）
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 如 'focus_0', 'focus_1' |
+| `content` |  |
+| `focus_type` | factual→事实焦点，legal→法律焦点，procedural→程序焦点，evidence→证据焦点 [枚举值见参考表] [枚举值见参考表] |
+| `case_number` |  |
+
 ### 法条构成要件（`LegalProvisionElement`）
 
 | 字段 | 说明 |
@@ -188,6 +219,51 @@
 | `element_type` | subject_element→主体要件，act_element→行为要件，result_element→结果要件，causality_element→因果关系，subjective_element→主观要件，legal_consequence→法律后果，见枚举值表 [枚举值见参考表] |
 | `content` | 该构成要件要素的具体法律描述，原文或摘要 |
 | `applicable_fact_pattern` | 哪些类型的事实会匹配该要件 |
+
+
+## 关系约束（自动生成）
+relations 数组中的 `relation_type` 只能使用下表中的本体关系名；不要自创 `evidence_to_xxx` 之类别名。
+
+| 关系名 | 起点类型 | 终点类型 | 基数 | 说明 |
+|---|---|---|---|---|
+| `appeals_to` | `CourtCase` | `CourtCase` | `one_to_one` | 二审案件上诉一审案件 |
+| `applies_standard` | `CourtCase` | `SentencingStandard` | `many_to_many` | 案件适用量刑/赔偿标准 |
+| `based_on` | `ExecutionInfo` | `JudgmentResult` | `one_to_one` | 执行依据裁判结果 |
+| `belongs_to` | `LegalProvision` | `Law` | `many_to_one` | 法律条文归属法律 |
+| `cites` | `CourtCase` | `LegalProvision` | `many_to_many` | 案件引用法律条文 |
+| `cites_guiding_case` | `CourtCase` | `GuidingCase` | `many_to_many` | 案件引用指导性案例 |
+| `employs` | `Procuratorate` | `Prosecutor` | `one_to_many` | 检察院雇佣检察官 |
+| `employs_attorney` | `LawFirm` | `Attorney` | `one_to_many` | 律所雇佣律师 |
+| `guides_case_type` | `GuidingCase` | `CaseType` | `one_to_many` | 指导性案例指导案由适用 |
+| `has_case_type` | `CourtCase` | `CaseType` | `one_to_many` | 案件具有案由类型 |
+| `has_dispute_focus` | `CourtCase` | `DisputeFocus` | `one_to_many` | 案件具有争议焦点 |
+| `has_fact` | `CourtCase` | `Fact` | `one_to_many` | 案件具有事实 |
+| `has_jurisdiction_over` | `Court` | `District` | `one_to_one` | 法院管辖辖区 |
+| `has_summary` | `CourtCase` | `CaseSummary` | `one_to_one` | 案件具有结构化摘要 |
+| `has_version` | `LegalProvision` | `LegalProvisionVersion` | `one_to_many` | 法条具有历史版本 |
+| `includes` | `TrialOrganization` | `Judge` | `one_to_many` | 审判组织包含法官（is_presiding=true 表示审判长） |
+| `includes_clerk` | `TrialOrganization` | `Clerk` | `one_to_one` | 审判组织配备书记员 |
+| `judgment_cites` | `JudgmentResult` | `LegalProvision` | `many_to_many` | 裁判结果依据法律条文 |
+| `leads_to` | `['Fact', 'DisputeFocus']` | `JudgmentResult` | `many_to_many` | 事实/争议焦点推导出裁判结果（三段论推理的结论链路） |
+| `matches_element` | `Fact` | `LegalProvisionElement` | `many_to_many` | 案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配） |
+| `plays_role` | `LegalSubject` | `LegalRole` | `many_to_many` | 主体在案件中担任角色 |
+| `prosecutes` | `Procuratorate` | `CourtCase` | `one_to_many` | 检察院公诉案件 |
+| `proves_fact` | `Evidence` | `Fact, DisputeFocus` | `many_to_many` | 证据证明案件事实/争议焦点 |
+| `represents` | `Attorney` | `LegalSubject` | `many_to_many` | 律师代理当事人 |
+| `resolved_by` | `DisputeFocus` | `LegalProvision` | `many_to_many` | 争议焦点由法律条文解决（争议焦点→法条映射） |
+| `retries_from` | `CourtCase` | `CourtCase` | `one_to_one` | 再审案件源自原审案件 |
+| `signed_by` | `LegalDocument` | `Judge` | `many_to_one` | 文书由法官签署 |
+| `submitted_for` | `Evidence` | `CourtCase` | `many_to_one` | 证据提交给案件 |
+| `superseded_by` | `LegalProvisionVersion` | `LegalProvisionVersion` | `one_to_one` | 旧版本被新版本替代 |
+| `tried_by` | `CourtCase` | `TrialOrganization` | `one_to_one` | 案件由审判组织审理 |
+| `typically_applies` | `CaseType` | `LegalProvision` | `many_to_many` | 案由典型适用的法律条文（用于法条补提和类案推荐） |
+| `undertakes` | `Judge` | `CourtCase` | `one_to_many` | 法官承办案件 |
+
+### 关系输出规则
+- `source_id` 和 `target_id` 必须引用本次 JSON 中真实出现的实体 id。
+- `relation_type` 必须严格使用上表中的本体关系名。
+- 优先输出文本中有明确依据的关系，避免为了凑数量臆造关系。
+- 如果某关系仅在字段层出现但未形成实体间连接，不要强行写入 relations。
 
 
 ## 输出 JSON Schema（自动生成 — 严格遵循此结构）
@@ -325,6 +401,30 @@
       "content": "",
       "applicable_fact_pattern": ""
     }
+  ],
+  "facts": [
+    {
+      "id": "fact_0",
+      "content": "",
+      "fact_type": "undisputed|disputed|to_be_proven",
+      "case_number": ""
+    }
+  ],
+  "dispute_focuses": [
+    {
+      "id": "focus_0",
+      "content": "",
+      "focus_type": "factual|legal|procedural|evidence",
+      "case_number": ""
+    }
+  ],
+  "relations": [
+    {
+      "source_id": "",
+      "target_id": "",
+      "relation_type": "appeals_to|applies_standard|based_on|belongs_to|cites|cites_guiding_case|employs|employs_attorney|guides_case_type|has_case_type|has_dispute_focus|has_fact|has_jurisdiction_over|has_summary|has_version|includes|includes_clerk|judgment_cites|leads_to|matches_element|plays_role|prosecutes|proves_fact|represents|resolved_by|retries_from|signed_by|submitted_for|superseded_by|tried_by|typically_applies|undertakes",
+      "description": "引用文本依据简述"
+    }
   ]
 }
 ```
@@ -333,24 +433,23 @@
 
 ## Few-shot 示例（刑事案）
 
-> 案由: 刑事-保险诈骗罪 | 入库编号: 2023-05-1-141-001 | 来源: 历史最佳解析（score=95）
+> 案由: 刑事-虐待罪 | 入库编号: 2026-02-1-214-001 | 来源: 历史最佳解析（score=90.0）
 
 ### 输入案件文本
 ```
-【案由分类】刑事-保险诈骗罪
+【案由分类】刑事-虐待罪
 
-【入库编号】2023-05-1-141-001
+【入库编号】2026-02-1-214-001
 
-【审判程序】二审
+【审判程序】一审
 
 【案例层级】02
 
 【基本案情】
-（一）被告人江某、余某灵诈骗部分　　2013年3月至7月，被告人江某分别驾驶浙H59***号东南菱帅轿车（被保险人系邵某某）、浙HZ6***号桑塔纳轿车（被保险人系陈某），在浙江省衢州市柯城区巨化中央大道昌苑菜场附近等地，以驾车故意碰撞路边电线杆、指示牌石墩、护栏，制造轿车撞击电线杆、指示牌石墩、护栏的虚假事故等方式，由其本人或者指使被告人余某灵冒充车辆驾驶员并提供相关材料，分别向中国某某财产保险股份有限公司衢州中心支公司（以下简称某某财产保险公司甲）、中国某某财产保险股份有限公司衢州市分公司（以下简称某某财产保险公司乙）报案并定损理赔，骗得理赔金共计人民币22，130元（以下币种同）。　　2014年12月1日12时许，被告人江某驾驶浙H93***号东南菱帅轿车（被保险人系陈某）搭载张某良、徐某南驾驶浙H0D***号丰田凯美瑞轿车至衢州市柯城区阳关水岸小区南侧道路，故意制造了两车刮擦的虚假事故，后江某指使张某良冒充浙H93***号东南菱帅轿车驾驶员并提供相关材料向某某财产保险公司甲报案并定损理赔，骗得理赔金4830元。　　（二）被告人江某、陈某保险诈骗部分　　1. 2013年10月30日12时许，被告人江某驾驶浙H11***号名爵轿车（车辆实际所有人系江某）至浙江省开化县长虹乡附近路段，故意制造了车辆碰撞路边山体的虚假事故，后提供相关材料向人民财产保险公司报案并定损理赔，骗得理赔金
-...（案情较长，已截断）
+2018年9月至2019年11月，被害人唐某某（女，时年5岁）因父母离异，跟随祖父唐某勇以及唐某勇的未婚同居老伴何某英共同生活。在共同生活期间，被告人何某英多次以唐某某不听话为由，采取打、咬、掐、烫等方式虐待唐某某，造成唐某某全身多处损伤。经鉴定，唐某某因外伤致肢体瘢痕的损伤程度为轻伤二级，右前臂皮肤被咬伤、面部及左脚前掌皮肤被烫伤及背部皮肤挫伤的损伤程度均为轻微伤。案发后，何某英取得唐某某父亲唐某金的谅解。u3000u3000四川省江安县人民检察院因被害人没有能力告诉，以被告人何某英犯虐待罪向江安县人民法院提起公诉。江安县人民法院于2020年5月25日作出（2020）川1523刑初28号刑事判决：被告人何某英犯虐待罪，判处有期徒刑一年六个月。宣判后，没有上诉、抗诉，判决已发生法律效力。
 
 【裁判理由】
-法院生效裁判认为：被告人江某、余某灵以非法占有为目的，多次利用他人车辆制造保险事故，骗取保险金，数额较大，其行为均已构成诈骗罪；被告人江某、陈某以非法占有为目的，虚构事实、隐瞒真相，故意制造保险事故，骗取保险金，数额较大，其中江某以故意造成保险事故方式骗取保险金三次以上，并具有其他严重情节，其行为均已构成保险诈骗罪。江某一人犯数罪，应实行数罪并罚。江某系在公安机关对其抓捕未果后，以通知其领取他案退赔款到案的，可见江某不具有投案的自动性和主动性，不能认定为自首。本案部分属共同犯罪，江某在共同犯罪中起主要作用，是主犯，应按其参与的全部犯罪处罚；余某灵、陈某起次要、辅助作用，是从犯，应从轻处罚。江某主动向公安机关提供同案犯的租住处，协助公安机关抓获同案犯，具有立功表现，可减轻处罚；江某、余某灵、陈某归案后如实供述自己的罪行，可从轻处罚；江某已退赔全部赃款，可酌情从轻处罚。根据陈某的犯罪情节、悔罪
+本案的争议焦点有二：一是对被害人唐某某应否认定为虐待罪中的“家庭成员”，二是本案应否适用公诉程序，由检察机关提起公诉。u3000u3000第一，应当认定被害人唐某某为虐待罪中的“家庭成员”。《中华人民共和国刑法》第二百六十条第一款规定：“虐待家庭成员，情节恶劣的，处二年以下有期徒刑、拘役或者管制。”关于家庭成员的范围，《中华人民共和国民法典》第一千零四十五条第三款规定：“配偶、父母、子女和其他共同生活的近亲属为家庭成员。”对于虐待罪中“家庭成员”的范围，实践中通常按照民法典上述规定予以把握。但是，随着经济社会发展，家庭关系出现一些新情况，未婚同居现象增多。基于此，《最高人民法院、最高人民检察院、公安部、司法部关于依法办理家庭暴力犯罪案件的意见》（法发〔2015〕4号）明确，家庭暴力犯罪不仅发生在家庭成员之间，还发生在具有监护、扶养、寄养、同居等关系的共同生活人员之间。出于根据时代发展和社会
 ...（裁判理由较长，已截断）
 ```
 
@@ -358,93 +457,59 @@
 ```json
 {
   "guiding_case": {
-    "guiding_case_name": "江某等保险诈骗、诈骗案",
-    "publication_date": "2017-02-20",
+    "guiding_case_name": "何某英虐待案",
+    "publication_date": "2020-05-25",
     "binding_force": "persuasive",
-    "guiding_points": "已归案的犯罪分子协助司法机关抓捕其他犯罪嫌疑人（包括同案犯）的，能否认定有立功表现，关键在于如何理解行为人是否有协助抓捕行为以及协助行为对抓捕其他犯罪嫌疑人（包括同案犯）是否起决定性作用。相关司法解释中均只强调构成立功需有其他犯罪嫌疑人（包括同案犯）被抓获的实际结果，并没有规定带领侦查人员抓获其他犯罪嫌疑人（包括同案犯）的需要当场抓获才构成立功。因此，是否当场抓获并不当然阻却立功的认定。",
+    "guiding_points": "1.由共同生活的父（母）、祖父（母）等近亲属抚养，并与该近亲属的未婚同居者处于较为稳定的共同生活状态的未成年人，应当认定为刑法第二百六十条规定的“家庭成员”。前述近亲属的未婚同居者对未成年人实施虐待行为，情节恶劣的，依法以虐待罪论处。\n2.被虐待的未成年人因年幼无法行使告诉权利，属于虐待罪中“被害人没有能力告诉”的情形，符合刑法第二百六十条第三款规定的，可以依法由检察机关提起公诉。",
     "case_level": "typical_case",
-    "storage_no": "2023-05-1-141-001"
+    "storage_no": "2026-02-1-214-001"
   },
   "case_type": {
     "category": "criminal",
     "level1": "刑事",
-    "level2": "保险诈骗罪"
+    "level2": "虐待罪"
   },
   "court_cases": [
     {
-      "case_number": "(2016)浙0802刑初358号",
-      "filing_date": "2016-01-01",
+      "case_number": "(2020)川1523刑初28号",
+      "filing_date": "2020-01-01",
       "trial_level": "first_instance",
       "trial_procedure": "一审",
-      "dispute_resolution_type": "litigation",
-      "party_count": null
-    },
-    {
-      "case_number": "(2016)浙08刑终326号",
-      "filing_date": "2016-10-28",
-      "trial_level": "second_instance",
-      "trial_procedure": "二审",
       "dispute_resolution_type": "litigation",
       "party_count": null
     }
   ],
   "legal_subjects": [
     {
-      "name": "江某",
+      "name": "何某英",
       "subject_type": "natural_person",
       "roles": [
         {
           "role_code": "criminal_defendant",
           "role_name": "被告人",
-          "case_number": "(2016)浙0802刑初358号"
-        },
-        {
-          "role_code": "criminal_defendant",
-          "role_name": "原审被告人",
-          "case_number": "(2016)浙08刑终326号"
+          "case_number": "(2020)川1523刑初28号"
         }
       ]
     },
     {
-      "name": "余某灵",
+      "name": "唐某某",
       "subject_type": "natural_person",
       "roles": [
         {
-          "role_code": "criminal_defendant",
-          "role_name": "被告人",
-          "case_number": "(2016)浙0802刑初358号"
-        },
-        {
-          "role_code": "criminal_defendant",
-          "role_name": "原审被告人",
-          "case_number": "(2016)浙08刑终326号"
+          "role_code": "victim",
+          "role_name": "被害人",
+          "case_number": "(2020)川1523刑初28号"
         }
       ]
     },
     {
-      "name": "陈某",
-      "subject_type": "natural_person",
-      "roles": [
-        {
-          "role_code": "criminal_defendant",
-          "role_name": "被告人",
-          "case_number": "(2016)浙0802刑初358号"
-        },
-        {
-          "role_code": "criminal_defendant",
-          "role_name": "原审被告人",
-          "case_number": "(2016)浙08刑终326号"
-        }
-      ]
-    },
-    {
-      "name": "浙江省柯城区人民检察院",
+      "name": "四川省江安县人民检察院",
       "subject_type": "organization",
       "roles": [
         {
           "role_code": "prosecutor",
-          "role_name": "抗诉机关",
-          "case_number": "(2016)浙08刑终326号"
+          "role_name": "公诉机关",
+          "case_number": "(2020)川1523刑初28号"
         }
       ]
     }
@@ -452,122 +517,174 @@
   "legal_provisions": [
     {
       "statute": "中华人民共和国刑法",
-      "article": "67",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_law",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑法",
-      "article": "69",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_law",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑法",
-      "article": "198",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_law",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑法",
-      "article": "266",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_law",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国刑事诉讼法",
-      "article": "236",
+      "article": "260",
       "paragraph": "1",
-      "item": "1",
-      "citation_position": "related_law",
+      "item": "",
+      "citation_position": "judgment_reason",
       "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "260",
+      "paragraph": "3",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "适用依据"
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1045",
+      "paragraph": "3",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "中华人民共和国反家庭暴力法",
+      "article": "37",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "related_law",
+      "citation_purpose": "说理依据"
+    },
+    {
+      "statute": "最高人民法院、最高人民检察院、公安部、司法部关于依法办理家庭暴力犯罪案件的意见",
+      "article": "",
+      "paragraph": "",
+      "item": "",
+      "citation_position": "judgment_reason",
+      "citation_purpose": "说理依据"
     }
   ],
   "evidence": [
     {
-      "evidence_type": "documentary",
+      "content": "唐某某因外伤致肢体瘢痕的损伤程度为轻伤二级，右前臂皮肤被咬伤、面部及左脚前掌皮肤被烫伤及背部皮肤挫伤的损伤程度均为轻微伤。",
+      "evidence_type": "expert_opinion",
+      "submitted_by": "公诉机关",
       "is_key_evidence": true,
       "admission_status": "admitted",
       "examination_status": "examined",
       "expert_institution": "",
-      "expert_conclusion": ""
-    },
-    {
-      "evidence_type": "documentary",
-      "is_key_evidence": true,
-      "admission_status": "admitted",
-      "examination_status": "examined",
-      "expert_institution": "",
-      "expert_conclusion": ""
-    },
-    {
-      "evidence_type": "documentary",
-      "is_key_evidence": true,
-      "admission_status": "admitted",
-      "examination_status": "examined",
-      "expert_institution": "",
-      "expert_conclusion": ""
+      "expert_conclusion": "唐某某肢体瘢痕轻伤二级，右前臂咬伤、面部及左脚烫伤、背部挫伤均为轻微伤。"
     }
   ],
   "judgment_results": [
     {
       "result_type": "guilty",
-      "specific_judgment": "一、被告人江某犯保险诈骗罪，判处有期徒刑三年二个月，并处罚金人民币二万元；犯诈骗罪，判处有期徒刑十个月，并处罚金人民币五千元，决定执行有期徒刑三年四个月，并处罚金人民币二万五千元；二、被告人陈某犯保险诈骗罪，判处有期徒刑一年，缓刑一年六个月，并处罚金人民币一万元；三、被告人余某灵犯诈骗罪，判处罚金人民币五千元。",
-      "reasoning": "法院认为：江某、余某灵以非法占有为目的，多次利用他人车辆制造保险事故，骗取保险金，数额较大，构成诈骗罪；江某、陈某以非法占有为目的，故意制造保险事故，骗取保险金，数额较大，江某具有其他严重情节，构成保险诈骗罪。江某一人犯数罪，应数罪并罚。江某不具有投案自动性，不构成自首。江某在共同犯罪中系主犯，余某灵、陈某系从犯。江某协助公安机关抓获同案犯，具有立功表现，可减轻处罚；江某、余某灵、陈某如实供述，可从轻处罚；江某退赔全部赃款，可酌情从轻。陈某符合缓刑条件，可宣告缓刑。",
-      "cost_allocation": ""
-    },
-    {
-      "result_type": "dismissed",
-      "specific_judgment": "驳回抗诉，维持原判。",
-      "reasoning": "二审法院认为原判认定事实和适用法律正确、量刑适当，裁定驳回抗诉，维持原判。",
+      "specific_judgment": "被告人何某英犯虐待罪，判处有期徒刑一年六个月。",
+      "reasoning": "被告人何某英对共同生活的未成年人唐某某多次采取打、咬、掐、烫等方式虐待，致轻伤，情节恶劣，构成虐待罪。唐某某因年幼无能力告诉，检察机关提起公诉于法有据。综合全案情节，依法判处。",
       "cost_allocation": ""
     }
   ],
   "case_summary": {
-    "key_facts": "2013年至2015年，被告人江某单独或伙同余某灵、陈某等人，多次故意制造车辆碰撞事故，骗取保险金。江某参与诈骗金额26960元，保险诈骗金额26455元；陈某参与保险诈骗10440元；余某灵参与诈骗8040元。江某归案后主动提供同案犯陈某的租住地并带领公安机关抓捕，虽未当场抓获，但次日将陈某抓获。江某退赔全部赃款50375元。",
-    "disputed_issues": "江某协助公安机关抓捕同案犯但未当场抓获，是否构成立功。",
-    "conclusion": "一审以保险诈骗罪、诈骗罪判处江某有期徒刑三年四个月并处罚金，以保险诈骗罪判处陈某有期徒刑一年缓刑一年六个月并处罚金，以诈骗罪判处罚金余某灵五千元。二审驳回抗诉，维持原判。",
+    "key_facts": "2018年9月至2019年11月，被告人何某英因共同生活的被害人唐某某（5岁）不听话，多次以打、咬、掐、烫等方式虐待，造成唐某某全身多处损伤，经鉴定为轻伤二级和轻微伤。案发后取得被害人父亲谅解。因被害人年幼无告诉能力，由检察机关提起公诉。",
+    "disputed_issues": "1. 唐某某是否属于虐待罪中的“家庭成员”；2. 被害人无告诉能力时能否由检察机关提起公诉。",
+    "conclusion": "法院认定何某英构成虐待罪，判处有期徒刑一年六个月。",
     "claim_amount": "",
     "judgment_amount": ""
   },
   "legal_provision_elements": [
     {
       "statute": "中华人民共和国刑法",
-      "article": "67",
-      "element_type": "subjective_element",
+      "article": "260",
+      "element_type": "subject_element",
       "provision_index": 0
     },
     {
       "statute": "中华人民共和国刑法",
-      "article": "67",
+      "article": "260",
+      "element_type": "act_element",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国刑法",
+      "article": "260",
       "element_type": "legal_consequence",
       "provision_index": 0
     },
     {
       "statute": "中华人民共和国刑法",
-      "article": "67",
-      "element_type": "legal_consequence",
-      "provision_index": 0
-    },
-    {
-      "statute": "中华人民共和国刑法",
-      "article": "69",
-      "element_type": "legal_consequence",
+      "article": "260",
+      "element_type": "exception_clause",
       "provision_index": 1
     },
     {
       "statute": "中华人民共和国刑法",
-      "article": "198",
-      "element_type": "act_element",
-      "provision_index": 2
+      "article": "260",
+      "element_type": "subject_element",
+      "provision_index": 1
+    }
+  ],
+  "facts": [
+    {
+      "id": "",
+      "content": "",
+      "fact_type": "undisputed",
+      "case_number": ""
+    },
+    {
+      "id": "",
+      "content": "",
+      "fact_type": "undisputed",
+      "case_number": ""
+    },
+    {
+      "id": "",
+      "content": "",
+      "fact_type": "undisputed",
+      "case_number": ""
+    }
+  ],
+  "dispute_focuses": [
+    {
+      "id": "",
+      "content": "",
+      "focus_type": "",
+      "case_number": ""
+    },
+    {
+      "id": "",
+      "content": "",
+      "focus_type": "",
+      "case_number": ""
+    }
+  ],
+  "relations": [
+    {
+      "source_id": "evidence_0",
+      "target_id": "fact_1",
+      "relation_type": "proves_fact",
+      "description": ""
+    },
+    {
+      "source_id": "fact_0",
+      "target_id": "dispute_focus_0",
+      "relation_type": "has_dispute_focus",
+      "description": ""
+    },
+    {
+      "source_id": "fact_2",
+      "target_id": "dispute_focus_1",
+      "relation_type": "has_dispute_focus",
+      "description": ""
+    },
+    {
+      "source_id": "judgment_result_0",
+      "target_id": "legal_provision_0",
+      "relation_type": "based_on",
+      "description": ""
+    },
+    {
+      "source_id": "judgment_result_0",
+      "target_id": "legal_provision_1",
+      "relation_type": "based_on",
+      "description": ""
+    },
+    {
+      "source_id": "dispute_focus_0",
+      "target_id": "judgment_result_0",
+      "relation_type": "resolved_by",
+      "description": ""
     }
   ]
 }

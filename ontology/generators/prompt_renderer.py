@@ -519,9 +519,43 @@ def render_entity_mapping_table(ontology: OntologySchema) -> str:
     return "\n".join(lines)
 
 
+def render_relation_reference(ontology: OntologySchema) -> str:
+    """渲染关系约束说明，让 relations 数组真正受本体约束。"""
+    relations = ontology.get("relations", {}) or {}
+    if not relations:
+        return ""
+
+    lines = [
+        "## 关系约束（自动生成）",
+        "relations 数组中的 `relation_type` 只能使用下表中的本体关系名；不要自创 `evidence_to_xxx` 之类别名。",
+        "",
+        "| 关系名 | 起点类型 | 终点类型 | 基数 | 说明 |",
+        "|---|---|---|---|---|",
+    ]
+
+    for name, rel in sorted(relations.items()):
+        from_type = rel.get("from_type", "") or ""
+        to_type = rel.get("to_type", "") or ""
+        cardinality = rel.get("cardinality", "many_to_many") or "many_to_many"
+        desc = rel.get("description", "") or ""
+        lines.append(f"| `{name}` | `{from_type}` | `{to_type}` | `{cardinality}` | {desc} |")
+
+    lines.extend([
+        "",
+        "### 关系输出规则",
+        "- `source_id` 和 `target_id` 必须引用本次 JSON 中真实出现的实体 id。",
+        "- `relation_type` 必须严格使用上表中的本体关系名。",
+        "- 优先输出文本中有明确依据的关系，避免为了凑数量臆造关系。",
+        "- 如果某关系仅在字段层出现但未形成实体间连接，不要强行写入 relations。",
+        "",
+    ])
+    return "\n".join(lines)
+
+
 def render_json_schema(ontology: OntologySchema) -> str:
     """渲染 JSON Schema 输出模板（包含枚举约束）"""
     enums = get_all_enum_tables(ontology)
+    relations = ontology.get("relations", {}) or {}
     P = chr(124)  # pipe character for f-strings
 
     lines = ["## 输出 JSON Schema（自动生成 — 严格遵循此结构）",
@@ -670,7 +704,7 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append('      "content": "",')
     lines.append('      "applicable_fact_pattern": ""')
     lines.append('    }')
-    lines.append('  ]')
+    lines.append('  ],')
     lines.append('  "facts": [')
     lines.append('    {')
     lines.append('      "id": "fact_0",')
@@ -691,8 +725,10 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append('    {')
     lines.append('      "source_id": "",')
     lines.append('      "target_id": "",')
-    lines.append('      "relation_type": "",')
-    lines.append('      "description": ""')
+    rel_names = sorted(relations.keys())
+    relation_type_value = P.join(rel_names) if rel_names else ""
+    lines.append(f'      "relation_type": "{relation_type_value}",')
+    lines.append('      "description": "引用文本依据简述"')
     lines.append('    }')
     lines.append('  ]')
 
@@ -718,6 +754,8 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
 9. **必须输出 relations 数组**，描述实体间的显式关联（如证据与事实、事实与争议焦点、焦点与裁判结果等）
 10. **证据采信意见（admission_status、admission_reason、probative_force）为强制提取字段**，每份证据都必须填写，不可留空
+11. **facts / dispute_focuses / relations 不是可选增强项，而是图谱主链的必填层；不能只写 case_summary 而把三者留空**
+12. **如果已抽到 evidence、judgment_results、legal_provisions、case_summary 中的关键事实/争议焦点，就必须继续补出对应 facts / dispute_focuses / relations**
 
 ## 强制提取要点
 - **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
@@ -730,6 +768,10 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 - **裁判推理过程（reasoning）必须提取**：从judgment_reason中提取法院的推理链条——法院认定了哪些事实、引用了哪些法条、如何从事实推导出结论。
 - **证据采信状态（admission_status）和质证状态（examination_status）必须提取**：从judgment_reason中查找法院对每份证据的认定结论（"予以确认""不予采信"等）。**admission_status必须填写，不可留空**。
 - **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
+- **事实节点（facts）必须显式输出**：至少提取 1-3 条可以独立成立的关键事实，每条事实应保持客观表述，并填写 `content`、`fact_type`、`case_number`；不要只把事实塞进 `case_summary.key_facts`。
+- **争议焦点节点（dispute_focuses）必须显式输出**：至少提取 1 条焦点，填写 `content`、`case_number`；不要只把焦点塞进 `case_summary.disputed_issues`。
+- **关系边（relations）不得空置**：若已抽到证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`based_on`、`submitted_for`。
+- **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
 - **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 """
 
@@ -745,6 +787,8 @@ def render_extraction_prompt(
         render_enum_reference(ontology),
         "",
         render_entity_mapping_table(ontology),
+        "",
+        render_relation_reference(ontology),
         "",
         render_json_schema(ontology),
         "",

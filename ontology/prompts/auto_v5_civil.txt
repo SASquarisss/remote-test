@@ -9,6 +9,10 @@
 6. 当事人角色必须映射到标准枚举值
 7. **所有缺失字段必须尽力从其他文本源推断，不能留空**
 8. 从related_info / related_judgment_body中提取所有审判组织的成员信息
+9. **必须输出 relations 数组**，描述实体间的显式关联（如证据与事实、事实与争议焦点、焦点与裁判结果等）
+10. **证据采信意见（admission_status、admission_reason、probative_force）为强制提取字段**，每份证据都必须填写，不可留空
+11. **facts / dispute_focuses / relations 不是可选增强项，而是图谱主链的必填层；不能只写 case_summary 而把三者留空**
+12. **如果已抽到 evidence、judgment_results、legal_provisions、case_summary 中的关键事实/争议焦点，就必须继续补出对应 facts / dispute_focuses / relations**
 
 ## 强制提取要点
 - **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
@@ -21,6 +25,10 @@
 - **裁判推理过程（reasoning）必须提取**：从judgment_reason中提取法院的推理链条——法院认定了哪些事实、引用了哪些法条、如何从事实推导出结论。
 - **证据采信状态（admission_status）和质证状态（examination_status）必须提取**：从judgment_reason中查找法院对每份证据的认定结论（"予以确认""不予采信"等）。**admission_status必须填写，不可留空**。
 - **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
+- **事实节点（facts）必须显式输出**：至少提取 1-3 条可以独立成立的关键事实，每条事实应保持客观表述，并填写 `content`、`fact_type`、`case_number`；不要只把事实塞进 `case_summary.key_facts`。
+- **争议焦点节点（dispute_focuses）必须显式输出**：至少提取 1 条焦点，填写 `content`、`case_number`；不要只把焦点塞进 `case_summary.disputed_issues`。
+- **关系边（relations）不得空置**：若已抽到证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`based_on`、`submitted_for`。
+- **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
 - **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 
 ## 枚举值约束（自动生成 - 必须严格遵守）
@@ -119,6 +127,9 @@
 | `is_key_evidence` | true/false |
 | `admission_status` | admitted→已采信，not_admitted→未采信。**必填**，从judgment_reason中提取法院对该证据的认定结论 |
 | `examination_status` | examined→已质证，not_examined→未经质证。从文本中提取 |
+| `admission_reason` | 从judgment_reason中摘录法院对证据的认定意见，如'证据真实、合法、与本案具有关联性' |
+| `probative_force` | valid→有效，invalid→无效 [枚举值见参考表] |
+| `case_number` | 从court_cases中对应 |
 | `expert_institution` | 如evidence_type=expert_opinion时填写鉴定机构全称 |
 | `expert_conclusion` | 如evidence_type=expert_opinion时填写鉴定结论 |
 
@@ -131,6 +142,8 @@
 | `reasoning` | **必填**，从judgment_reason提取法院的推理链条：事实认定→法律适用→结论推导的完整逻辑。300字以内，保留关键推理节点 |
 | `case_number` |  |
 | `cost_allocation` | 如'案件受理费12800元，由原告承担30%，被告承担70%' |
+| `claim_amount` | 原告起诉时的诉求金额 |
+| `effective_date` | 判决生效日期，格式YYYY-MM-DD |
 
 ### 案件结构化摘要（`CaseSummary`）
 
@@ -178,6 +191,24 @@
 | `members` | 含审判长、审判员、人民陪审员等 |
 | `summary` |  |
 
+### 案件事实实体（`Fact`）
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 如 'fact_0', 'fact_1' |
+| `content` |  |
+| `fact_type` | undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实 [枚举值见参考表] [枚举值见参考表] |
+| `case_number` |  |
+
+### 争议焦点实体（`DisputeFocus`）
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 如 'focus_0', 'focus_1' |
+| `content` |  |
+| `focus_type` | factual→事实焦点，legal→法律焦点，procedural→程序焦点，evidence→证据焦点 [枚举值见参考表] [枚举值见参考表] |
+| `case_number` |  |
+
 ### 法条构成要件（`LegalProvisionElement`）
 
 | 字段 | 说明 |
@@ -188,6 +219,51 @@
 | `element_type` | subject_element→主体要件，act_element→行为要件，result_element→结果要件，causality_element→因果关系，subjective_element→主观要件，legal_consequence→法律后果，见枚举值表 [枚举值见参考表] |
 | `content` | 该构成要件要素的具体法律描述，原文或摘要 |
 | `applicable_fact_pattern` | 哪些类型的事实会匹配该要件 |
+
+
+## 关系约束（自动生成）
+relations 数组中的 `relation_type` 只能使用下表中的本体关系名；不要自创 `evidence_to_xxx` 之类别名。
+
+| 关系名 | 起点类型 | 终点类型 | 基数 | 说明 |
+|---|---|---|---|---|
+| `appeals_to` | `CourtCase` | `CourtCase` | `one_to_one` | 二审案件上诉一审案件 |
+| `applies_standard` | `CourtCase` | `SentencingStandard` | `many_to_many` | 案件适用量刑/赔偿标准 |
+| `based_on` | `ExecutionInfo` | `JudgmentResult` | `one_to_one` | 执行依据裁判结果 |
+| `belongs_to` | `LegalProvision` | `Law` | `many_to_one` | 法律条文归属法律 |
+| `cites` | `CourtCase` | `LegalProvision` | `many_to_many` | 案件引用法律条文 |
+| `cites_guiding_case` | `CourtCase` | `GuidingCase` | `many_to_many` | 案件引用指导性案例 |
+| `employs` | `Procuratorate` | `Prosecutor` | `one_to_many` | 检察院雇佣检察官 |
+| `employs_attorney` | `LawFirm` | `Attorney` | `one_to_many` | 律所雇佣律师 |
+| `guides_case_type` | `GuidingCase` | `CaseType` | `one_to_many` | 指导性案例指导案由适用 |
+| `has_case_type` | `CourtCase` | `CaseType` | `one_to_many` | 案件具有案由类型 |
+| `has_dispute_focus` | `CourtCase` | `DisputeFocus` | `one_to_many` | 案件具有争议焦点 |
+| `has_fact` | `CourtCase` | `Fact` | `one_to_many` | 案件具有事实 |
+| `has_jurisdiction_over` | `Court` | `District` | `one_to_one` | 法院管辖辖区 |
+| `has_summary` | `CourtCase` | `CaseSummary` | `one_to_one` | 案件具有结构化摘要 |
+| `has_version` | `LegalProvision` | `LegalProvisionVersion` | `one_to_many` | 法条具有历史版本 |
+| `includes` | `TrialOrganization` | `Judge` | `one_to_many` | 审判组织包含法官（is_presiding=true 表示审判长） |
+| `includes_clerk` | `TrialOrganization` | `Clerk` | `one_to_one` | 审判组织配备书记员 |
+| `judgment_cites` | `JudgmentResult` | `LegalProvision` | `many_to_many` | 裁判结果依据法律条文 |
+| `leads_to` | `['Fact', 'DisputeFocus']` | `JudgmentResult` | `many_to_many` | 事实/争议焦点推导出裁判结果（三段论推理的结论链路） |
+| `matches_element` | `Fact` | `LegalProvisionElement` | `many_to_many` | 案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配） |
+| `plays_role` | `LegalSubject` | `LegalRole` | `many_to_many` | 主体在案件中担任角色 |
+| `prosecutes` | `Procuratorate` | `CourtCase` | `one_to_many` | 检察院公诉案件 |
+| `proves_fact` | `Evidence` | `Fact, DisputeFocus` | `many_to_many` | 证据证明案件事实/争议焦点 |
+| `represents` | `Attorney` | `LegalSubject` | `many_to_many` | 律师代理当事人 |
+| `resolved_by` | `DisputeFocus` | `LegalProvision` | `many_to_many` | 争议焦点由法律条文解决（争议焦点→法条映射） |
+| `retries_from` | `CourtCase` | `CourtCase` | `one_to_one` | 再审案件源自原审案件 |
+| `signed_by` | `LegalDocument` | `Judge` | `many_to_one` | 文书由法官签署 |
+| `submitted_for` | `Evidence` | `CourtCase` | `many_to_one` | 证据提交给案件 |
+| `superseded_by` | `LegalProvisionVersion` | `LegalProvisionVersion` | `one_to_one` | 旧版本被新版本替代 |
+| `tried_by` | `CourtCase` | `TrialOrganization` | `one_to_one` | 案件由审判组织审理 |
+| `typically_applies` | `CaseType` | `LegalProvision` | `many_to_many` | 案由典型适用的法律条文（用于法条补提和类案推荐） |
+| `undertakes` | `Judge` | `CourtCase` | `one_to_many` | 法官承办案件 |
+
+### 关系输出规则
+- `source_id` 和 `target_id` 必须引用本次 JSON 中真实出现的实体 id。
+- `relation_type` 必须严格使用上表中的本体关系名。
+- 优先输出文本中有明确依据的关系，避免为了凑数量臆造关系。
+- 如果某关系仅在字段层出现但未形成实体间连接，不要强行写入 relations。
 
 
 ## 输出 JSON Schema（自动生成 — 严格遵循此结构）
@@ -325,6 +401,30 @@
       "content": "",
       "applicable_fact_pattern": ""
     }
+  ],
+  "facts": [
+    {
+      "id": "fact_0",
+      "content": "",
+      "fact_type": "undisputed|disputed|to_be_proven",
+      "case_number": ""
+    }
+  ],
+  "dispute_focuses": [
+    {
+      "id": "focus_0",
+      "content": "",
+      "focus_type": "factual|legal|procedural|evidence",
+      "case_number": ""
+    }
+  ],
+  "relations": [
+    {
+      "source_id": "",
+      "target_id": "",
+      "relation_type": "appeals_to|applies_standard|based_on|belongs_to|cites|cites_guiding_case|employs|employs_attorney|guides_case_type|has_case_type|has_dispute_focus|has_fact|has_jurisdiction_over|has_summary|has_version|includes|includes_clerk|judgment_cites|leads_to|matches_element|plays_role|prosecutes|proves_fact|represents|resolved_by|retries_from|signed_by|submitted_for|superseded_by|tried_by|typically_applies|undertakes",
+      "description": "引用文本依据简述"
+    }
   ]
 }
 ```
@@ -333,24 +433,24 @@
 
 ## Few-shot 示例（民事案）
 
-> 案由: 民事-环境污染责任纠纷 | 入库编号: 2023-11-2-377-005 | 来源: 历史最佳解析（score=95）
+> 案由: 民事-网络侵权责任纠纷 | 入库编号: 2024-18-2-369-002 | 来源: 历史最佳解析（score=95.0）
 
 ### 输入案件文本
 ```
-【案由分类】民事-环境污染责任纠纷
+【案由分类】民事-网络侵权责任纠纷
 
-【入库编号】2023-11-2-377-005
+【入库编号】2024-18-2-369-002
 
 【审判程序】二审
 
 【案例层级】02
 
 【基本案情】
-重庆某农业开发公司诉称：2011年3月15日，四川某钻井大队与重庆某盐业公司签订钻井施工合同，负责“长平三井”钻前及钻井施工工作。期间，四川某钻井大队在长平三井钻井过程中产生的含盐特征等污水给重庆某农业开发公司农业基地造成了污染，尤其是受2011年11月下雨等因素影响，该含盐特征的污染物流入重庆某农业开发公司农业基地，致使重庆某农业开发公司遭受损失。2012年2月14日，经长寿区双龙镇人民政府主持调解，重庆某农业开发公司与四川某钻井大队签订《协议书》，由四川某钻井大队一次性支付重庆某农业开发公司50万元作为补偿。2012年4月至5月，即长平三井场地验收前，因四川某钻井大队处理、填埋钻井产生的污染物的措施不当，以及下雨等原因，再次对重庆某农业开发公司等数家农业基地造成污染。同年4月，重庆某盐业公司的长平二井配套管道发生泄漏，也对重庆某农业开发公司在内的农业基地造成严重污染。故请求判令：一、四川某钻井大队、重庆某盐业公司立即停止侵害，恢复被污染土地原状；二、赔偿原告2012年6月1日至2017年6月1日止的农产品损失129.92万元、土壤修复期间损失6.494万元；三、本案诉讼费由四川某钻井大队、重庆某盐业公司负担。　　重庆某盐业公司辩称：一、重庆某农业开发公司并非是涉案土地承包经营权人，其并非本案的适格主体；二、长平三井的污染、非法掩埋污染物等行为均发生在四川某钻井大队施工期间，并非
+原告宋某诉称，宋某系某网络游戏玩家，在游戏内与其他玩家就游戏道具分配问题产生矛盾。2022年4月，网络游戏主播叶某开设专场直播公开评述宋某与他人的游戏纠纷，吸引网络用户观看，导致网络用户在直播间内发表大量侮辱宋某的言论。宋某认为叶某的行为侵害其名誉权，且多次要求网络游戏直播平台删除前述直播回放未果，遂起诉要求叶某与网络游戏直播平台共同承担停止侵害、赔礼道歉、赔偿损失等侵权责任。　　被告叶某辩称，其作为案涉游戏主播，发布直播目的是为了调和游戏玩家矛盾，未使用侮辱、贬损性语言，未侵害宋某名誉权。网络用户的评论未涉及宋某真实身份信息，游戏角色是虚拟身份，对虚拟人物的评价不会导致现实生活中宋某社会评价的降低。　　被告广州某计算机系统有限公司辩称，宋某起诉前对平台直播回放的投诉不符合《平台直播侵权投诉指引》要求，不构成有效通知，被告亦无法判断案涉直播是否侵权，未实施侵权行为，无侵害宋某名誉的主观故意，不应承担侵权责任。　　法院经审理查明：宋某是某网络游戏玩家，叶某是该网络游戏主播，粉丝数逾30万。广州某计算机系统有限公司是游戏直播平台运营者。2022年4月某日晚，叶某以“全网爆料”“全服吃瓜”方式发布直播，吸引不特定网络用户观看及讨论宋某与游戏玩家间的纠纷。在叶某的引导下，直播间内出现大量侮辱、谩骂宋某的弹幕评论，叶某对此未加以提醒和制止。宋某多次就上述直播回放向平台致电举报，2022年5月
 ...（案情较长，已截断）
 
 【裁判理由】
-法院生效裁判认为：本案争议焦点为：一、重庆某农业开发公司作为原告提起本案诉讼，主体是否适格；二、涉案土地受污染损害的原因及损害后果认定；三、赔偿责任主体的确定及其责任承担方式。　　一、重庆某农业开发公司是否本案适格原告　　涉案土地虽由赵某某出面分别与重庆市长寿区双龙镇连丰村民委员会、双龙镇龙滩村民委员会签订《土地承包经营权租赁合同》，但签订合同后，该土地一直由其子韩某某成立的重庆某农业开发公司用于农业开发，在该租赁土地种植大棚蔬菜。审理中，各方对重庆某农业开发公司耕种该土地的事实无异议，赵某某作为重庆某农业开发公司的诉讼代理人也表示租赁涉案土地就是为其子韩某某成立公司进行农业开发。现该土地受到污染，重庆某农业开发公司作为土地的实际使用人遭受财产损失，其作为受害人，有权提起侵权赔偿。故重庆某农业开发公司在本案中作为原告起诉，主体适格。　　二、涉案土地受污染损害的原因及损害后果认定　　重庆某农
+法院生效裁判认为：游戏直播平台内容向不特定网络用户提供，属于网络公共空间。案涉直播明确指向特定游戏玩家的游戏行为，结合直播公开的游戏角色形象、游戏画面和游戏账号注册使用情况，能够确定宋某即是案涉直播评述的游戏玩家。主播叶某未了解纠纷全貌，仍利用自身热度，擅自开设专场直播，使用煽动、夸张言辞为直播间引流，违反直播平台严禁主播“引导用户拉踩引战、造谣攻击，实施网络暴力”的要求，制造宋某与其他游戏玩家的对立情绪，引导、放任网络用户对宋某进行侮辱、谩骂，该行为具有违法性，客观上造成宋某社会评价降低。叶某将载有宋某身份信息的诉讼文书违法向他人提供，亦加重了侵权行为的损害后果，叶某具有主观过错，应当依法承担侵害宋某名誉权的责任。　　游戏直播平台运营者并非案涉网络游戏运营方，不知晓游戏用户真实身份，亦难以实时监控直播弹幕跟帖情况，故不足以认定存在“知道或应当知道”侵权行为发生的情形。宋某向直播平台客服电
 ...（裁判理由较长，已截断）
 ```
 
@@ -358,30 +458,30 @@
 ```json
 {
   "guiding_case": {
-    "guiding_case_name": "重庆某农业开发公司诉四川某钻井大队、重庆某盐业公司环境污染责任纠纷案",
-    "publication_date": "2017-06-21",
+    "guiding_case_name": "宋某诉叶某、广州某计算机系统有限公司网络侵权责任纠纷案",
+    "publication_date": "2022-11-18",
     "binding_force": "persuasive",
-    "guiding_points": "在无意思联络数人环境侵权案件中，存在多个污染源头和多次污染行为时，可从空间和时间两个维度入手，结合自然规律、地域区位等因素认定单次污染行为与损害后果的因果关系。当事人之间就单次环境污染的损害后果达成的赔偿协议并不免除侵权人应当承担的修复责任。",
+    "guiding_points": "网络主播在提供网络表演及视听节目服务过程中，引导、放任众多网络用户在直播间内谩骂、侮辱他人，致使他人名誉权遭受侵害的，网络主播应当依法承担侵权责任。",
     "case_level": "typical_case",
-    "storage_no": "2023-11-2-377-005"
+    "storage_no": "2024-18-2-369-002"
   },
   "case_type": {
     "category": "civil",
     "level1": "民事",
-    "level2": "环境污染责任纠纷"
+    "level2": "网络侵权责任纠纷"
   },
   "court_cases": [
     {
-      "case_number": "(2016)渝0112民初3377号",
-      "filing_date": "2016-01-01",
+      "case_number": "(2022)粤0192民初9098号",
+      "filing_date": "2022-01-01",
       "trial_level": "first_instance",
       "trial_procedure": "一审",
       "dispute_resolution_type": "litigation",
       "party_count": null
     },
     {
-      "case_number": "(2016)渝01民终8972号",
-      "filing_date": "2016-01-01",
+      "case_number": "(2022)粤01民终21935号",
+      "filing_date": "2022-01-01",
       "trial_level": "second_instance",
       "trial_procedure": "二审",
       "dispute_resolution_type": "litigation",
@@ -390,50 +490,50 @@
   ],
   "legal_subjects": [
     {
-      "name": "重庆某农业开发公司",
-      "subject_type": "organization",
+      "name": "宋某",
+      "subject_type": "natural_person",
       "roles": [
         {
           "role_code": "plaintiff",
           "role_name": "原告",
-          "case_number": "(2016)渝0112民初3377号"
+          "case_number": "(2022)粤0192民初9098号"
+        },
+        {
+          "role_code": "appellant",
+          "role_name": "上诉人",
+          "case_number": "(2022)粤01民终21935号"
+        }
+      ]
+    },
+    {
+      "name": "叶某",
+      "subject_type": "natural_person",
+      "roles": [
+        {
+          "role_code": "defendant",
+          "role_name": "被告",
+          "case_number": "(2022)粤0192民初9098号"
         },
         {
           "role_code": "appellee",
           "role_name": "被上诉人",
-          "case_number": "(2016)渝01民终8972号"
+          "case_number": "(2022)粤01民终21935号"
         }
       ]
     },
     {
-      "name": "四川某钻井大队",
+      "name": "广州某计算机系统有限公司",
       "subject_type": "organization",
       "roles": [
         {
           "role_code": "defendant",
           "role_name": "被告",
-          "case_number": "(2016)渝0112民初3377号"
+          "case_number": "(2022)粤0192民初9098号"
         },
         {
-          "role_code": "appellant",
-          "role_name": "上诉人",
-          "case_number": "(2016)渝01民终8972号"
-        }
-      ]
-    },
-    {
-      "name": "重庆某盐业公司",
-      "subject_type": "organization",
-      "roles": [
-        {
-          "role_code": "defendant",
-          "role_name": "被告",
-          "case_number": "(2016)渝0112民初3377号"
-        },
-        {
-          "role_code": "appellant",
-          "role_name": "上诉人",
-          "case_number": "(2016)渝01民终8972号"
+          "role_code": "appellee",
+          "role_name": "被上诉人",
+          "case_number": "(2022)粤01民终21935号"
         }
       ]
     }
@@ -441,7 +541,7 @@
   "legal_provisions": [
     {
       "statute": "中华人民共和国民法典",
-      "article": "1229",
+      "article": "1024",
       "paragraph": "",
       "item": "",
       "citation_position": "related_law",
@@ -449,31 +549,7 @@
     },
     {
       "statute": "中华人民共和国民法典",
-      "article": "1230",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_law",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国侵权责任法",
-      "article": "12",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_law",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国侵权责任法",
-      "article": "65",
-      "paragraph": "",
-      "item": "",
-      "citation_position": "related_law",
-      "citation_purpose": "适用依据"
-    },
-    {
-      "statute": "中华人民共和国侵权责任法",
-      "article": "66",
+      "article": "1194",
       "paragraph": "",
       "item": "",
       "citation_position": "related_law",
@@ -482,15 +558,9 @@
   ],
   "evidence": [
     {
-      "evidence_type": "expert_opinion",
-      "is_key_evidence": true,
-      "admission_status": "admitted",
-      "examination_status": "examined",
-      "expert_institution": "西南大学司法鉴定所",
-      "expert_conclusion": "涉案土地存在污染，主要污染物为氯、全盐量、钠、硫等；重庆某农业开发公司受污染面积37.12亩，财产损害27.67万元，修复费用9.848万元。"
-    },
-    {
-      "evidence_type": "documentary",
+      "content": "叶某在游戏直播平台发布的专场直播视频回放，内容为公开评述宋某与他人游戏纠纷，并出现大量侮辱、谩骂宋某的弹幕评论。",
+      "evidence_type": "audio_visual",
+      "submitted_by": "宋某",
       "is_key_evidence": true,
       "admission_status": "admitted",
       "examination_status": "examined",
@@ -498,7 +568,19 @@
       "expert_conclusion": ""
     },
     {
+      "content": "宋某致电直播平台客服的投诉记录，要求删除侵权直播回放。",
+      "evidence_type": "electronic_data",
+      "submitted_by": "宋某",
+      "is_key_evidence": false,
+      "admission_status": "admitted",
+      "examination_status": "examined",
+      "expert_institution": "",
+      "expert_conclusion": ""
+    },
+    {
+      "content": "叶某违法向他人提供的载有宋某身份信息的诉讼文书，证明叶某加重侵权的行为。",
       "evidence_type": "documentary",
+      "submitted_by": "宋某",
       "is_key_evidence": false,
       "admission_status": "admitted",
       "examination_status": "examined",
@@ -509,48 +591,132 @@
   "judgment_results": [
     {
       "result_type": "liable",
-      "specific_judgment": "一、撤销重庆市渝北区人民法院（2016）渝0112号民事判决；二、重庆某盐业公司和四川某钻井大队针对被污染土地进行修复，如未修复，则由重庆某盐业公司承担3.94万元，四川某钻井大队承担5.908万元；三、重庆某盐业公司支付土壤修复期间产出损害2.597万元及农产品减产损失，四川某钻井大队支付土壤修复期间产出损害2.597万元及农产品减产损失；四、驳回原告重庆某农业开发公司其他诉讼请求。",
-      "reasoning": "涉案土地受污染系长平二井及长平三井两个污染源共同作用所致。长平二井由重庆某盐业公司所有及管理，其应对管道泄漏导致的污染承担赔偿责任；长平三井的两次污染均发生在四川某钻井大队施工期间，应由其承担赔偿责任。根据鉴定报告及地理位置，酌定长平三井原因力60%，长平二井原因力40%。长平三井第一次污染已赔偿，第二次污染原因力占60%，故四川某钻井大队承担总损害60%×60%=36%，重庆某盐业公司承担40%。修复责任不因赔偿协议免除。",
+      "specific_judgment": "一、叶某于判决发生法律效力之日起十五日内，使用某直播平台主播账号以直播的方式向宋某公开赔礼道歉，致歉内容须事先经法院审查，直播回放保留天数不少于15日；二、叶某于判决发生法律效力之日起十五日内向宋某赔偿精神损害抚慰金2万元；三、驳回宋某的其他诉讼请求。",
+      "reasoning": "叶某作为网络主播，在直播中引导、放任网络用户对宋某进行侮辱谩骂，具有主观过错，其行为侵害了宋某的名誉权，应承担侵权责任；游戏直播平台在接到投诉后已及时删除直播回放，并在诉讼中提供了侵权用户信息，已履行法定义务，不承担侵权责任。",
+      "cost_allocation": ""
+    },
+    {
+      "result_type": "dismissed",
+      "specific_judgment": "驳回上诉，维持原判。",
+      "reasoning": "游戏直播平台内容向不特定网络用户提供，属于网络公共空间。案涉直播明确指向特定游戏玩家的游戏行为，结合直播公开的游戏角色形象、游戏画面和游戏账号注册使用情况，能够确定宋某即是案涉直播评述的游戏玩家。主播叶某未了解纠纷全貌，仍利用自身热度，擅自开设专场直播，使用煽动、夸张言辞为直播间引流，违反直播平台严禁主播“引导用户拉踩引战、造谣攻击，实施网络暴力”的要求，制造宋某与其他游戏玩家的对立情绪，引导、放任网络用户对宋某进行侮辱、谩骂，该行为具有违法性，客观上造成宋某社会评价降低。叶某将载有宋某身份信息的诉讼文书违法向他人提供，亦加重了侵权行为的损害后果，叶某具有主观过错，应当依法承担侵害宋某名誉权的责任。游戏直播平台运营者并非案涉网络游戏运营方，不知晓游戏用户真实身份，亦难以实时监控直播弹幕跟帖情况，故不足以认定存在“知道或应当知道”侵权行为发生的情形。宋某向直播平台客服电话投诉时未提供构成侵权的初步证据及权利人的真实身份信息，且直播平台在宋某起诉后提供了侵权用户身份信息，并删除被诉直播回放，未违反平台的法定义务，依法不承担侵权责任。",
       "cost_allocation": ""
     }
   ],
   "case_summary": {
-    "key_facts": "四川某钻井大队在施工长平三井过程中两次污染重庆某农业开发公司土地，重庆某盐业公司的长平二井管道泄漏亦造成污染。2012年2月14日双方就第一次污染达成50万元赔偿协议。鉴定报告认定污染面积37.12亩，财产损害27.67万元，修复费用9.848万元。各方对鉴定报告无异议。",
-    "disputed_issues": "1. 重庆某农业开发公司是否为适格原告；2. 涉案土地污染原因及损害后果认定；3. 赔偿责任主体及责任承担方式，特别是两次污染行为的原因力划分及赔偿协议是否免除修复责任。",
-    "conclusion": "二审法院认定重庆某农业开发公司为适格原告，污染由长平二井和长平三井共同造成，酌定长平三井原因力60%，长平二井40%。四川某钻井大队对长平三井第二次污染承担36%责任，重庆某盐业公司承担40%责任。赔偿协议不免除修复责任。",
-    "claim_amount": "129.92万元",
-    "judgment_amount": "27.67万元"
+    "key_facts": "宋某系网络游戏玩家，叶某系粉丝逾30万的游戏主播。2022年4月，叶某开设专场直播公开评述宋某与他人游戏纠纷，引导、放任网络用户发表大量侮辱、谩骂宋某的弹幕评论。宋某要求直播平台删除回放未果后起诉。叶某还在诉讼中违法提供载有宋某身份信息的文书，加重损害。一审判决叶某赔礼道歉并赔偿精神损害抚慰金2万元，驳回其他请求。宋某上诉，二审维持。",
+    "disputed_issues": "1. 叶某的行为是否侵害宋某名誉权；2. 游戏直播平台是否应当承担侵权责任。",
+    "conclusion": "二审法院认定叶某作为网络主播，在直播中引导、放任网络用户侮辱宋某，侵害其名誉权，应承担侵权责任；直播平台已及时采取必要措施且无主观过错，不承担侵权责任。据此驳回上诉，维持原判。",
+    "claim_amount": "",
+    "judgment_amount": "2万元"
   },
   "legal_provision_elements": [
     {
       "statute": "中华人民共和国民法典",
-      "article": "1229",
-      "element_type": "legal_consequence",
+      "article": "1024",
+      "element_type": "subject_element",
       "provision_index": 0
     },
     {
       "statute": "中华人民共和国民法典",
-      "article": "1230",
-      "element_type": "exception_clause",
+      "article": "1024",
+      "element_type": "act_element",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1024",
+      "element_type": "result_element",
+      "provision_index": 0
+    },
+    {
+      "statute": "中华人民共和国民法典",
+      "article": "1194",
+      "element_type": "subject_element",
       "provision_index": 1
     },
     {
-      "statute": "中华人民共和国侵权责任法",
-      "article": "12",
+      "statute": "中华人民共和国民法典",
+      "article": "1194",
       "element_type": "legal_consequence",
-      "provision_index": 2
+      "provision_index": 1
+    }
+  ],
+  "facts": [
+    {
+      "id": "",
+      "content": "",
+      "fact_type": "undisputed",
+      "case_number": ""
     },
     {
-      "statute": "中华人民共和国侵权责任法",
-      "article": "65",
-      "element_type": "legal_consequence",
-      "provision_index": 3
+      "id": "",
+      "content": "",
+      "fact_type": "undisputed",
+      "case_number": ""
     },
     {
-      "statute": "中华人民共和国侵权责任法",
-      "article": "66",
-      "element_type": "exception_clause",
-      "provision_index": 4
+      "id": "",
+      "content": "",
+      "fact_type": "undisputed",
+      "case_number": ""
+    },
+    {
+      "id": "",
+      "content": "",
+      "fact_type": "undisputed",
+      "case_number": ""
+    }
+  ],
+  "dispute_focuses": [
+    {
+      "id": "",
+      "content": "",
+      "focus_type": "",
+      "case_number": ""
+    },
+    {
+      "id": "",
+      "content": "",
+      "focus_type": "",
+      "case_number": ""
+    }
+  ],
+  "relations": [
+    {
+      "source_id": "evidence_0",
+      "target_id": "fact_1",
+      "relation_type": "proves_fact",
+      "description": ""
+    },
+    {
+      "source_id": "evidence_1",
+      "target_id": "fact_2",
+      "relation_type": "proves_fact",
+      "description": ""
+    },
+    {
+      "source_id": "evidence_2",
+      "target_id": "fact_3",
+      "relation_type": "proves_fact",
+      "description": ""
+    },
+    {
+      "source_id": "fact_1",
+      "target_id": "dispute_focus_0",
+      "relation_type": "has_dispute_focus",
+      "description": ""
+    },
+    {
+      "source_id": "fact_2",
+      "target_id": "dispute_focus_1",
+      "relation_type": "has_dispute_focus",
+      "description": ""
+    },
+    {
+      "source_id": "dispute_focus_0",
+      "target_id": "judgment_result_1",
+      "relation_type": "resolved_by",
+      "description": ""
     }
   ]
 }

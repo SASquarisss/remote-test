@@ -1,0 +1,55 @@
+{
+  "prompt_file": "ontology/prompts/auto_v5_civil.txt",
+  "prompt_sha1": "0a822e67939c026e94c552e79185c971e9d7d828",
+  "few_shot": {
+    "row_id": "2478",
+    "score": 95.0,
+    "quality": 256.0,
+    "case_type": "民事-网络侵权责任纠纷",
+    "file": "extracted_candidate_structured_v1.jsonl",
+    "details": {
+      "provisions": 2,
+      "cases": 2,
+      "subjects": 3,
+      "evidence": 3,
+      "results": 2,
+      "key_facts": true,
+      "disputed": true,
+      "conclusion": true,
+      "facts": 4,
+      "focuses": 2,
+      "relations": 9,
+      "relation_types": 4,
+      "graph_ready": true,
+      "rich_graph": true
+    },
+    "overall_coverage": {
+      "present_entities": [
+        "CaseSummary",
+        "CaseType",
+        "CourtCase",
+        "DisputeFocus",
+        "Evidence",
+        "Fact",
+        "GuidingCase",
+        "JudgmentResult",
+        "LegalProvision",
+        "LegalProvisionElement",
+        "LegalSubject"
+      ],
+      "relation_types": [
+        "based_on",
+        "has_dispute_focus",
+        "proves_fact",
+        "resolved_by"
+      ]
+    },
+    "change_coverage": {
+      "covered_entities": [],
+      "missing_entities": [],
+      "covered_relations": [],
+      "missing_relations": [],
+      "field_status": {}
+    }
+  }
+}

@@ -1,0 +1,2399 @@
+{
+  "generated_at": "2026-05-17T16:04:51+00:00",
+  "ontology_path": "ontology/schemas/legal_ontology_v2.yaml",
+  "ontology_summary": {
+    "entities": {
+      "Attorney": {
+        "parent": "Person",
+        "required": [
+          "law_firm_id",
+          "license_number"
+        ],
+        "optional": [
+          "bar_association",
+          "specialization"
+        ],
+        "fields": [
+          [
+            "bar_association",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "law_firm_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "license_number",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "specialization",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "CaseParticipant": {
+        "parent": "JudicialEntity",
+        "required": [
+          "case_id",
+          "role_code"
+        ],
+        "optional": [
+          "is_primary",
+          "role_name",
+          "subject_id",
+          "trial_level"
+        ],
+        "fields": [
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "is_primary",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "role_code",
+            {
+              "required": true,
+              "enum_values": [
+                "plaintiff",
+                "defendant",
+                "third_party",
+                "witness",
+                "agent",
+                "expert_witness",
+                "interpreter",
+                "prosecutor",
+                "applicant",
+                "respondent",
+                "relator",
+                "appellant",
+                "appellee",
+                "retrial_applicant",
+                "retrial_respondent",
+                "mediator",
+                "arbitrator",
+                "beneficiary",
+                "victim",
+                "criminal_defendant",
+                "enforcement_applicant",
+                "enforcement_respondent",
+                "judicial_review_applicant",
+                "insolvency_debtor",
+                "surety",
+                "class_representative"
+              ]
+            }
+          ],
+          [
+            "role_name",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "subject_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "trial_level",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "CaseSummary": {
+        "parent": "JudicialEntity",
+        "required": [
+          "case_id"
+        ],
+        "optional": [
+          "amount_involved",
+          "claim_amount",
+          "conclusion",
+          "disputed_issues",
+          "fact_vector",
+          "issue_tags",
+          "judgment_amount",
+          "key_facts",
+          "sentencing_referral_id"
+        ],
+        "fields": [
+          [
+            "amount_involved",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "claim_amount",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "conclusion",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "disputed_issues",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "fact_vector",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "issue_tags",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "judgment_amount",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "key_facts",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "sentencing_referral_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "CaseType": {
+        "parent": "LegalNorm",
+        "required": [
+          "category",
+          "code",
+          "level1",
+          "level2"
+        ],
+        "optional": [
+          "description",
+          "typical_provision_ids"
+        ],
+        "fields": [
+          [
+            "category",
+            {
+              "required": true,
+              "enum_values": [
+                "civil",
+                "criminal",
+                "administrative",
+                "ip",
+                "execution",
+                "state_compensation"
+              ]
+            }
+          ],
+          [
+            "code",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "description",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "level1",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "level2",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "typical_provision_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Clerk": {
+        "parent": "Person",
+        "required": [
+          "court_id"
+        ],
+        "optional": [
+          "position"
+        ],
+        "fields": [
+          [
+            "court_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "position",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Court": {
+        "parent": "Organization",
+        "required": [
+          "court_level",
+          "district_id"
+        ],
+        "optional": [
+          "chambers",
+          "jurisdiction_area"
+        ],
+        "fields": [
+          [
+            "chambers",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "court_level",
+            {
+              "required": true,
+              "enum_values": [
+                "supreme",
+                "high",
+                "intermediate",
+                "basic",
+                "special"
+              ]
+            }
+          ],
+          [
+            "district_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "jurisdiction_area",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "CourtCase": {
+        "parent": "JudicialEntity",
+        "required": [
+          "case_type_id",
+          "court_id",
+          "filing_date",
+          "status",
+          "trial_level"
+        ],
+        "optional": [
+          "case_number",
+          "cause_of_action",
+          "claim_amount",
+          "dispute_resolution_type",
+          "first_instance_case_number",
+          "party_count",
+          "related_cases",
+          "source_text_hash",
+          "source_text_path",
+          "summary"
+        ],
+        "fields": [
+          [
+            "case_number",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_type_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "cause_of_action",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "claim_amount",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "court_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "dispute_resolution_type",
+            {
+              "required": false,
+              "enum_values": [
+                "litigation",
+                "mediation",
+                "arbitration",
+                "judicial_aid",
+                "administrative_review"
+              ]
+            }
+          ],
+          [
+            "filing_date",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "first_instance_case_number",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "party_count",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "related_cases",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "source_text_hash",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "source_text_path",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "status",
+            {
+              "required": true,
+              "enum_values": [
+                "filing",
+                "trial",
+                "judged",
+                "effective",
+                "appealed",
+                "retried",
+                "executing",
+                "terminated"
+              ]
+            }
+          ],
+          [
+            "summary",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "trial_level",
+            {
+              "required": true,
+              "enum_values": [
+                "first_instance",
+                "second_instance",
+                "retrial"
+              ]
+            }
+          ]
+        ]
+      },
+      "DisputeFocus": {
+        "parent": "JudicialEntity",
+        "required": [],
+        "optional": [
+          "canonical_template_id",
+          "case_id",
+          "content",
+          "focus_category_id",
+          "resolution_logic",
+          "resolved_by_provision_ids"
+        ],
+        "fields": [
+          [
+            "canonical_template_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "content",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "focus_category_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "resolution_logic",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "resolved_by_provision_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "District": {
+        "parent": "JudicialEntity",
+        "required": [
+          "code",
+          "name"
+        ],
+        "optional": [
+          "administrative_level",
+          "parent_district_id"
+        ],
+        "fields": [
+          [
+            "administrative_level",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "code",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "name",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "parent_district_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Evidence": {
+        "parent": "JudicialEntity",
+        "required": [],
+        "optional": [
+          "admission_status",
+          "case_id",
+          "chain_of_custody",
+          "description",
+          "evidence_type",
+          "examination_status",
+          "expert_conclusion",
+          "expert_institution",
+          "file_path",
+          "submission_date",
+          "submitter_id"
+        ],
+        "fields": [
+          [
+            "admission_status",
+            {
+              "required": false,
+              "enum_values": [
+                "admitted",
+                "not_admitted"
+              ]
+            }
+          ],
+          [
+            "case_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "chain_of_custody",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "description",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "evidence_type",
+            {
+              "required": false,
+              "enum_values": [
+                "documentary",
+                "physical",
+                "audio_visual",
+                "electronic_data",
+                "witness_testimony",
+                "party_statement",
+                "expert_opinion",
+                "inspection_record"
+              ]
+            }
+          ],
+          [
+            "examination_status",
+            {
+              "required": false,
+              "enum_values": [
+                "not_examined",
+                "examined"
+              ]
+            }
+          ],
+          [
+            "expert_conclusion",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "expert_institution",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "file_path",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "submission_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "submitter_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "ExecutionInfo": {
+        "parent": "JudicialEntity",
+        "required": [],
+        "optional": [
+          "case_id",
+          "completion_date",
+          "execution_amount",
+          "execution_court_id",
+          "execution_measures",
+          "execution_status"
+        ],
+        "fields": [
+          [
+            "case_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "completion_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "execution_amount",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "execution_court_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "execution_measures",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "execution_status",
+            {
+              "required": false,
+              "enum_values": [
+                "pending",
+                "in_progress",
+                "completed",
+                "terminated"
+              ]
+            }
+          ]
+        ]
+      },
+      "ExpertInstitution": {
+        "parent": "Organization",
+        "required": [
+          "accreditation_number",
+          "expertise_fields"
+        ],
+        "optional": [
+          "accreditation_authority",
+          "validity_period"
+        ],
+        "fields": [
+          [
+            "accreditation_authority",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "accreditation_number",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "expertise_fields",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "validity_period",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Fact": {
+        "parent": "JudicialEntity",
+        "required": [],
+        "optional": [
+          "case_id",
+          "content",
+          "fact_type",
+          "proven_by_evidence_ids"
+        ],
+        "fields": [
+          [
+            "case_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "content",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "fact_type",
+            {
+              "required": false,
+              "enum_values": [
+                "undisputed",
+                "disputed",
+                "to_be_proven"
+              ]
+            }
+          ],
+          [
+            "proven_by_evidence_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "GuidingCase": {
+        "parent": "LegalNorm",
+        "required": [
+          "binding_force",
+          "guiding_case_number",
+          "guiding_points",
+          "issuing_court_id",
+          "publication_date"
+        ],
+        "optional": [
+          "guiding_points_vector",
+          "related_case_type_ids"
+        ],
+        "fields": [
+          [
+            "binding_force",
+            {
+              "required": true,
+              "enum_values": [
+                "mandatory",
+                "persuasive",
+                "reference"
+              ]
+            }
+          ],
+          [
+            "guiding_case_number",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "guiding_points",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "guiding_points_vector",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "issuing_court_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "publication_date",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "related_case_type_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Judge": {
+        "parent": "Person",
+        "required": [
+          "court_id",
+          "position"
+        ],
+        "optional": [
+          "appointment_date",
+          "judge_level"
+        ],
+        "fields": [
+          [
+            "appointment_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "court_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "judge_level",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "position",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "JudgmentResult": {
+        "parent": "JudicialEntity",
+        "required": [
+          "case_id",
+          "result_type"
+        ],
+        "optional": [
+          "compensation_amount",
+          "cost_allocation",
+          "effective_date",
+          "judgment_date",
+          "reasoning",
+          "sentence_term",
+          "sentencing_standard_id"
+        ],
+        "fields": [
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "compensation_amount",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "cost_allocation",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "effective_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "judgment_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "reasoning",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "result_type",
+            {
+              "required": true,
+              "enum_values": [
+                "guilty",
+                "not_guilty",
+                "liable",
+                "not_liable",
+                "dismissed",
+                "withdrawn",
+                "partially_upheld",
+                "remanded",
+                "punitive_damages",
+                "procedural_ruling",
+                "bankruptcy_declared",
+                "mediation_agreement",
+                "arbitration_award",
+                "administrative_decision"
+              ]
+            }
+          ],
+          [
+            "sentence_term",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "sentencing_standard_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "JudicialEntity": {
+        "parent": null,
+        "required": [
+          "create_time",
+          "desensitize",
+          "id",
+          "name",
+          "source",
+          "update_time"
+        ],
+        "optional": [],
+        "fields": [
+          [
+            "create_time",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "desensitize",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "name",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "source",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "update_time",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Law": {
+        "parent": "LegalNorm",
+        "required": [
+          "document_number",
+          "effective_date",
+          "enactment_date",
+          "law_level",
+          "name",
+          "status"
+        ],
+        "optional": [
+          "legislative_purpose",
+          "repealed_date"
+        ],
+        "fields": [
+          [
+            "document_number",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "effective_date",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "enactment_date",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "law_level",
+            {
+              "required": true,
+              "enum_values": [
+                "constitution",
+                "basic_law",
+                "ordinary_law",
+                "administrative_regulation",
+                "local_regulation",
+                "self_governing_regulation",
+                "military_regulation",
+                "judicial_interpretation",
+                "department_rule",
+                "normative_document"
+              ]
+            }
+          ],
+          [
+            "legislative_purpose",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "name",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "repealed_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "status",
+            {
+              "required": true,
+              "enum_values": [
+                "effective",
+                "amended",
+                "repealed"
+              ]
+            }
+          ]
+        ]
+      },
+      "LawFirm": {
+        "parent": "Organization",
+        "required": [
+          "firm_type",
+          "license_number"
+        ],
+        "optional": [
+          "partners",
+          "practice_areas"
+        ],
+        "fields": [
+          [
+            "firm_type",
+            {
+              "required": true,
+              "enum_values": [
+                "partnership",
+                "limited_liability",
+                "sole_practitioner"
+              ]
+            }
+          ],
+          [
+            "license_number",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "partners",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "practice_areas",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "LegalDocument": {
+        "parent": "JudicialEntity",
+        "required": [],
+        "optional": [
+          "case_id",
+          "content",
+          "content_hash",
+          "creation_date",
+          "document_number",
+          "document_type",
+          "file_path",
+          "issuing_court_id",
+          "signed_by_judge_id"
+        ],
+        "fields": [
+          [
+            "case_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "content",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "content_hash",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "creation_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "document_number",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "document_type",
+            {
+              "required": false,
+              "enum_values": [
+                "judgment",
+                "ruling",
+                "mediation",
+                "order",
+                "notice",
+                "indictment",
+                "petition"
+              ]
+            }
+          ],
+          [
+            "file_path",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "issuing_court_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "signed_by_judge_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "LegalNorm": {
+        "parent": null,
+        "required": [
+          "create_time",
+          "desensitize",
+          "id",
+          "name",
+          "source",
+          "update_time"
+        ],
+        "optional": [],
+        "fields": [
+          [
+            "create_time",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "desensitize",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "name",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "source",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "update_time",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "LegalProvision": {
+        "parent": "LegalNorm",
+        "required": [
+          "article"
+        ],
+        "optional": [
+          "content",
+          "item",
+          "law_id",
+          "legislative_purpose",
+          "paragraph",
+          "references",
+          "related_provisions",
+          "repealed_date",
+          "status"
+        ],
+        "fields": [
+          [
+            "article",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "content",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "item",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "law_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "legislative_purpose",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "paragraph",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "references",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "related_provisions",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "repealed_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "status",
+            {
+              "required": false,
+              "enum_values": [
+                "effective",
+                "amended",
+                "repealed"
+              ]
+            }
+          ]
+        ]
+      },
+      "LegalProvisionElement": {
+        "parent": null,
+        "required": [
+          "element_type",
+          "provision_id"
+        ],
+        "optional": [
+          "applicable_fact_pattern",
+          "content"
+        ],
+        "fields": [
+          [
+            "applicable_fact_pattern",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "content",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "element_type",
+            {
+              "required": true,
+              "enum_values": [
+                "subject_element",
+                "object_element",
+                "act_element",
+                "result_element",
+                "causality_element",
+                "subjective_element",
+                "legal_consequence",
+                "exception_clause"
+              ]
+            }
+          ],
+          [
+            "provision_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "LegalProvisionVersion": {
+        "parent": "LegalNorm",
+        "required": [],
+        "optional": [
+          "amendment_reason",
+          "content",
+          "provision_id",
+          "status",
+          "superseded_by_version_id",
+          "version_date"
+        ],
+        "fields": [
+          [
+            "amendment_reason",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "content",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "provision_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "status",
+            {
+              "required": false,
+              "enum_values": [
+                "effective",
+                "amended",
+                "repealed"
+              ]
+            }
+          ],
+          [
+            "superseded_by_version_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "version_date",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "LegalRole": {
+        "parent": "JudicialEntity",
+        "required": [
+          "code",
+          "name"
+        ],
+        "optional": [
+          "description",
+          "permissions"
+        ],
+        "fields": [
+          [
+            "code",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "description",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "name",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "permissions",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "LegalSubject": {
+        "parent": null,
+        "required": [
+          "create_time",
+          "desensitize",
+          "id",
+          "name",
+          "source",
+          "update_time"
+        ],
+        "optional": [],
+        "fields": [
+          [
+            "create_time",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "desensitize",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "name",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "source",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "update_time",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Organization": {
+        "parent": "LegalSubject",
+        "required": [
+          "org_type"
+        ],
+        "optional": [
+          "business_scope",
+          "credit_code",
+          "legal_name_alias",
+          "legal_representative",
+          "registered_capital"
+        ],
+        "fields": [
+          [
+            "business_scope",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "credit_code",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "legal_name_alias",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "legal_representative",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "org_type",
+            {
+              "required": true,
+              "enum_values": [
+                "company",
+                "government_agency",
+                "ngo",
+                "law_firm",
+                "expert_institution",
+                "court",
+                "procuratorate",
+                "individual_business",
+                "partnership",
+                "sole_proprietorship"
+              ]
+            }
+          ],
+          [
+            "registered_capital",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "Person": {
+        "parent": null,
+        "required": [],
+        "optional": [],
+        "fields": []
+      },
+      "Procuratorate": {
+        "parent": "Organization",
+        "required": [
+          "district_id",
+          "procuratorate_level"
+        ],
+        "optional": [
+          "departments"
+        ],
+        "fields": [
+          [
+            "departments",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "district_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "procuratorate_level",
+            {
+              "required": true,
+              "enum_values": [
+                "supreme",
+                "provincial",
+                "municipal",
+                "district"
+              ]
+            }
+          ]
+        ]
+      },
+      "Prosecutor": {
+        "parent": "Person",
+        "required": [
+          "position",
+          "procuratorate_id"
+        ],
+        "optional": [],
+        "fields": [
+          [
+            "position",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "procuratorate_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "SentencingStandard": {
+        "parent": "LegalNorm",
+        "required": [
+          "applicable_provision_id",
+          "case_type_id",
+          "sentence_range_max",
+          "sentence_range_min",
+          "sentence_unit",
+          "standard_type"
+        ],
+        "optional": [
+          "circumstance_levels",
+          "measurement_formula",
+          "region_id",
+          "valid_from",
+          "valid_to"
+        ],
+        "fields": [
+          [
+            "applicable_provision_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_type_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "circumstance_levels",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "measurement_formula",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "region_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "sentence_range_max",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "sentence_range_min",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "sentence_unit",
+            {
+              "required": true,
+              "enum_values": [
+                "month",
+                "year",
+                "yuan",
+                "percent"
+              ]
+            }
+          ],
+          [
+            "standard_type",
+            {
+              "required": true,
+              "enum_values": [
+                "criminal_sentence",
+                "civil_compensation",
+                "administrative_penalty"
+              ]
+            }
+          ],
+          [
+            "valid_from",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "valid_to",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
+      "TrialOrganization": {
+        "parent": "JudicialEntity",
+        "required": [
+          "case_id",
+          "organization_type"
+        ],
+        "optional": [
+          "clerk_id",
+          "judge_ids",
+          "presiding_judge_id"
+        ],
+        "fields": [
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "clerk_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "judge_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "organization_type",
+            {
+              "required": true,
+              "enum_values": [
+                "sole_judge",
+                "collegiate_bench",
+                "judicial_committee"
+              ]
+            }
+          ],
+          [
+            "presiding_judge_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      }
+    },
+    "relations": {
+      "appeals_to": {
+        "from_type": "CourtCase",
+        "to_type": "CourtCase",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "applies_standard": {
+        "from_type": "CourtCase",
+        "to_type": "SentencingStandard",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "based_on": {
+        "from_type": "ExecutionInfo",
+        "to_type": "JudgmentResult",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "belongs_to": {
+        "from_type": "LegalProvision",
+        "to_type": "Law",
+        "cardinality": "many_to_one",
+        "attributes": []
+      },
+      "cites": {
+        "from_type": "CourtCase",
+        "to_type": "LegalProvision",
+        "cardinality": "many_to_many",
+        "attributes": [
+          "citation_position",
+          "citation_purpose",
+          "context"
+        ]
+      },
+      "cites_guiding_case": {
+        "from_type": "CourtCase",
+        "to_type": "GuidingCase",
+        "cardinality": "many_to_many",
+        "attributes": [
+          "citation_purpose",
+          "similarity_score"
+        ]
+      },
+      "employs": {
+        "from_type": "Procuratorate",
+        "to_type": "Prosecutor",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "employs_attorney": {
+        "from_type": "LawFirm",
+        "to_type": "Attorney",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "guides_case_type": {
+        "from_type": "GuidingCase",
+        "to_type": "CaseType",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "has_case_type": {
+        "from_type": "CourtCase",
+        "to_type": "CaseType",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "has_dispute_focus": {
+        "from_type": "CourtCase",
+        "to_type": "DisputeFocus",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "has_fact": {
+        "from_type": "CourtCase",
+        "to_type": "Fact",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "has_jurisdiction_over": {
+        "from_type": "Court",
+        "to_type": "District",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "has_summary": {
+        "from_type": "CourtCase",
+        "to_type": "CaseSummary",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "has_version": {
+        "from_type": "LegalProvision",
+        "to_type": "LegalProvisionVersion",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "includes": {
+        "from_type": "TrialOrganization",
+        "to_type": "Judge",
+        "cardinality": "one_to_many",
+        "attributes": [
+          "is_presiding"
+        ]
+      },
+      "includes_clerk": {
+        "from_type": "TrialOrganization",
+        "to_type": "Clerk",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "judgment_cites": {
+        "from_type": "JudgmentResult",
+        "to_type": "LegalProvision",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "leads_to": {
+        "from_type": [
+          "Fact",
+          "DisputeFocus"
+        ],
+        "to_type": "JudgmentResult",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "matches_element": {
+        "from_type": "Fact",
+        "to_type": "LegalProvisionElement",
+        "cardinality": "many_to_many",
+        "attributes": [
+          "match_reasoning",
+          "match_score"
+        ]
+      },
+      "plays_role": {
+        "from_type": "LegalSubject",
+        "to_type": "LegalRole",
+        "cardinality": "many_to_many",
+        "attributes": [
+          "case_id",
+          "end_time",
+          "role_description",
+          "start_time"
+        ]
+      },
+      "prosecutes": {
+        "from_type": "Procuratorate",
+        "to_type": "CourtCase",
+        "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "proves_fact": {
+        "from_type": "Evidence",
+        "to_type": "Fact, DisputeFocus",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "represents": {
+        "from_type": "Attorney",
+        "to_type": "LegalSubject",
+        "cardinality": "many_to_many",
+        "attributes": [
+          "authorization_period_end",
+          "authorization_period_start",
+          "authorization_scope",
+          "case_id"
+        ]
+      },
+      "resolved_by": {
+        "from_type": "DisputeFocus",
+        "to_type": "LegalProvision",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "retries_from": {
+        "from_type": "CourtCase",
+        "to_type": "CourtCase",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "signed_by": {
+        "from_type": "LegalDocument",
+        "to_type": "Judge",
+        "cardinality": "many_to_one",
+        "attributes": []
+      },
+      "submitted_for": {
+        "from_type": "Evidence",
+        "to_type": "CourtCase",
+        "cardinality": "many_to_one",
+        "attributes": []
+      },
+      "superseded_by": {
+        "from_type": "LegalProvisionVersion",
+        "to_type": "LegalProvisionVersion",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "tried_by": {
+        "from_type": "CourtCase",
+        "to_type": "TrialOrganization",
+        "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "typically_applies": {
+        "from_type": "CaseType",
+        "to_type": "LegalProvision",
+        "cardinality": "many_to_many",
+        "attributes": [
+          "applicability_score",
+          "effective_from",
+          "effective_to",
+          "is_primary",
+          "source"
+        ]
+      },
+      "undertakes": {
+        "from_type": "Judge",
+        "to_type": "CourtCase",
+        "cardinality": "one_to_many",
+        "attributes": []
+      }
+    },
+    "entity_count": 32,
+    "relation_count": 32,
+    "sha1": "bfb1a6e56bf618331d757e85934bdbe3651dd9b5"
+  },
+  "categories": {
+    "civil": {
+      "prompt_file": "ontology/prompts/auto_v5_civil.txt",
+      "prompt_sha1": "0a822e67939c026e94c552e79185c971e9d7d828",
+      "few_shot": {
+        "row_id": "2478",
+        "score": 95.0,
+        "quality": 256.0,
+        "case_type": "民事-网络侵权责任纠纷",
+        "file": "extracted_candidate_structured_v1.jsonl",
+        "details": {
+          "provisions": 2,
+          "cases": 2,
+          "subjects": 3,
+          "evidence": 3,
+          "results": 2,
+          "key_facts": true,
+          "disputed": true,
+          "conclusion": true,
+          "facts": 4,
+          "focuses": 2,
+          "relations": 9,
+          "relation_types": 4,
+          "graph_ready": true,
+          "rich_graph": true
+        },
+        "overall_coverage": {
+          "present_entities": [
+            "CaseSummary",
+            "CaseType",
+            "CourtCase",
+            "DisputeFocus",
+            "Evidence",
+            "Fact",
+            "GuidingCase",
+            "JudgmentResult",
+            "LegalProvision",
+            "LegalProvisionElement",
+            "LegalSubject"
+          ],
+          "relation_types": [
+            "based_on",
+            "has_dispute_focus",
+            "proves_fact",
+            "resolved_by"
+          ]
+        },
+        "change_coverage": {
+          "covered_entities": [],
+          "missing_entities": [],
+          "covered_relations": [],
+          "missing_relations": [],
+          "field_status": {}
+        }
+      }
+    },
+    "criminal": {
+      "prompt_file": "ontology/prompts/auto_v5_criminal.txt",
+      "prompt_sha1": "a01e2d29495814e0613542e72814fa651244bd85",
+      "few_shot": {
+        "row_id": "23127",
+        "score": 90.0,
+        "quality": 232.0,
+        "case_type": "刑事-虐待罪",
+        "file": "extracted_candidate_structured_v1.jsonl",
+        "details": {
+          "provisions": 5,
+          "cases": 1,
+          "subjects": 3,
+          "evidence": 1,
+          "results": 1,
+          "key_facts": true,
+          "disputed": true,
+          "conclusion": true,
+          "facts": 3,
+          "focuses": 2,
+          "relations": 7,
+          "relation_types": 4,
+          "graph_ready": true,
+          "rich_graph": true
+        },
+        "overall_coverage": {
+          "present_entities": [
+            "CaseSummary",
+            "CaseType",
+            "CourtCase",
+            "DisputeFocus",
+            "Evidence",
+            "Fact",
+            "GuidingCase",
+            "JudgmentResult",
+            "LegalProvision",
+            "LegalProvisionElement",
+            "LegalSubject",
+            "Prosecutor"
+          ],
+          "relation_types": [
+            "based_on",
+            "has_dispute_focus",
+            "proves_fact",
+            "resolved_by"
+          ]
+        },
+        "change_coverage": {
+          "covered_entities": [],
+          "missing_entities": [],
+          "covered_relations": [],
+          "missing_relations": [],
+          "field_status": {}
+        }
+      }
+    },
+    "administrative": {
+      "prompt_file": "ontology/prompts/auto_v5_admin.txt",
+      "prompt_sha1": "06c02276cb98bb5005f84525a72af493498af2ea",
+      "few_shot": {
+        "row_id": "2847",
+        "score": 95.0,
+        "quality": 276.0,
+        "case_type": "行政-专利相关行政案件",
+        "file": "extracted_candidate_structured_v1.jsonl",
+        "details": {
+          "provisions": 2,
+          "cases": 2,
+          "subjects": 3,
+          "evidence": 1,
+          "results": 1,
+          "key_facts": true,
+          "disputed": true,
+          "conclusion": true,
+          "facts": 3,
+          "focuses": 2,
+          "relations": 16,
+          "relation_types": 7,
+          "graph_ready": true,
+          "rich_graph": true
+        },
+        "overall_coverage": {
+          "present_entities": [
+            "CaseSummary",
+            "CaseType",
+            "CourtCase",
+            "DisputeFocus",
+            "Evidence",
+            "Fact",
+            "GuidingCase",
+            "JudgmentResult",
+            "LegalProvision",
+            "LegalProvisionElement",
+            "LegalSubject"
+          ],
+          "relation_types": [
+            "based_on",
+            "has_dispute_focus",
+            "has_fact",
+            "matches_element",
+            "proves_fact",
+            "resolved_by",
+            "submitted_for"
+          ]
+        },
+        "change_coverage": {
+          "covered_entities": [],
+          "missing_entities": [],
+          "covered_relations": [],
+          "missing_relations": [],
+          "field_status": {}
+        }
+      }
+    }
+  },
+  "evaluation_prompt": {
+    "prompt_file": "ontology/prompts/auto_ontology_evaluation.txt",
+    "prompt_sha1": "fbe2fe2aad369b98c26fc7abee04ae9d1ab7a192",
+    "ontology_sha1": "bfb1a6e56bf618331d757e85934bdbe3651dd9b5",
+    "generated_at": "2026-05-17T16:04:50+00:00"
+  }
+}
