@@ -265,6 +265,11 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
 - 优先输出文本中有明确依据的关系，避免为了凑数量臆造关系。
 - 如果某关系仅在字段层出现但未形成实体间连接，不要强行写入 relations。
 
+### 自动补图关系（不进入 relations）
+- `legal_provision_elements` 通过 `provision_index` 回连 `legal_provisions` 的对应法条，这类结构性连接由后处理自动补图。
+- 不要在 `relations` 中重复输出 `LegalProvisionElement -> LegalProvision` 这类纯结构派生边。
+- `matches_element` 这类需要语义判断的关系仍然必须显式输出到 `relations`。
+
 
 ## 输出 JSON Schema（自动生成 — 严格遵循此结构）
 
@@ -702,6 +707,12 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
     },
     {
       "source_id": "fact_1",
+      "target_id": "prov_elem_0",
+      "relation_type": "matches_element",
+      "description": "主播在公开直播中指向性评价并引导网民辱骂，匹配名誉权侵害构成中的行为要件。"
+    },
+    {
+      "source_id": "fact_1",
       "target_id": "dispute_focus_0",
       "relation_type": "has_dispute_focus",
       "description": ""
@@ -715,7 +726,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
     {
       "source_id": "dispute_focus_0",
       "target_id": "judgment_result_1",
-      "relation_type": "resolved_by",
+      "relation_type": "leads_to",
       "description": ""
     }
   ]

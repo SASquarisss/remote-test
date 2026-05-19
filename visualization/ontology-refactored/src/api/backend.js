@@ -11,11 +11,15 @@ export async function parseText(text) {
   return data;
 }
 
-export async function parseQuality(jsonResult) {
+export async function parseQuality(rawText, jsonResult, rowId) {
   const response = await fetch(`${API_BASE}/api/parse-quality`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ json_result: jsonResult }),
+    body: JSON.stringify({
+      raw_text: rawText,
+      json_result: jsonResult,
+      row_id: rowId,
+    }),
   });
   const data = await response.json();
   if (data.error) throw new Error(data.error);
@@ -30,6 +34,23 @@ export async function ontologyEvaluate(text, jsonResult, rowId) {
       raw_text: text,
       json_result: jsonResult,
       row_id: rowId,
+    }),
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+export async function parseEnhancement(rawText, jsonResult, rowId, qualityResult, ontologyEval) {
+  const response = await fetch(`${API_BASE}/api/parse-enhancement`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      raw_text: rawText,
+      json_result: jsonResult,
+      row_id: rowId,
+      quality_result: qualityResult,
+      ontology_eval: ontologyEval,
     }),
   });
   const data = await response.json();

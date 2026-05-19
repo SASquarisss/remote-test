@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -9,6 +10,14 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:9120',
         changeOrigin: true
+      }
+    }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        workspace: resolve(__dirname, 'index.html'),
+        database: resolve(__dirname, 'index.database.html')
       }
     }
   }

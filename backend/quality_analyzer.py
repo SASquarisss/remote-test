@@ -207,13 +207,17 @@ ENTITY_FIELD_MAP = [
         "label": "争议焦点",
         "category": "JudicialEntity",
         "category_label": "司法实体层",
-        "path": None,
-        "is_computed": True,
-        "desc": "包含在 case_summary.disputed_issues 中",
-        "fields": [],
+        "path": ("dispute_focuses",),
+        "is_list": True,
+        "fields": [
+            {"key": "id", "label": "焦点ID", "required": True},
+            {"key": "content", "label": "焦点内容", "required": True},
+            {"key": "case_number", "label": "关联案号", "required": False},
+            {"key": "resolution_logic", "label": "解决逻辑", "required": False},
+        ],
         "relations": [
             {"key": "has_dispute_focus", "label": "属于案件", "target": "CourtCase"},
-            {"key": "resolved_by", "label": "由法条解决", "target": "LegalProvision"},
+            {"key": "resolved_by", "label": "由裁判/法条解决", "target": "JudgmentResult, LegalProvision"},
         ],
     },
     {
@@ -221,10 +225,15 @@ ENTITY_FIELD_MAP = [
         "label": "案件事实",
         "category": "JudicialEntity",
         "category_label": "司法实体层",
-        "path": None,
-        "is_computed": True,
-        "desc": "包含在 case_summary.key_facts 中",
-        "fields": [],
+        "path": ("facts",),
+        "is_list": True,
+        "fields": [
+            {"key": "id", "label": "事实ID", "required": True},
+            {"key": "content", "label": "事实内容", "required": True},
+            {"key": "case_number", "label": "关联案号", "required": False},
+            {"key": "fact_type", "label": "事实类型", "required": True},
+            {"key": "proven_by_evidence_ids", "label": "证明证据", "required": False},
+        ],
         "relations": [
             {"key": "has_fact", "label": "属于案件", "target": "CourtCase"},
             {"key": "proves_fact", "label": "被证据证明", "target": "Evidence"},
@@ -457,6 +466,8 @@ def _analyze_entity(json_result: Dict[str, Any], entity_def: Dict[str, Any]) -> 
     is_list = entity_def.get("is_list", False)
     fields = entity_def.get("fields", [])
     relations = entity_def.get("relations", [])
+    relation_graph = _analyze_relation_graph(json_result)
+    relation_types = relation_graph.get("relation_types", {})
 
     # Get the value(s) for this entity
     values = []
@@ -573,7 +584,11 @@ def _analyze_entity(json_result: Dict[str, Any], entity_def: Dict[str, Any]) -> 
             "name": rel["key"],
             "label": rel["label"],
             "target": rel["target"],
-            "status": "ok" if _get_entity_count(json_result, entity_def) > 0 else "partial",
+            "status": (
+                "ok"
+                if relation_types.get(rel["key"], 0) > 0
+                else ("partial" if _get_entity_count(json_result, entity_def) > 0 else "missing")
+            ),
         })
 
     # Build issues list
@@ -624,6 +639,111 @@ def _compute_evidence_admission_fill_rate(json_result: Dict[str, Any]) -> float:
     return round(filled / len(evidence_list), 2)
 
 
+def _generated_graph_id(prefix: str, idx: int, item: Dict[str, Any]) -> str:
+    if isinstance(item, dict) and item.get("id"):
+        return str(item.get("id"))
+    return f"{prefix}_{idx}"
+
+
+def _normalize_graph_ref(ref: str) -> str:
+    if not isinstance(ref, str):
+        return str(ref)
+    mapping = {
+        "evidence_": "evid_",
+        "judgment_result_": "jr_",
+        "judgment_results_": "jr_",
+        "legal_provision_": "prov_",
+        "legal_provisions_": "prov_",
+        "dispute_focus_": "focus_",
+        "dispute_focuses_": "focus_",
+    }
+    for old, new in mapping.items():
+        if ref.startswith(old):
+            return new + ref[len(old):]
+    return ref
+
+
+def _collect_graph_refs(json_result: Dict[str, Any]) -> Dict[str, set]:
+    refs = {"all": set()}
+    for cc in (_get_field_value(json_result, "court_cases") or []):
+        case_number = (cc.get("case_number") or "").strip()
+        if case_number:
+            refs["all"].add(case_number)
+    for idx, fact in enumerate(json_result.get("facts", []) or []):
+        refs["all"].add(_normalize_graph_ref(_generated_graph_id("fact", idx, fact)))
+    for idx, focus in enumerate(json_result.get("dispute_focuses", []) or []):
+        refs["all"].add(_normalize_graph_ref(_generated_graph_id("focus", idx, focus)))
+    for idx, evid in enumerate(json_result.get("evidence", []) or []):
+        refs["all"].add(_normalize_graph_ref(_generated_graph_id("evid", idx, evid)))
+    for idx, jr in enumerate(json_result.get("judgment_results", []) or []):
+        refs["all"].add(_normalize_graph_ref(_generated_graph_id("jr", idx, jr)))
+    for idx, prov in enumerate(json_result.get("legal_provisions", []) or []):
+        refs["all"].add(_normalize_graph_ref(_generated_graph_id("prov", idx, prov)))
+    return refs
+
+
+def _analyze_relation_graph(json_result: Dict[str, Any]) -> Dict[str, Any]:
+    refs = _collect_graph_refs(json_result)
+    relations = json_result.get("relations") or []
+    relation_types: Dict[str, int] = {}
+    issues = []
+    valid_count = 0
+    dangling_count = 0
+    duplicate_count = 0
+    seen = set()
+
+    for idx, rel in enumerate(relations):
+        if not isinstance(rel, dict):
+            issues.append({"entity": f"relations[{idx}]", "msg": "关系项不是对象", "severity": "major"})
+            continue
+        src = _normalize_graph_ref((rel.get("source_id") or "").strip())
+        tgt = _normalize_graph_ref((rel.get("target_id") or "").strip())
+        rtype = (rel.get("relation_type") or "").strip()
+        edge_key = (src, tgt, rtype)
+
+        if edge_key in seen:
+            duplicate_count += 1
+            issues.append({"entity": f"relations[{idx}]", "msg": f"重复关系 {src}->{tgt}:{rtype}", "severity": "minor"})
+        seen.add(edge_key)
+
+        if not src or not tgt or not rtype:
+            issues.append({"entity": f"relations[{idx}]", "msg": "source_id / target_id / relation_type 存在空值", "severity": "critical"})
+            continue
+
+        relation_types[rtype] = relation_types.get(rtype, 0) + 1
+        if src not in refs["all"] or tgt not in refs["all"]:
+            dangling_count += 1
+            issues.append({"entity": f"relations[{idx}]", "msg": f"悬空关系引用 {src}->{tgt}:{rtype}", "severity": "major"})
+        else:
+            valid_count += 1
+
+    expected_checks = [
+        ("has_fact", bool(json_result.get("facts")), "存在 facts 但没有 has_fact 关系"),
+        ("has_dispute_focus", bool(json_result.get("dispute_focuses")), "存在 dispute_focuses 但没有 has_dispute_focus 关系"),
+        ("submitted_for", bool(json_result.get("evidence")), "存在 evidence 但没有 submitted_for 关系"),
+        ("proves_fact", bool(json_result.get("evidence")) and bool(json_result.get("facts") or json_result.get("dispute_focuses")), "存在证据与事实/争议焦点但没有 proves_fact 关系"),
+        ("leads_to", bool(json_result.get("dispute_focuses")) and bool(json_result.get("judgment_results")), "存在 dispute_focuses 与 judgment_results 但没有 leads_to 关系"),
+        ("judgment_cites", bool(json_result.get("judgment_results")) and bool(json_result.get("legal_provisions")), "存在 judgment_results 与 legal_provisions 但没有 judgment_cites 关系"),
+    ]
+    for rel_name, enabled, message in expected_checks:
+        if enabled and relation_types.get(rel_name, 0) == 0:
+            issues.append({"entity": "relations", "msg": message, "severity": "major"})
+
+    coverage_score = 0.0
+    if relations:
+        coverage_score = (valid_count / max(1, len(relations))) * 100.0
+
+    return {
+        "score": round(max(0.0, coverage_score - duplicate_count * 5), 1),
+        "relation_types": relation_types,
+        "issues": issues,
+        "valid_count": valid_count,
+        "dangling_count": dangling_count,
+        "duplicate_count": duplicate_count,
+        "relation_count": len(relations),
+    }
+
+
 def parse_quality(json_result: Dict[str, Any]) -> Dict[str, Any]:
     """
     Analyze parse quality of a json_result against the ontology structure.
@@ -641,9 +761,11 @@ def parse_quality(json_result: Dict[str, Any]) -> Dict[str, Any]:
             "issues": [],
         }
 
+    relation_graph = _analyze_relation_graph(json_result)
+
     # Analyze each entity
     entity_results = []
-    all_issues = []
+    all_issues = relation_graph["issues"][:]
     for entity_def in ENTITY_FIELD_MAP:
         result = _analyze_entity(json_result, entity_def)
         entity_results.append(result)
@@ -685,6 +807,10 @@ def parse_quality(json_result: Dict[str, Any]) -> Dict[str, Any]:
         total_score = sum(all_scores) / len(all_scores)
     else:
         total_score = 0
+    if relation_graph["relation_count"]:
+        total_score = (total_score * 0.78) + (relation_graph["score"] * 0.22)
+    elif json_result.get("facts") or json_result.get("dispute_focuses") or json_result.get("evidence"):
+        total_score = max(0.0, total_score - 12.0)
 
     # Confidence
     if total_score >= 90:
@@ -703,9 +829,14 @@ def parse_quality(json_result: Dict[str, Any]) -> Dict[str, Any]:
         "entities": entity_results,
         "issues": all_issues,
         "summary": {
-            "facts_count": len(_get_field_value(json_result, "case_summary.key_facts")) if isinstance(_get_field_value(json_result, "case_summary"), dict) and isinstance(_get_field_value(json_result, "case_summary.key_facts"), list) else 0,
-            "dispute_focuses_count": len(_get_field_value(json_result, "case_summary.disputed_issues")) if isinstance(_get_field_value(json_result, "case_summary"), dict) and isinstance(_get_field_value(json_result, "case_summary.disputed_issues"), list) else 0,
-            "relations_count": len(json_result.get("relations", [])),
+            "facts_count": len(json_result.get("facts", []) or []),
+            "dispute_focuses_count": len(json_result.get("dispute_focuses", []) or []),
+            "relations_count": relation_graph["relation_count"],
+            "relation_valid_count": relation_graph["valid_count"],
+            "relation_dangling_count": relation_graph["dangling_count"],
+            "relation_duplicate_count": relation_graph["duplicate_count"],
+            "relation_types": relation_graph["relation_types"],
+            "relation_score": relation_graph["score"],
             "evidence_admission_fill_rate": _compute_evidence_admission_fill_rate(json_result),
         },
     }

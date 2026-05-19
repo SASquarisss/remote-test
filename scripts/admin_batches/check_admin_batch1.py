@@ -1,9 +1,14 @@
+#!/usr/bin/env python3
 import json
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 all_recs = {}
-for path in ['data_lake/extracted_v2.2_admin_batch1_first10.jsonl', 'data_lake/extracted_v2.2_admin_batch1_remaining.jsonl']:
+for rel_path in ['data_lake/extracted_v2.2_admin_batch1_first10.jsonl', 'data_lake/extracted_v2.2_admin_batch1_remaining.jsonl']:
+    path = REPO_ROOT / rel_path
     try:
-        with open(path) as f:
+        with path.open("r", encoding="utf-8") as f:
             for line in f:
                 if line.strip():
                     r = json.loads(line)
@@ -14,7 +19,7 @@ for path in ['data_lake/extracted_v2.2_admin_batch1_first10.jsonl', 'data_lake/e
 ids_order = ['2292','3358','3906','699','3369','5412','3228','5319']
 sorted_recs = [all_recs[rid] for rid in ids_order if rid in all_recs]
 
-with open('data_lake/extracted_v2.2_admin_full.jsonl', 'w', encoding='utf-8') as f:
+with (REPO_ROOT / 'data_lake/extracted_v2.2_admin_full.jsonl').open('w', encoding='utf-8') as f:
     for r in sorted_recs:
         f.write(json.dumps(r, ensure_ascii=False) + '\n')
 

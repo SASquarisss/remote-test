@@ -7,7 +7,10 @@ evaluation_prompt_renderer.py
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List
+
+import yaml
 
 from ontology.generators.ontology_reader import OntologySchema
 
@@ -38,6 +41,15 @@ GRAPH_RELATION_PRIORITY = [
     "judgment_cites",
     "cites",
 ]
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+RELATION_POLICY_PATH = REPO_ROOT / "ontology" / "relation_policies.yaml"
+
+
+def load_relation_policies() -> Dict[str, Any]:
+    if not RELATION_POLICY_PATH.exists():
+        return {"derived_relations": []}
+    return yaml.safe_load(RELATION_POLICY_PATH.read_text(encoding="utf-8")) or {"derived_relations": []}
 
 
 def _pick_entities(ontology: OntologySchema) -> List[Dict[str, Any]]:
@@ -84,6 +96,7 @@ def _entity_field_summary(entity: Dict[str, Any]) -> str:
 def render_evaluation_schema_summary(ontology: OntologySchema) -> str:
     entities = ontology.get("entities") or {}
     relations = ontology.get("relations") or {}
+    derived_relations = load_relation_policies().get("derived_relations") or []
     lines = [
         "## 当前本体关键实体",
         "",
@@ -122,15 +135,29 @@ def render_evaluation_schema_summary(ontology: OntologySchema) -> str:
             f" | cardinality=`{rel.get('cardinality', '')}`"
         )
 
+    if derived_relations:
+        lines.extend([
+            "",
+            "## 自动补图关系",
+            "",
+        ])
+        for rel in derived_relations:
+            lines.append(
+                f"- `{rel.get('relation_type', '')}`: `{rel.get('from_type', '')}` -> `{rel.get('to_type', '')}`"
+                f" | derivation=`{rel.get('derivation_kind', '')}`"
+                f" | {rel.get('description', '')}"
+            )
+
     lines.extend([
         "",
         "## 图谱关键检查项",
         "",
         "- `facts`、`dispute_focuses`、`relations` 是当前抽取链的核心评估对象，不可仅按旧式摘要字段替代。",
         "- 若存在 `facts`，优先检查是否有 `has_fact`、`proves_fact` 等关系将事实挂到案件与证据上。",
-        "- 若存在 `dispute_focuses`，优先检查是否有 `has_dispute_focus`、`resolved_by` 等关系形成“案件 -> 争议焦点 -> 裁判/法条”主链。",
+        "- 若存在 `dispute_focuses`，优先检查是否有 `has_dispute_focus`、`leads_to`、`resolved_by` 等关系形成“案件 -> 争议焦点 -> 裁判结果/法条”主链。",
         "- 若存在 `evidence`，需检查是否通过 `submitted_for` 指向案件，并通过 `proves_fact` 指向 `Fact` 或 `DisputeFocus`。",
-        "- 若存在 `judgment_results` 与 `legal_provisions`，需检查是否形成 `based_on` / `judgment_cites` 等裁判依据链。",
+        "- 若存在 `judgment_results` 与 `legal_provisions`，需检查是否形成 `judgment_cites` 等裁判依据链。",
+        "- 自动补图关系用于结构补全，不应替代 schema 原生关系；评估时要区分“模型未显式抽取”与“后处理可自动派生”。",
         "- 关系合法性需要检查 `source_id`、`target_id` 是否真实引用到输出中的节点，而不是悬空引用。",
     ])
     return "\n".join(lines).strip() + "\n"

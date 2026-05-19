@@ -2,9 +2,9 @@ import { safeGetElement } from '../utils/dom.js';
 
 export class TopNavBar {
   constructor() {
-    this.container = safeGetElement('topNavBar');
-    this.nodeCount = safeGetElement('navNodeCount');
-    this.edgeCount = safeGetElement('navEdgeCount');
+    this.container = document.getElementById('topNavBar');
+    this.nodeCount = document.getElementById('navNodeCount');
+    this.edgeCount = document.getElementById('navEdgeCount');
     
     this.ensureUI();
   }
@@ -14,8 +14,8 @@ export class TopNavBar {
       const html = `
         <div id="topNavBar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 999; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
           <div>
-            <h1 style="font-size: 17px; font-weight: 600; letter-spacing: 1px; margin: 0;">📜 法律本体论 v2.2 (Refactored)</h1>
-            <div style="font-size: 12px; opacity: 0.7;">Legal Ontology Knowledge Graph</div>
+            <h1 style="font-size: 17px; font-weight: 600; letter-spacing: 1px; margin: 0;">legal_ontology_workspace</h1>
+            <div style="font-size: 12px; opacity: 0.7;">本体图谱、解析图谱与评估工作台</div>
           </div>
           <div style="font-size: 12px; opacity: 0.8; display: flex; gap: 16px; align-items: center;">
             <span><span id="navNodeCount">-</span> 类型节点</span>
@@ -26,9 +26,9 @@ export class TopNavBar {
       `;
       document.body.insertAdjacentHTML('afterbegin', html);
       
-      this.container = document.getElementById('topNavBar');
-      this.nodeCount = document.getElementById('navNodeCount');
-      this.edgeCount = document.getElementById('navEdgeCount');
+      this.container = safeGetElement('topNavBar');
+      this.nodeCount = safeGetElement('navNodeCount');
+      this.edgeCount = safeGetElement('navEdgeCount');
     }
   }
   

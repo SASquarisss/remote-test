@@ -104,6 +104,9 @@
   };
   var REL_LABEL_MAP = {
     based_on: '依据',
+    judgment_cites: '裁判依据',
+    element_of_provision: '要件对应法条',
+    leads_to: '推导出',
     proves_fact: '证明',
     resolved_by: '裁判',
     has_fact: '事实',

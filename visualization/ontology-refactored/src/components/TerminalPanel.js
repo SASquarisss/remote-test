@@ -1,7 +1,7 @@
 import { store } from '../store/index.js';
 import { safeGetElement } from '../utils/dom.js';
 import { escapeHtml } from '../utils/formatter.js';
-import { parseQuality, saveResult, ontologyEvaluate } from '../api/backend.js';
+import { parseEnhancement, parseQuality, saveResult, ontologyEvaluate } from '../api/backend.js';
 
 export class TerminalPanel {
   constructor() {
@@ -9,23 +9,28 @@ export class TerminalPanel {
     this.container = document.getElementById('termBody'); // use termBody as container
     this.dragHandle = safeGetElement('termDragHandle');
     this.closeBtn = safeGetElement('btnTermClose');
+    this.expandedHeightPx = null;
     
     this.ensureTerminalUI();
     
     this.inputArea = safeGetElement('termInputArea');
     this.parseBtn = safeGetElement('btnTermParse');
-    this.saveBtn = safeGetElement('btnTermSave');
+    this.saveBtn = document.getElementById('btnTermSave');
     this.saveBtnBottom = safeGetElement('btnTermSaveBottom');
     this.clearBtn = safeGetElement('btnTermClear');
     this.evalBtn = safeGetElement('btnTermEvaluate');
+    this.enhanceBtn = safeGetElement('btnTermEnhance');
     this.statusArea = safeGetElement('termStatusArea');
     
     this.lastResult = null;
     this.lastQualityResult = null;
     this.lastEvalResult = null;
+    this.lastEnhancementResult = null;
+    this.isEnhancing = false;
     this.lastTerminalLocateTimestamp = null;
     
     this.bindEvents();
+    this.syncLayoutState();
     
     // Listen for cross-graph focus to update issues view
     store.subscribe(state => {
@@ -73,13 +78,15 @@ export class TerminalPanel {
           
           <div class="term-splitter" id="splitterLeft"></div>
           
-          <div id="termJsonColumn" class="term-col term-col-middle" style="width: 35%; flex: none; background: #fff;">
+          <div id="termJsonColumn" class="term-col term-col-middle" style="width: 42%; flex: none; background: #fff;">
             <div class="term-col-header" style="border-bottom: 1px solid #e0e0e0; background: #fbfcfe;">
               <div class="term-tab-group" id="jsonTabGroup">
                 <span class="term-tab active" data-target="termJsonArea">
                   <span class="term-tab-label">📄 解析数据</span>
                 </span>
-                <!-- More tabs can be added here in the future -->
+                <span class="term-tab" data-target="termEnhanceTabContent">
+                  <span class="term-tab-label">✨ 增量解析数据</span>
+                </span>
               </div>
             </div>
             <div style="flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
@@ -87,9 +94,15 @@ export class TerminalPanel {
                 <div class="term-json-placeholder" id="termJsonPlaceholder">等待解析结果...</div>
                 <div id="termJsonTree" style="display:none; font-family: monospace; font-size: 12px; line-height: 1.5; color: #333; padding: 10px; flex: 1; overflow: auto;"></div>
               </div>
+              <div id="termEnhanceTabContent" class="term-content-pane" style="display: none; flex: 1; flex-direction: column; overflow: hidden; background: #fff;">
+                <div id="termEnhancePlaceholder" style="padding: 16px; color: #94a3b8;">等待本体论评估后进行增量解析...</div>
+                <div id="termEnhanceMeta" style="display:none; padding: 12px 14px; border-bottom: 1px solid #eef2f7; background: #fafcff;"></div>
+                <div id="termEnhanceTree" style="display:none; font-family: monospace; font-size: 13px; line-height: 1.7; color: #1f2937; padding: 14px 16px 18px; flex: 1; overflow: auto;"></div>
+              </div>
             </div>
             <div class="term-eval-row">
               <button class="btn-eval" id="btnTermEvaluate" disabled>🔍 本体论评估</button>
+              <button class="btn-enhance" id="btnTermEnhance" disabled>✨ 增量解析</button>
               <span class="term-eval-score" id="termEvalScoreArea"></span>
             </div>
           </div>
@@ -113,6 +126,10 @@ export class TerminalPanel {
                 </span>
               </div>
               <span class="term-panel-hint" id="termPanelHint">等待解析结果</span>
+            </div>
+            <div class="term-graph-mode-bar" id="termGraphModeBar">
+              <span class="term-graph-mode-badge" id="termGraphModeBadge">全貌模式</span>
+              <span class="term-graph-mode-summary" id="termGraphModeSummary">查看案件整体结构，默认保留全量实体并对结构边降噪。</span>
             </div>
             
             <div id="termWorkspaceContent" style="flex: 1; position: relative; overflow: hidden;">
@@ -142,18 +159,7 @@ export class TerminalPanel {
           visContainer.style.inset = '0';
           visContainer.style.display = 'flex';
           visContainer.style.flexDirection = 'column';
-          
-          // Ensure termGraphInfo exists for the toolbar
-          if (!document.getElementById('termGraphInfo')) {
-            const graphInfo = document.createElement('div');
-            graphInfo.id = 'termGraphInfo';
-            graphInfo.style.padding = '12px';
-            graphInfo.style.flex = '1';
-            graphInfo.style.height = '100%';
-            graphInfo.style.boxSizing = 'border-box';
-            graphInfo.style.background = '#fff';
-            visContainer.appendChild(graphInfo);
-          }
+          visContainer.style.background = '#fff';
         }
       }
 
@@ -179,7 +185,7 @@ export class TerminalPanel {
     
     if (splitterLeft && colLeft && colMiddle) {
       let isDraggingLeft = false;
-      splitterLeft.addEventListener('mousedown', (e) => {
+      splitterLeft.addEventListener('mousedown', () => {
         isDraggingLeft = true;
         splitterLeft.classList.add('dragging');
         document.body.style.cursor = 'col-resize';
@@ -203,7 +209,7 @@ export class TerminalPanel {
 
     if (splitterRight && colLeft && colMiddle) {
       let isDraggingRight = false;
-      splitterRight.addEventListener('mousedown', (e) => {
+      splitterRight.addEventListener('mousedown', () => {
         isDraggingRight = true;
         splitterRight.classList.add('dragging');
         document.body.style.cursor = 'col-resize';
@@ -243,11 +249,7 @@ export class TerminalPanel {
         const dy = startY - e.clientY;
         const newHeight = Math.max(200, Math.min(window.innerHeight - 100, startHeight + dy));
         this.panel.style.height = `${newHeight}px`;
-        // Sync main view bottom
-        const mainView = document.getElementById('kgMainView');
-        if (mainView) {
-          mainView.style.height = `calc(100vh - ${newHeight}px)`;
-        }
+        this.applyMainViewHeight(newHeight);
 
         // Force height 100% to fix flex layout issues when resizing
         const termBody = document.getElementById('termBody');
@@ -263,20 +265,28 @@ export class TerminalPanel {
       });
       
       document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
         isDragging = false;
         document.body.style.cursor = '';
+        this.syncLayoutState();
       });
     }
 
     if (this.closeBtn) {
       this.closeBtn.addEventListener('click', () => {
+        if (this.panel && this.panel.classList.contains('expanded')) {
+          this.expandedHeightPx = this.panel.offsetHeight || this.expandedHeightPx;
+        }
         this.panel.classList.remove('expanded');
+        this.panel.classList.add('collapsed');
         const bar = document.getElementById('termCollapsedBar');
         const termPanel = this.panel.querySelector('.terminal-panel');
+        const footer = this.panel.querySelector('.term-footer');
+        this.panel.style.height = '40px';
         if (bar) bar.style.display = 'flex';
         if (termPanel) termPanel.style.display = 'none';
-        const mainView = document.getElementById('kgMainView');
-        if (mainView) mainView.style.height = 'calc(100vh - 40px)'; // collapsed bar height
+        if (footer) footer.style.display = 'none';
+        this.syncLayoutState();
       });
     }
 
@@ -284,11 +294,16 @@ export class TerminalPanel {
     if (collapsedBar) {
       collapsedBar.addEventListener('click', () => {
         this.panel.classList.add('expanded');
+        this.panel.classList.remove('collapsed');
+        if (this.expandedHeightPx && this.expandedHeightPx > 40) {
+          this.panel.style.height = `${this.expandedHeightPx}px`;
+        }
         collapsedBar.style.display = 'none';
         const termPanel = this.panel.querySelector('.terminal-panel');
+        const footer = this.panel.querySelector('.term-footer');
         if (termPanel) termPanel.style.display = 'flex';
-        const mainView = document.getElementById('kgMainView');
-        if (mainView) mainView.style.height = `calc(100vh - ${this.panel.offsetHeight}px)`;
+        if (footer) footer.style.display = 'flex';
+        this.syncLayoutState();
       });
     }
 
@@ -312,6 +327,9 @@ export class TerminalPanel {
     if (this.evalBtn) {
       this.evalBtn.addEventListener('click', () => this.handleEvaluate());
     }
+    if (this.enhanceBtn) {
+      this.enhanceBtn.addEventListener('click', () => this.handleEnhanceParse());
+    }
 
     const heightBtns = this.panel?.querySelectorAll('.term-height-btn');
     if (heightBtns) {
@@ -322,10 +340,7 @@ export class TerminalPanel {
           const h = btn.getAttribute('data-height');
           const newHeight = (window.innerHeight * parseInt(h, 10)) / 100;
           this.panel.style.height = `${newHeight}px`;
-          const mainView = document.getElementById('kgMainView');
-          if (mainView) {
-            mainView.style.height = `calc(100vh - ${newHeight}px)`;
-          }
+          this.applyMainViewHeight(newHeight);
 
           // Force height 100% to fix flex layout issues when resizing
           const termBody = document.getElementById('termBody');
@@ -338,6 +353,8 @@ export class TerminalPanel {
               termLeft.style.minHeight = '0';
             }
           }
+
+          this.syncLayoutState();
         });
       });
     }
@@ -373,16 +390,44 @@ export class TerminalPanel {
     }
   }
 
+  applyMainViewHeight(heightPx) {
+    const state = store.getState();
+    if (state.workspaceLayoutMode !== 'parse_primary') return;
+    const mainView = document.getElementById('kgMainView');
+    if (mainView) {
+      mainView.style.height = `calc(100vh - ${heightPx}px)`;
+    }
+  }
+
+  syncLayoutState() {
+    if (!this.panel) return;
+    const isExpanded = this.panel.classList.contains('expanded');
+    const isCollapsed = !isExpanded;
+    this.panel.classList.toggle('collapsed', isCollapsed);
+    if (isExpanded) {
+      this.expandedHeightPx = this.panel.offsetHeight || this.expandedHeightPx;
+    }
+    store.setState({
+      terminalCollapsed: isCollapsed,
+      terminalHeightPx: isCollapsed ? 40 : this.panel.offsetHeight
+    });
+  }
+
   ensureTerminalExpanded() {
     if (this.panel && !this.panel.classList.contains('expanded')) {
       this.panel.classList.add('expanded');
+      this.panel.classList.remove('collapsed');
+      if (this.expandedHeightPx && this.expandedHeightPx > 40) {
+        this.panel.style.height = `${this.expandedHeightPx}px`;
+      }
       const bar = document.getElementById('termCollapsedBar');
       const termPanel = this.panel.querySelector('.terminal-panel');
+      const footer = this.panel.querySelector('.term-footer');
       if (bar) bar.style.display = 'none';
       if (termPanel) termPanel.style.display = 'flex';
-      const mainView = document.getElementById('kgMainView');
-      if (mainView) mainView.style.height = `calc(100vh - ${this.panel.offsetHeight}px)`;
+      if (footer) footer.style.display = 'flex';
     }
+    this.syncLayoutState();
   }
 
   renderJson(jsonResult) {
@@ -511,6 +556,37 @@ export class TerminalPanel {
     }
   }
 
+  updateEnhanceButtonState() {
+    if (!this.enhanceBtn) return;
+    const ready = Boolean(this.lastEvalResult && !this.isEnhancing);
+    this.enhanceBtn.disabled = !ready;
+    this.enhanceBtn.classList.toggle('ready', ready);
+    this.enhanceBtn.style.opacity = ready ? '1' : '0.92';
+    this.enhanceBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+  }
+
+  resetEnhancementState() {
+    this.lastEnhancementResult = null;
+    this.isEnhancing = false;
+
+    const placeholder = document.getElementById('termEnhancePlaceholder');
+    const metaHost = document.getElementById('termEnhanceMeta');
+    const treeHost = document.getElementById('termEnhanceTree');
+    if (placeholder) {
+      placeholder.style.display = 'block';
+      placeholder.textContent = this.lastEvalResult ? '等待执行增量解析...' : '等待本体论评估后进行增量解析...';
+    }
+    if (metaHost) {
+      metaHost.style.display = 'none';
+      metaHost.innerHTML = '';
+    }
+    if (treeHost) {
+      treeHost.style.display = 'none';
+      treeHost.innerHTML = '';
+    }
+    this.updateEnhanceButtonState();
+  }
+
   async handleParse() {
     const text = this.inputArea ? this.inputArea.value.trim() : '';
     if (!text) {
@@ -537,7 +613,10 @@ export class TerminalPanel {
       if (result.error) throw new Error(result.error);
       
       this.lastResult = result;
+      this.lastEvalResult = null;
+      this.lastQualityResult = null;
       this.setStatus(`解析成功 (得分: ${result.score})`, '#27ae60');
+      this.resetEnhancementState();
       
       this.renderJson(result.json_result);
       
@@ -549,11 +628,12 @@ export class TerminalPanel {
         store.setState({ 
           parseGraphData: result,
           isParseResultAvailable: true,
-          isOntologyVisible: true
+          isOntologyVisible: true,
+          workspaceLayoutMode: 'parse_primary'
         });
         
         // Auto-run quality analysis
-        this.switchTab('termIssuesArea');
+        this.switchTab('termIssuesTabContent');
         await this.handleQualityAnalysis(result.json_result);
       }
     } catch (err) {
@@ -834,7 +914,7 @@ export class TerminalPanel {
     issuesTab.innerHTML = '<div style="color: #94a3b8;">分析中...</div>';
     
     try {
-      const qa = await parseQuality(jsonResult);
+      const qa = await parseQuality(this.inputArea?.value?.trim() || '', jsonResult, this.lastResult?.row_id || '');
       if (qa.error) throw new Error(qa.error);
       
       this.lastQualityResult = qa;
@@ -866,6 +946,9 @@ export class TerminalPanel {
         score: this.lastResult.score,
         issues: this.lastResult.issues,
         text: this.inputArea ? this.inputArea.value : '',
+        ontology_eval: this.lastEvalResult,
+        quality_result: this.lastQualityResult,
+        enhancement_result: this.lastEnhancementResult,
         target_layer: targetLayer,
       });
       
@@ -902,8 +985,6 @@ export class TerminalPanel {
     const oc = result.ontology_coverage || {};
     
     // Attempt to extract focus info (mock)
-    const focus = { target: null, parsingIssues: [], coverageItems: [], uncoveredItems: [], parsingSuggestions: [], ontologySuggestions: [] };
-
     const bg = (score) => score >= 80 ? '#27ae60' : (score >= 60 ? '#e67e22' : '#e74c3c');
 
     let html = '';
@@ -1002,6 +1083,7 @@ export class TerminalPanel {
 
     scroll.innerHTML = html;
     this.bindJumpEvents(scroll);
+    this.updateEnhanceButtonState();
   }
 
   async handleEvaluate() {
@@ -1014,7 +1096,7 @@ export class TerminalPanel {
     }
     
     this.setStatus('评估中...', '#8e44ad');
-    this.switchTab('termEvalArea');
+    this.switchTab('termEvalTabContent');
     
     const evalTab = document.getElementById('termEvalTabContent') || document.getElementById('termEvalArea');
     if (evalTab) {
@@ -1036,6 +1118,114 @@ export class TerminalPanel {
         this.evalBtn.style.opacity = '1'; 
         this.evalBtn.style.cursor = 'pointer';
       }
+      this.updateEnhanceButtonState();
+    }
+  }
+
+  renderEnhancementResult(result) {
+    this.lastEnhancementResult = result;
+    const placeholder = document.getElementById('termEnhancePlaceholder');
+    const metaHost = document.getElementById('termEnhanceMeta');
+    const treeHost = document.getElementById('termEnhanceTree');
+    if (!metaHost || !treeHost) return;
+
+    if (placeholder) placeholder.style.display = 'none';
+    metaHost.style.display = 'block';
+    treeHost.style.display = 'block';
+
+    const targets = result.targets || [];
+    const targetHtml = targets.length
+      ? targets.map(item => `
+          <span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;margin:0 8px 8px 0;background:${item.priority === 'high' ? '#fee2e2' : '#eef2ff'};color:${item.priority === 'high' ? '#b91c1c' : '#3730a3'};font-size:12px;">
+            ${escapeHtml(item.label || item.entity || '')}
+          </span>
+        `).join('')
+      : '<span style="color:#94a3b8;">本轮未识别到明确补强目标。</span>';
+    const formatDeltaSummary = (counts, emptyText) => {
+      const added = counts?.added || {};
+      const updated = counts?.updated || {};
+      const parts = [];
+      if (Object.keys(added).length) {
+        parts.push(`新增：${Object.entries(added).map(([key, value]) => `${escapeHtml(key)} +${value}`).join('，')}`);
+      }
+      if (Object.keys(updated).length) {
+        parts.push(`更新：${Object.entries(updated).map(([key, value]) => `${escapeHtml(key)} +${value}`).join('，')}`);
+      }
+      return parts.length ? parts.join('；') : emptyText;
+    };
+    const entitySummary = formatDeltaSummary(result.delta?.entity_counts, '暂无实体变化');
+    const relationSummary = formatDeltaSummary(result.delta?.relation_type_counts, '暂无关系变化');
+
+    metaHost.innerHTML = `
+      <div style="font-size:14px;font-weight:700;color:#0f172a;">✨ 增量解析结果</div>
+      <div style="margin-top:6px;font-size:13px;color:#475569;line-height:1.7;">${escapeHtml(result.summary || '已生成专项补强结果。')}</div>
+      <div style="margin-top:10px;font-size:12px;color:#334155;font-weight:700;">增强目标</div>
+      <div style="margin-top:6px;">${targetHtml}</div>
+      <div style="margin-top:6px;font-size:12px;color:#334155;font-weight:700;">差异摘要</div>
+      <div style="margin-top:4px;font-size:12px;color:#64748b;line-height:1.7;">实体差异：${entitySummary}</div>
+      <div style="margin-top:2px;font-size:12px;color:#64748b;line-height:1.7;">关系差异：${relationSummary}</div>
+    `;
+
+    const enhancementData = result.changed_enhancement_payload || {};
+    treeHost.innerHTML = '';
+    if (Object.keys(enhancementData).length) {
+      treeHost.appendChild(this.buildJsonTree(enhancementData, true));
+    } else {
+      treeHost.innerHTML = '<div style="padding: 4px 0; color: #94a3b8;">本轮增量结果与原解析一致，未产生需要单独展示的变化项。</div>';
+    }
+  }
+
+  async handleEnhanceParse() {
+    if (!this.lastResult || !this.lastEvalResult || !this.inputArea?.value.trim()) return;
+
+    this.isEnhancing = true;
+    this.updateEnhanceButtonState();
+    if (this.enhanceBtn) {
+      this.enhanceBtn.textContent = '✨ 增量解析中...';
+      this.enhanceBtn.classList.add('loading');
+    }
+
+    const placeholder = document.getElementById('termEnhancePlaceholder');
+    const metaHost = document.getElementById('termEnhanceMeta');
+    const treeHost = document.getElementById('termEnhanceTree');
+    if (placeholder) {
+      placeholder.style.display = 'block';
+      placeholder.textContent = '正在根据问题与评估缺口进行增量解析...';
+    }
+    if (metaHost) {
+      metaHost.style.display = 'none';
+      metaHost.innerHTML = '';
+    }
+    if (treeHost) {
+      treeHost.style.display = 'none';
+      treeHost.innerHTML = '';
+    }
+    this.switchTab('termEnhanceTabContent');
+    this.setStatus('专项增量解析中...', '#2563eb');
+
+    try {
+      const result = await parseEnhancement(
+        this.inputArea.value.trim(),
+        this.lastResult.json_result,
+        this.lastResult.row_id,
+        this.lastQualityResult,
+        this.lastEvalResult
+      );
+      this.renderEnhancementResult(result);
+      this.setStatus('专项增量解析完成', '#22c55e');
+    } catch (err) {
+      this.setStatus(`增量解析失败: ${err.message}`, '#ef4444');
+      if (placeholder) {
+        placeholder.style.display = 'block';
+        placeholder.textContent = `增量解析失败: ${err.message}`;
+      }
+    } finally {
+      this.isEnhancing = false;
+      if (this.enhanceBtn) {
+        this.enhanceBtn.textContent = '✨ 增量解析';
+        this.enhanceBtn.classList.remove('loading');
+      }
+      this.updateEnhanceButtonState();
     }
   }
   
@@ -1070,10 +1260,18 @@ export class TerminalPanel {
           if (termGraphInfo) {
             termGraphInfo.style.display = 'block';
           }
+          const termGraphModeBar = document.getElementById('termGraphModeBar');
+          if (termGraphModeBar) {
+            termGraphModeBar.style.display = 'flex';
+          }
         } else {
           const termGraphInfo = document.getElementById('termGraphInfo');
           if (termGraphInfo) {
             termGraphInfo.style.display = 'none';
+          }
+          const termGraphModeBar = document.getElementById('termGraphModeBar');
+          if (termGraphModeBar) {
+            termGraphModeBar.style.display = 'none';
           }
         }
   }

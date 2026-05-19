@@ -1,0 +1,14 @@
+derived_relations:
+  - name: element_of_provision
+    relation_type: element_of_provision
+    label: 要件对应法条
+    from_type: LegalProvisionElement
+    to_type: LegalProvision
+    derivation_kind: provision_index
+    source_collection: legal_provision_elements
+    target_collection: legal_provisions
+    target_node_prefix: prov_
+    deterministic: true
+    render_in_graph: true
+    emit_to_relations: false
+    description: 通过 legal_provision_elements[].provision_index 自动补图，不要求模型在 relations 中显式输出。

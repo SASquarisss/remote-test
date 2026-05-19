@@ -30,6 +30,12 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from ontology.generators.ontology_reader import load_ontology, get_all_enum_tables
 from ontology.generators.prompt_renderer import render_extraction_prompt
+from scripts.data_lake_layers import (
+    OFFICIAL_CANDIDATE_LAYER,
+    STRUCTURED_CANDIDATE_LAYER,
+    get_fewshot_candidate_files,
+    summarize_data_lake_layers,
+)
 
 
 # ==================== 案由分类 ====================
@@ -42,6 +48,25 @@ def classify_case_type(case_type: str) -> str:
     if ct.startswith("民事"): return "civil"
     if ct.startswith("行政"): return "administrative"
     return "other"
+
+
+def summarize_graph_coverage(output: dict) -> dict:
+    """统计 few-shot 样本中的图谱结构覆盖度。"""
+    facts = output.get("facts") or []
+    focuses = output.get("dispute_focuses") or []
+    relations = output.get("relations") or []
+    nonempty_relations = [r for r in relations if (r.get("relation_type") or "").strip()
+                          and (r.get("source_id") or "").strip()
+                          and (r.get("target_id") or "").strip()]
+    relation_types = sorted({(r.get("relation_type") or "").strip() for r in nonempty_relations if (r.get("relation_type") or "").strip()})
+    return {
+        "facts": len(facts),
+        "focuses": len(focuses),
+        "relations": len(nonempty_relations),
+        "relation_types": relation_types,
+        "graph_ready": bool(nonempty_relations) and (len(facts) > 0 or len(focuses) > 0),
+        "rich_graph": bool(nonempty_relations) and len(facts) > 0 and len(focuses) > 0,
+    }
 
 
 # ==================== Few-shot 数据加载 ====================
@@ -89,7 +114,7 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
     if data_lake_dir is None:
         data_lake_dir = str(REPO_ROOT / "data_lake")
     dl = Path(data_lake_dir)
-    jsonls = sorted(dl.glob("extracted_*.jsonl"))
+    jsonls = get_fewshot_candidate_files(dl)
 
     # 按类别收集
     candidates: dict = defaultdict(list)
@@ -141,10 +166,16 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
                     if cs.get("claim_amount"): quality += 5
                     if cs.get("judgment_amount"): quality += 5
                     # v3: 新实体加分
-                    facts = len(out.get("facts") or [])
-                    focuses = len(out.get("dispute_focuses") or [])
-                    rels = len(out.get("relations") or [])
-                    quality += facts * 2 + focuses * 3 + rels
+                    graph_cov = summarize_graph_coverage(out)
+                    facts = graph_cov["facts"]
+                    focuses = graph_cov["focuses"]
+                    rels = graph_cov["relations"]
+                    rel_type_count = len(graph_cov["relation_types"])
+                    quality += facts * 2 + focuses * 3 + rels * 4 + rel_type_count * 5
+                    if graph_cov["graph_ready"]:
+                        quality += 18
+                    if graph_cov["rich_graph"]:
+                        quality += 15
 
                     candidates[cat].append({
                         "quality": quality, "score": raw,
@@ -155,7 +186,11 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
                         "input_meta": inp,
                         "details": {"provisions": provisions, "cases": cases,
                                     "subjects": subjects, "evidence": evidence, "results": results,
-                                    "key_facts": has_kf, "disputed": has_di, "conclusion": has_con},
+                                    "key_facts": has_kf, "disputed": has_di, "conclusion": has_con,
+                                    "facts": facts, "focuses": focuses, "relations": rels,
+                                    "relation_types": rel_type_count,
+                                    "graph_ready": graph_cov["graph_ready"],
+                                    "rich_graph": graph_cov["rich_graph"]},
                     })
         except Exception:
             continue
@@ -167,12 +202,30 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
         if not items:
             print(f"  ⚠️  {cat}: 无可用样本")
             continue
-        items.sort(key=lambda x: x["quality"], reverse=True)
-        best[cat] = items[0]
-        d = items[0]["details"]
-        print(f"  ✅ {cat}: id={items[0]['row_id']}, quality={items[0]['quality']}, "
-              f"score={items[0]['score']}, provisions={d['provisions']}, "
-              f"cases={d['cases']}, subjects={d['subjects']} ({items[0]['case_type']})")
+        relation_ready_items = [x for x in items if x["details"].get("graph_ready")]
+        rich_graph_items = [x for x in items if x["details"].get("rich_graph")]
+        if rich_graph_items:
+            pool = rich_graph_items
+        elif relation_ready_items:
+            pool = relation_ready_items
+        else:
+            pool = items
+        pool.sort(key=lambda x: (
+            1 if x["details"].get("rich_graph") else 0,
+            1 if x["details"].get("graph_ready") else 0,
+            x["details"].get("relations", 0),
+            x["details"].get("relation_types", 0),
+            x["details"].get("focuses", 0),
+            x["details"].get("facts", 0),
+            x["quality"],
+        ), reverse=True)
+        best[cat] = pool[0]
+        d = pool[0]["details"]
+        print(f"  ✅ {cat}: id={pool[0]['row_id']}, quality={pool[0]['quality']}, "
+              f"score={pool[0]['score']}, provisions={d['provisions']}, "
+              f"cases={d['cases']}, subjects={d['subjects']}, "
+              f"facts={d['facts']}, focuses={d['focuses']}, relations={d['relations']} "
+              f"({pool[0]['case_type']})")
     return best
 
 
@@ -222,8 +275,9 @@ def clean_fewshot_output(output: dict) -> dict:
             for p in (output.get("legal_provisions") or [])[:5]
         ],
         "evidence": [
-            {k: e.get(k, "") for k in ["evidence_type", "is_key_evidence", "admission_status", "examination_status",
-                                         "expert_institution", "expert_conclusion"]}
+            {k: e.get(k, "") for k in ["content", "evidence_type", "submitted_by", "is_key_evidence",
+                                       "admission_status", "examination_status",
+                                       "expert_institution", "expert_conclusion"]}
             for e in (output.get("evidence") or [])[:3]
         ],
         "judgment_results": [
@@ -238,6 +292,18 @@ def clean_fewshot_output(output: dict) -> dict:
         "legal_provision_elements": [
             {k: el.get(k, "") for k in ["statute", "article", "element_type", "provision_index"]}
             for el in (output.get("legal_provision_elements") or [])[:5]
+        ],
+        "facts": [
+            {k: f.get(k, "") for k in ["id", "content", "fact_type", "case_number"]}
+            for f in (output.get("facts") or [])[:4]
+        ],
+        "dispute_focuses": [
+            {k: df.get(k, "") for k in ["id", "content", "focus_type", "case_number"]}
+            for df in (output.get("dispute_focuses") or [])[:3]
+        ],
+        "relations": [
+            {k: r.get(k, "") for k in ["source_id", "target_id", "relation_type", "description"]}
+            for r in (output.get("relations") or [])[:6]
         ],
     }
 
@@ -313,6 +379,35 @@ def inject_few_shots(prompt: str, target_case_type: str = None,
     return prompt
 
 
+def extract_prompt_json_block(prompt: str) -> Optional[str]:
+    """提取 prompt 中第一个 json fenced block。"""
+    m = re.search(r"```json\s*(\{[\s\S]*?\})\s*```", prompt)
+    if not m:
+        return None
+    return m.group(1)
+
+
+def validate_generated_prompt(prompt: str) -> tuple[bool, str]:
+    """对生成的 prompt 做最小结构校验。"""
+    json_block = extract_prompt_json_block(prompt)
+    if not json_block:
+        return False, "未找到 JSON fenced block"
+    try:
+        parsed = json.loads(json_block)
+    except Exception as exc:
+        return False, f"JSON 示例不可解析: {exc}"
+
+    required_top_keys = {
+        "guiding_case", "case_type", "court_cases", "legal_subjects",
+        "legal_provisions", "evidence", "judgment_results", "case_summary",
+        "legal_provision_elements", "facts", "dispute_focuses", "relations",
+    }
+    missing = sorted(required_top_keys - set(parsed.keys()))
+    if missing:
+        return False, f"JSON 示例缺少顶层字段: {', '.join(missing)}"
+    return True, "ok"
+
+
 # ==================== 主入口 ====================
 
 def main():
@@ -358,9 +453,28 @@ def main():
 
     prompt = render_extraction_prompt(ontology)
 
+    if args.case_type and not args.few_shot:
+        print("ℹ️ --case-type 当前只用于 few-shot 样本匹配；未启用 --few-shot 时该参数会被忽略")
+
     if args.few_shot:
         dl_dir = str(args.few_shot) if isinstance(args.few_shot, str) else None
+        data_lake_path = Path(dl_dir) if dl_dir else (REPO_ROOT / "data_lake")
+        layer_counts = summarize_data_lake_layers(data_lake_path)
+        print("ℹ️ data_lake 分层: " + ", ".join(f"{k}={v}" for k, v in sorted(layer_counts.items())))
+        print(
+            "ℹ️ few-shot 候选池当前使用 `"
+            + STRUCTURED_CANDIDATE_LAYER
+            + "_*` 与 `"
+            + OFFICIAL_CANDIDATE_LAYER
+            + "_*`；`fewshot_cmp_*` / `compare*` / `manual_*` 不参与候选"
+        )
         prompt = inject_few_shots(prompt, target_case_type=args.case_type, data_lake_dir=dl_dir)
+
+    ok, msg = validate_generated_prompt(prompt)
+    if not ok:
+        print(f"❌ Prompt 校验失败: {msg}")
+        sys.exit(2)
+    print("✅ Prompt JSON 示例校验通过")
 
     if args.output:
         output_path = REPO_ROOT / args.output

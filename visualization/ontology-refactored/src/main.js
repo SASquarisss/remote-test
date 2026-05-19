@@ -1,4 +1,4 @@
-import { Store, store } from './store/index.js';
+import { store } from './store/index.js';
 import { OntologyGraph } from './components/OntologyGraph.js';
 import { ParseGraph } from './components/ParseGraph.js';
 import { DetailPanel } from './components/DetailPanel.js';
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ontologyLegend = new OntologyLegend();
   const ontologyGraph = new OntologyGraph('ontologyContainer');
   const controlsPanel = new ControlsPanel(ontologyGraph.network);
-  const parseGraph = new ParseGraph('termVisCanvasHost');
+  const parseGraph = new ParseGraph('parseGraphCanvasHost');
   const detailPanel = new DetailPanel();
   const terminalPanel = new TerminalPanel();
   
@@ -29,14 +29,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 1000);
 
-  // Handle cross-component layout coordination via store
-  store.subscribe((state) => {
-    // When parse result is available, ParseGraph goes to main view, Ontology goes to mini-mode
-    if (state.isParseResultAvailable) {
+  let lastLayoutSignature = '';
+
+  const getTerminalHeight = (state) => {
+    if (state.terminalCollapsed) return 40;
+    if (typeof state.terminalHeightPx === 'number' && state.terminalHeightPx > 0) {
+      return state.terminalHeightPx;
+    }
+    return terminalPanel.panel?.offsetHeight || Math.round(window.innerHeight * 0.5);
+  };
+
+  const applyWorkspaceLayout = (state) => {
+    const hasParseResult = Boolean(state.isParseResultAvailable && state.parseGraphData);
+    const layoutMode = hasParseResult ? (state.workspaceLayoutMode || 'parse_primary') : 'ontology_primary';
+    const signature = [
+      layoutMode,
+      hasParseResult ? 'parse' : 'empty',
+      state.terminalCollapsed ? 'collapsed' : 'expanded',
+      state.isOntologyVisible === false ? 'ontology-hidden' : 'ontology-visible',
+      getTerminalHeight(state)
+    ].join('|');
+
+    if (signature === lastLayoutSignature) return;
+    lastLayoutSignature = signature;
+
+    const mainView = document.getElementById('kgMainView');
+    const ontologyContainer = document.getElementById('ontologyContainer');
+    if (mainView) {
+      mainView.style.height = `calc(100vh - ${getTerminalHeight(state)}px)`;
+    }
+
+    if (layoutMode === 'parse_primary') {
       parseGraph.mountToMainView();
       ontologyGraph.setMiniMode();
-      store.setState({ isOntologyVisible: true });
+      if (ontologyContainer) {
+        ontologyContainer.style.display = state.isOntologyVisible === false ? 'none' : 'block';
+      }
+      return;
     }
+
+    parseGraph.mountToTerminal();
+    ontologyGraph.setMainMode();
+    if (ontologyContainer) {
+      ontologyContainer.style.display = 'block';
+    }
+  };
+
+  store.subscribe((state) => {
+    applyWorkspaceLayout(state);
+  });
+
+  window.addEventListener('resize', () => {
+    lastLayoutSignature = '';
+    applyWorkspaceLayout(store.getState());
   });
 
   // Fetch initial test data to simulate state hydration
@@ -67,20 +112,32 @@ document.addEventListener('DOMContentLoaded', () => {
         let targetTab = 'termVisContainer';
         if (data.active_tab === 'eval') targetTab = 'termEvalTabContent';
         else if (data.active_tab === 'issues') targetTab = 'termIssuesTabContent';
+        else if (data.active_tab === 'enhance') targetTab = 'termEnhanceTabContent';
         
         store.setState({ 
           parseGraphData: result,
           selectedGraph: 'parse',
           isParseResultAvailable: true,
+          workspaceLayoutMode: 'parse_primary',
+          isOntologyVisible: true,
           activeTab: targetTab
         });
         
         terminalPanel.switchTab(targetTab);
-        terminalPanel.handleQualityAnalysis(result.json_result);
+        if (data.term_quality_result) {
+          terminalPanel.lastQualityResult = data.term_quality_result;
+          terminalPanel.renderQualityIssues(data.term_quality_result, store.getState().parseNodeData);
+        } else {
+          terminalPanel.handleQualityAnalysis(result.json_result);
+        }
         
         if (data.term_eval_result) {
           // Hydrate eval result if it exists
           terminalPanel.renderEvalResult(data.term_eval_result);
+        }
+
+        if (data.term_enhancement_result) {
+          terminalPanel.renderEnhancementResult(data.term_enhancement_result);
         }
         
         terminalPanel.setStatus('测试数据已加载（含上次解析结果）', '#27ae60');
@@ -88,6 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }).catch(err => console.warn('加载测试数据失败:', err));
+
+  applyWorkspaceLayout(store.getState());
   
-  console.log('Ontology Refactored App Initialized.');
+  console.log('legal_ontology_workspace initialized.');
 });

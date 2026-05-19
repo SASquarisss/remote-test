@@ -3,7 +3,7 @@
 > **项目**: 法律本体论知识图谱系统  
 > **文档版本**: v1.0  
 > **关联页面**: `ontology_v2.2.html`, `admin_instances.html`  
-> **关联模块**: `guiding_case_extractor_v3.py`, `generate_admin_vis.py`
+> **关联模块**: `guiding_case_extractor_v3.py`, `scripts/visualization/generate_admin_vis.py`
 
 ---
 
@@ -544,7 +544,7 @@ async function loadCaseIndex() {
 | `fill_empty_provision_content()` | `guiding_case_extractor_v3.py` | 复制到 parser.py |
 | `evaluate_output()` | `guiding_case_extractor_v3.py` | 复制到 parser.py |
 | `load_prompt()` | `guiding_case_extractor_v3.py` | 复制到 parser.py |
-| KG 转换逻辑 | `generate_admin_vis.py` | 实现 `kg_convert()` 函数 |
+| KG 转换逻辑 | `scripts/visualization/generate_admin_vis.py` | 实现 `kg_convert()` 函数 |
 | ROOT_COLORS | `ontology_v2.2.html` | 前端 JS 复用 |
 | ADMIN_SHAPES | `admin_instances.html` | 前端 JS 复用 |
 

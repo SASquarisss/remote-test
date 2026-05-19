@@ -1,9 +1,12 @@
 """Simple dev server: serves static files from visualization/ + API."""
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 # Re-export the app and add static routes
-from backend.app import app, REPO_ROOT
+from backend.app import app
 from flask import send_from_directory
 
 VIS_DIR = REPO_ROOT / "visualization"

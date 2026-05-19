@@ -12,12 +12,24 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import yaml
+
 from ontology.generators.ontology_reader import (
     OntologySchema,
     get_all_enum_tables,
     get_entity_for_extraction,
     load_ontology,
 )
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+RELATION_POLICY_PATH = REPO_ROOT / "ontology" / "relation_policies.yaml"
+
+
+def load_relation_policies() -> Dict[str, Any]:
+    if not RELATION_POLICY_PATH.exists():
+        return {"derived_relations": []}
+    return yaml.safe_load(RELATION_POLICY_PATH.read_text(encoding="utf-8")) or {"derived_relations": []}
 
 
 # ========== 中文映射表：枚举值 → 中文说明 ==========
@@ -522,6 +534,7 @@ def render_entity_mapping_table(ontology: OntologySchema) -> str:
 def render_relation_reference(ontology: OntologySchema) -> str:
     """渲染关系约束说明，让 relations 数组真正受本体约束。"""
     relations = ontology.get("relations", {}) or {}
+    derived_relations = load_relation_policies().get("derived_relations") or []
     if not relations:
         return ""
 
@@ -549,6 +562,21 @@ def render_relation_reference(ontology: OntologySchema) -> str:
         "- 如果某关系仅在字段层出现但未形成实体间连接，不要强行写入 relations。",
         "",
     ])
+
+    if derived_relations:
+        lines.extend([
+            "### 自动补图关系（不进入 relations）",
+            "- 下表关系由结构字段稳定推导，仅用于图谱补全；不要在 `relations` 中重复输出这些边。",
+            "",
+            "| 关系名 | 起点类型 | 终点类型 | 生成方式 | 说明 |",
+            "|---|---|---|---|---|",
+        ])
+        for rel in derived_relations:
+            lines.append(
+                f"| `{rel.get('relation_type', '')}` | `{rel.get('from_type', '')}` | `{rel.get('to_type', '')}` "
+                f"| `{rel.get('derivation_kind', '')}` | {rel.get('description', '')} |"
+            )
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -770,7 +798,7 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 - **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
 - **事实节点（facts）必须显式输出**：至少提取 1-3 条可以独立成立的关键事实，每条事实应保持客观表述，并填写 `content`、`fact_type`、`case_number`；不要只把事实塞进 `case_summary.key_facts`。
 - **争议焦点节点（dispute_focuses）必须显式输出**：至少提取 1 条焦点，填写 `content`、`case_number`；不要只把焦点塞进 `case_summary.disputed_issues`。
-- **关系边（relations）不得空置**：若已抽到证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`based_on`、`submitted_for`。
+- **关系边（relations）不得空置**：若已抽到证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`judgment_cites`、`submitted_for`。
 - **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
 - **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 """

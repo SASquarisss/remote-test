@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>legal_ontology_database</title>
+  <link rel="stylesheet" href="/src/styles/database.css">
+</head>
+<body>
+  <div id="databaseApp">
+    <div id="databaseTopFilters"></div>
+    <div id="databaseGraphView"></div>
+    <div id="databaseBottomPanel"></div>
+    <div id="databaseSchemaPanel"></div>
+    <div id="databaseDetailPanel" class="detail-panel-shell">
+      <div class="detail-panel-header">
+        <h2 id="databaseDetailPanelTitle">详细信息</h2>
+        <button id="databaseDetailPanelClose" class="detail-panel-close" title="关闭">✕</button>
+      </div>
+      <div id="databaseDetailPanelBody" class="detail-panel-body">
+        <div class="detail-empty">选择案例、来源节点或关系后查看详细信息</div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.database.js"></script>
+</body>
+</html>

@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""行政案例提取wrapper——支持命令行参数覆盖"""
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+"""行政案例提取 wrapper，移动后仍按仓库根目录解析相对路径。"""
+import os
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 
 from dotenv import load_dotenv
 load_dotenv(os.path.expanduser('~/.hermes/.env'))
@@ -10,9 +14,10 @@ if not os.environ.get('DEEPSEEK_API_KEY'):
     print("ERROR: DEEPSEEK_API_KEY not set", flush=True)
     sys.exit(1)
 
+import argparse
 from extraction.llm_extractors.guiding_case_extractor_v3 import main
 
-import argparse
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--input', default='data/raw/admin_cases_only.csv')
 parser.add_argument('--output', default='data_lake/extracted_v2.2_admin_full.jsonl')
@@ -30,5 +35,7 @@ sys.argv = [
     '--start', str(args.start),
     '--workers', str(args.workers),
     '--prompt-path', args.prompt_path,
+    '--meta-producer', 'scripts/admin_batches/run_admin_extraction.py',
+    '--meta-batch-label', 'admin_full',
 ]
 main()

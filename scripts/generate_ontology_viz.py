@@ -7,7 +7,7 @@ an interactive HTML visualization (vis-network, drag-enabled, bilingual).
 
 Usage:
     python scripts/generate_ontology_viz.py
-    # -> outputs ontology_viz.html at repo root
+    # -> outputs visualization/ontology_viz.html
 """
 
 import json
@@ -18,7 +18,7 @@ from collections import deque
 REPO = Path(__file__).resolve().parent.parent
 YAML_EN = REPO / "ontology/schemas/legal_ontology_v2.yaml"
 YAML_ZH = REPO / "ontology/schemas/legal_ontology_v2.zh.yaml"
-OUT_HTML = REPO / "ontology_viz.html"
+OUT_HTML = REPO / "visualization/ontology_viz.html"
 
 # ---------------------------------------------------------------------------
 # YAML helpers

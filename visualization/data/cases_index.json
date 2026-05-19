@@ -47,5 +47,33 @@
     "case_type": "criminal",
     "version": 1,
     "source": "manual"
+  },
+  {
+    "row_id": "manual_1779034093",
+    "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+    "case_type": "criminal",
+    "version": 1,
+    "source": "manual",
+    "meta": {
+      "source": "manual",
+      "types": [
+        "刑事",
+        "走私普通货物、物品"
+      ],
+      "years": [
+        "2024"
+      ],
+      "procedures": [
+        "一审",
+        "二审"
+      ],
+      "stats": {
+        "facts": 4,
+        "focuses": 1,
+        "relations": 33,
+        "evidence": 4,
+        "provisions": 9
+      }
+    }
   }
 ]

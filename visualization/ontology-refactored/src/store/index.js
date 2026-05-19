@@ -25,5 +25,14 @@ export const store = new Store({
   selectedNodeId: null,
   selectedNodeType: null,
   selectedGraph: null, // 'ontology' | 'parse'
+  selectedEdgeId: null,
   isPanelOpen: false,
+  isOntologyVisible: true,
+  isParseResultAvailable: false,
+  workspaceLayoutMode: 'ontology_primary',
+  terminalCollapsed: false,
+  terminalHeightPx: null,
+  parseGraphDisplayMode: 'skeleton',
+  parseGraphExpandedGroups: {},
+  parseGraphSemanticZoom: 'mid',
 });

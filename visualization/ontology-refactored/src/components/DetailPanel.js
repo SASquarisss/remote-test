@@ -1,5 +1,6 @@
 import { store } from '../store/index.js';
-import { ENTITY_DATA, ZH_LABELS, RELATION_EDGES } from '../data/schema.js';
+import { ENTITY_DATA, ZH_LABELS } from '../data/schema.js';
+import { getOntologyRelationEdges } from '../data/relationModel.js';
 import { safeGetElement } from '../utils/dom.js';
 import { escapeHtml } from '../utils/formatter.js';
 
@@ -101,21 +102,24 @@ export class DetailPanel {
     
     if (state.selectedGraph === 'ontology' && state.selectedNodeId) {
       const typeName = state.selectedNodeId;
-      const outgoing = RELATION_EDGES.filter(r => r[1] === typeName);
-      const incoming = RELATION_EDGES.filter(r => r[2] === typeName);
+      const ontologyEdges = getOntologyRelationEdges();
+      const outgoing = ontologyEdges.filter(r => r.fromType === typeName);
+      const incoming = ontologyEdges.filter(r => r.toType === typeName);
       
       html += `<div class="panel-section"><div class="panel-section-title">关联路径</div>`;
       if (outgoing.length > 0) {
         html += '<div style="margin-bottom: 12px;"><strong>发起的关联 (Out)</strong><ul>';
         outgoing.forEach(r => {
-          html += `<li>→ ${escapeHtml(r[2])} <span style="color:#888; font-size:12px;">(${escapeHtml(r[0])})</span></li>`;
+          const sourceLabel = r.source === 'derived' ? '派生' : '原生';
+          html += `<li>→ ${escapeHtml(r.toType)} <span style="color:#888; font-size:12px;">(${escapeHtml(r.relationType)} · ${escapeHtml(sourceLabel)})</span></li>`;
         });
         html += '</ul></div>';
       }
       if (incoming.length > 0) {
         html += '<div><strong>被指向的关联 (In)</strong><ul>';
         incoming.forEach(r => {
-          html += `<li>← ${escapeHtml(r[1])} <span style="color:#888; font-size:12px;">(${escapeHtml(r[0])})</span></li>`;
+          const sourceLabel = r.source === 'derived' ? '派生' : '原生';
+          html += `<li>← ${escapeHtml(r.fromType)} <span style="color:#888; font-size:12px;">(${escapeHtml(r.relationType)} · ${escapeHtml(sourceLabel)})</span></li>`;
         });
         html += '</ul></div>';
       }
@@ -304,25 +308,45 @@ export class DetailPanel {
           this.tabInfo.innerHTML = `<div class="empty-hint">未找到实体数据: ${escapeHtml(state.selectedNodeId)}</div>`;
         }
       } else if (state.selectedGraph === 'ontology' && state.selectedEdgeId) {
-        const edgeId = state.selectedEdgeId;
-        const idx = parseInt(edgeId.split('_')[1], 10);
-        const edgeData = !isNaN(idx) ? RELATION_EDGES[idx] : null;
+        const runtimeEdge = state.ontologyEdgeData || null;
+        const edgeData = runtimeEdge
+          ? {
+              relationType: runtimeEdge.relationType || runtimeEdge.label || '',
+              fromType: runtimeEdge.from,
+              toType: runtimeEdge.to,
+              label: runtimeEdge.label || runtimeEdge.relationType || '',
+              source: runtimeEdge.edgeSource || 'schema',
+              description: runtimeEdge.description || '',
+              derivationKind: runtimeEdge.derivationKind || ''
+            }
+          : getOntologyRelationEdges().find(edge => edge.id === state.selectedEdgeId);
         
         if (edgeData) {
-          this.title.textContent = `🔗 关系边: ${escapeHtml(edgeData[0])}`;
+          const edgeSourceLabel = edgeData.source === 'derived' ? '自动补图关系' : '本体原生关系';
+          this.title.textContent = `🔗 关系边: ${escapeHtml(edgeData.label || edgeData.relationType)}`;
           this.panelTabs.style.display = 'none';
           this.tabInfo.innerHTML = `
             <div class="panel-section">
               <div class="panel-section-title">关系方向</div>
               <div class="field-row">
-                <span style="font-weight:500;">${escapeHtml(edgeData[1])}</span>
+                <span style="font-weight:500;">${escapeHtml(edgeData.fromType)}</span>
                 <span style="color:#888;font-size:18px;margin:0 10px;">→</span>
-                <span style="font-weight:500;">${escapeHtml(edgeData[2])}</span>
+                <span style="font-weight:500;">${escapeHtml(edgeData.toType)}</span>
               </div>
             </div>
             <div class="panel-section">
               <div class="panel-section-title">关系名称</div>
-              <div class="summary-highlight">${escapeHtml(edgeData[0])}</div>
+              <div class="summary-highlight">${escapeHtml(edgeData.label || edgeData.relationType)}</div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-section-title">关系属性</div>
+              <div class="field-row"><span class="field-label">关系类型</span><span class="field-value">${escapeHtml(edgeData.relationType || edgeData.label || '')}</span></div>
+              <div class="field-row"><span class="field-label">来源</span><span class="field-value">${escapeHtml(edgeSourceLabel)}</span></div>
+              ${edgeData.derivationKind ? `<div class="field-row"><span class="field-label">派生方式</span><span class="field-value">${escapeHtml(edgeData.derivationKind)}</span></div>` : ''}
+            </div>
+            <div class="panel-section">
+              <div class="panel-section-title">说明</div>
+              <div class="summary-highlight">${escapeHtml(edgeData.description || (edgeData.source === 'derived' ? '该关系由系统根据结构字段自动补图。' : '该关系属于本体 schema 中定义的原生关系。'))}</div>
             </div>
           `;
         } else {
@@ -332,7 +356,7 @@ export class DetailPanel {
         }
       } else if (state.selectedGraph === 'parse' && state.parseNodeData) {
         const node = state.parseNodeData;
-        const label = node.label || node.id;
+        const label = node.fullLabel || node.label || node.id;
         const nodeType = node.nodeType || node.group || '未知类型';
         this.title.textContent = `📋 解析节点: ${escapeHtml(label)}`;
         this.panelTabs.style.display = 'flex';
@@ -458,9 +482,10 @@ export class DetailPanel {
         const e = state.parseEdgeData;
         const fromNode = state.parseGraphData?.nodes?.find(n => n.id === e.from);
         const toNode = state.parseGraphData?.nodes?.find(n => n.id === e.to);
-        const fromLabel = fromNode ? (fromNode.label || fromNode.id) : e.from;
-        const toLabel = toNode ? (toNode.label || toNode.id) : e.to;
-        const edgeLabel = e.label || e.relationName || '相关';
+        const fromLabel = fromNode ? (fromNode.fullLabel || fromNode.label || fromNode.id) : e.from;
+        const toLabel = toNode ? (toNode.fullLabel || toNode.label || toNode.id) : e.to;
+        const edgeLabel = e.fullLabel || e.label || e.relationName || '相关';
+        const edgeSourceLabel = e.edgeType === 'derived' || e.isDerived ? '自动补图' : '显式关系';
 
         this.title.textContent = `🔗 解析关系: ${escapeHtml(edgeLabel)}`;
         this.panelTabs.style.display = 'flex';
@@ -472,7 +497,7 @@ export class DetailPanel {
         html += this.buildSummaryCard(
           edgeLabel,
           `#${e.id || ''}`,
-          [edgeLabel, '关系边'],
+          [edgeLabel, '关系边', edgeSourceLabel],
           this.buildSummaryMetric(fromLabel, '源节点') + this.buildSummaryMetric(toLabel, '目标节点')
         );
 
@@ -497,6 +522,14 @@ export class DetailPanel {
             <div class="field-row">
               <span class="field-label">ID</span>
               <span class="field-value" style="font-family:monospace;font-size:11px;color:#666;">${escapeHtml(e.id)}</span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">关系类型</span>
+              <span class="field-value">${escapeHtml(e.relationType || edgeLabel)}</span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">来源</span>
+              <span class="field-value">${escapeHtml(edgeSourceLabel)}</span>
             </div>
           </div>
         `;

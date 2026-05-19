@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""PART 2: rows 20-36 (17 rows)"""
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+"""PART 2: rows 20-36 (17 rows)."""
+import os
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 
 from dotenv import load_dotenv
 load_dotenv(os.path.expanduser('~/.hermes/.env'))
@@ -22,5 +26,7 @@ sys.argv = [
     '--start', '20',
     '--workers', '3',
     '--prompt-path', 'ontology/prompts/auto_v5_admin.txt',
+    '--meta-producer', 'scripts/admin_batches/run_admin_part2.py',
+    '--meta-batch-label', 'admin_full_part2',
 ]
 main()

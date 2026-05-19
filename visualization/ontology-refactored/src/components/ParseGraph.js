@@ -3,98 +3,182 @@ import { DataSet } from 'vis-data';
 import { store } from '../store/index.js';
 import { bindCustomPan } from '../utils/pan.js';
 
-const ZONE_MAP = {
-  Evidence: 'left',
-  Fact: 'leftDetail',
-  DisputeFocus: 'centerDetail',
-  CourtCase: 'core',
-  GuidingCase: 'core',
-  CaseType: 'core',
-  CaseSummary: 'centerDetail',
-  JudgmentResult: 'rightDetail',
-  Judge: 'right',
-  Attorney: 'right',
-  LegalRole: 'right',
-  Person: 'right',
-  LegalSubject: 'right',
-  LegalProvision: 'bottom',
-  Law: 'bottom',
-  LegalNorm: 'bottom',
+const MAIN_LANE_X = {
+  caseLane: -1420,
+  subjectLane: -1080,
+  evidenceLane: -680,
+  factLane: -180,
+  elementLane: 320,
+  lawLane: 820,
+  resultLane: 1260,
 };
 
-const Y_LEVEL_MAP = {
-  CourtCase: 1, GuidingCase: 0, CaseType: 0, CaseSummary: 1,
-  JudgmentResult: 1, Evidence: 0, Fact: 1, DisputeFocus: 1,
-  Judge: 0, Attorney: 1, LegalRole: 1, Person: 0,
-  LegalSubject: 0, LegalProvision: 0, Law: 0, LegalNorm: 0,
+const MAIN_LANE_Y = {
+  caseLane: 40,
+  subjectLane: 60,
+  evidenceLane: 70,
+  factLane: 70,
+  elementLane: 70,
+  lawLane: 60,
+  resultLane: 70,
 };
 
-const ZONE_X_OFFSET = {
-  left: -760, leftDetail: -440, core: 0, center: 0,
-  centerDetail: 0, right: 760, rightDetail: 460, bottom: 0,
+const MAIN_LANE_SPACING = {
+  caseLane: 280,
+  subjectLane: 145,
+  evidenceLane: 150,
+  factLane: 165,
+  elementLane: 135,
+  lawLane: 150,
+  resultLane: 170,
 };
 
-const ZONE_SPACING = {
-  left: 220, leftDetail: 240, core: 210, center: 230,
-  centerDetail: 280, right: 220, rightDetail: 260, bottom: 250
+const AUXILIARY_LANE_X_JITTER = {
+  GuidingCase: -120,
+  CaseType: 120,
+  CaseSummary: -80,
+  JudgmentResult: 0,
+  DisputeFocus: 0,
+  Judge: -90,
+  Attorney: 90,
+  LegalRole: 0,
+  LegalSubject: 0,
+  Person: 0,
 };
 
-const ZONE_Y_BASE = {
-  left: 70, leftDetail: 300, core: 80, center: 90,
-  centerDetail: 360, right: 90, rightDetail: 340, bottom: 710
+const EDGE_PRIORITY_MAP = {
+  proves_fact: 'P0',
+  matches_element: 'P0',
+  element_of_provision: 'P0',
+  judgment_cites: 'P1',
+  leads_to: 'P1',
+  resolved_by: 'P1',
+  has_fact: 'P2',
+  has_dispute_focus: 'P2',
+  submitted_for: 'P2',
+  has_summary: 'P2',
+};
+
+const STRUCTURAL_RELATION_TYPES = new Set(['has_fact', 'has_dispute_focus', 'submitted_for', 'has_summary']);
+
+const CASE_CONTEXT_RELATION_TYPES = new Set([
+  '证据',
+  '事实',
+  '裁判',
+  '争议焦点',
+  '审理',
+  '审判',
+  '案由',
+  '一级案由',
+  '二级案由',
+  '上诉',
+  '上诉人',
+  '原审被告人',
+  '同案犯',
+  '原公诉机关',
+  '货主',
+  '代理',
+  '关联',
+  'appeals_to',
+  'tried_by',
+]);
+
+const AGGREGATE_GROUP_CONFIG = {
+  DisputeFocus: { key: 'focuses', label: '焦点', lane: 'resultLane' },
+  JudgmentResult: { key: 'judgments', label: '裁判', lane: 'resultLane' },
+  CaseSummary: { key: 'summary', label: '摘要', lane: 'resultLane' },
+};
+
+const ANALYSIS_MODE_META = {
+  overview: {
+    label: '全貌模式',
+    theme: 'overview',
+    summary: '查看案件整体结构，默认保留全量实体并对结构边降噪。',
+  },
+  subgraph: {
+    label: '核心子图',
+    theme: 'subgraph',
+    summary: '仅保留核心链路骨架，快速检查证据到裁判的主流程。',
+  },
+  local_focus: {
+    label: '局部展开',
+    theme: 'local',
+    summary: '围绕当前选中节点保留一跳关键邻域，适合局部阅读。',
+  },
+  evidence_chain: {
+    label: '证据链',
+    theme: 'evidence',
+    summary: '突出 证据 -> 事实 -> 法条元素/法条 -> 裁判 的证据主链。',
+  },
+  judgment_basis: {
+    label: '裁判依据链',
+    theme: 'judgment',
+    summary: '突出 事实/焦点 -> 法条元素 -> 法条 -> 裁判 的依据路径。',
+  },
+  trace_upstream: {
+    label: '上游追踪',
+    theme: 'upstream',
+    summary: '从当前节点反向回溯关键来源路径。',
+  },
+  trace_downstream: {
+    label: '下游追踪',
+    theme: 'downstream',
+    summary: '从当前节点向后追踪关键影响路径。',
+  },
+  playback: {
+    label: '逻辑回放',
+    theme: 'playback',
+    summary: '按证据到裁判的顺序依次点亮逻辑流转步骤。',
+  },
+  xray: {
+    label: '异常断链审查',
+    theme: 'xray',
+    summary: '突出孤立节点、无证据事实和潜在断链位置。',
+  },
 };
 
 export class ParseGraph {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
+    this.layer = document.getElementById('parseGraphLayer');
     this.network = null;
     this.nodesDs = new DataSet();
     this.edgesDs = new DataSet();
-    this.overlayHost = this.container;
+    this.overlayHost = this.layer || this.container;
     this.viewMode = 'all';
     this.lastRenderedData = null;
     this.needsLayout = false;
+    this.isMainView = false;
+    this.semanticZoom = store.getState().parseGraphSemanticZoom || 'mid';
+    this.localFocusMode = false;
+    this.pathPreset = 'none';
+    this.traceDirection = 'none';
+    this.toolDescText = '请选择上方的分析模式。这些工具可以帮助你过滤冗余信息、检查逻辑断裂或一键排版案件结构。';
+    this.traceSummaryText = '';
+    this.currentAnalysisMode = 'overview';
     this.init();
   }
 
   mountToMainView() {
-    const mainView = document.getElementById('kgMainView');
-    if (!mainView) return;
-    
-    // Move the entire container to the main view so vis.js coordinate math works correctly
-    if (this.network && this.network.canvas && !this.isMainView) {
-      mainView.appendChild(this.container);
-      this.isMainView = true;
-      
-      // Force height adjustment based on terminal state
-      const terminal = document.getElementById('parseTerminal');
-      if (terminal && !terminal.classList.contains('collapsed')) {
-        const termHeight = terminal.offsetHeight;
-        mainView.style.height = `calc(100vh - ${termHeight}px)`;
-      } else {
-        mainView.style.height = 'calc(100vh - 36px)';
-      }
-      
-      setTimeout(() => {
-        this.network.setSize('100%', '100%');
-        this.network.fit({ animation: true });
-      }, 100);
-    }
+    if (!this.network || !this.layer) return;
+    this.isMainView = true;
+    this.layer.style.display = 'block';
+    this.container.style.display = 'block';
+    this.overlayHost = this.layer;
+    setTimeout(() => {
+      this.network.setSize('100%', '100%');
+      this.network.redraw();
+      this.renderZoneOverlay();
+      this.network.fit({ animation: true });
+    }, 100);
   }
 
   mountToTerminal() {
-    const termVisContainer = document.getElementById('termVisContainer');
-    if (!termVisContainer) return;
-    
-    // Move the container back to terminal
-    if (this.network && this.network.canvas) {
-      termVisContainer.appendChild(this.container);
-      this.isMainView = false;
-      setTimeout(() => {
-        this.network.setSize('100%', '100%');
-        this.network.fit({ animation: true });
-      }, 100);
-    }
+    if (!this.network || !this.layer) return;
+    this.isMainView = false;
+    this.layer.style.display = 'none';
+    this.container.style.display = 'none';
+    this.overlayHost = this.layer;
   }
 
   init() {
@@ -103,7 +187,7 @@ export class ParseGraph {
     const options = {
       physics: { enabled: false },
       interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true, zoomView: false, dragView: false, dragNodes: true },
-      edges: { smooth: { type: 'curvedCW', roundness: 0.1 }, font: { size: 9, color: '#64748b' }, selectionWidth: 2.2 },
+      edges: { smooth: { type: 'curvedCW', roundness: 0.1 }, font: { size: 9, color: '#64748b', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' }, selectionWidth: 2.2 },
       nodes: { font: { face: 'Microsoft YaHei, PingFang SC, sans-serif', multi: 'md' }, borderWidth: 2, shadow: { enabled: true, size: 3 } },
       layout: { improvedLayout: false, randomSeed: 42 },
     };
@@ -116,6 +200,11 @@ export class ParseGraph {
         const nodeId = params.nodes[0];
         // Skip cluster nodes for panel opening
         if (typeof nodeId === 'string' && nodeId.startsWith('cluster_')) return;
+        const nodeData = this.nodesDs.get(nodeId);
+        if (nodeData?.nodeType === 'AggregateGroup') {
+          this.toggleAggregateGroup(nodeData.aggregateKey);
+          return;
+        }
         
         store.setState({
           selectedNodeId: nodeId,
@@ -124,7 +213,11 @@ export class ParseGraph {
           isPanelOpen: true,
           parseNodeData: this.nodesDs.get(nodeId)
         });
-        
+
+        if (this.localFocusMode || this.traceDirection !== 'none') {
+          this.updateView();
+        }
+
         this.highlightNeighbors(nodeId);
       } else if (params.edges.length > 0) {
         const edgeId = params.edges[0];
@@ -157,7 +250,10 @@ export class ParseGraph {
 
     this.network.on('zoom', () => {
       if (this.zoomTimeout) clearTimeout(this.zoomTimeout);
-      this.zoomTimeout = setTimeout(() => this.renderZoneOverlay(), 16);
+      this.zoomTimeout = setTimeout(() => {
+        this.renderZoneOverlay();
+        this.updateSemanticZoom();
+      }, 16);
     });
 
     // Native zoom and pan will work now that we reparent this.container instead of just the canvas.frame.
@@ -251,6 +347,53 @@ export class ParseGraph {
     this.initGraphTools();
   }
 
+  getRelationType(edge) {
+    return edge?.relationType || edge?.relation_type || edge?.label || '';
+  }
+
+  getEdgePriority(edge) {
+    const relationType = this.getRelationType(edge);
+    return EDGE_PRIORITY_MAP[relationType] || 'P1';
+  }
+
+  isStructuralEdge(edge) {
+    return STRUCTURAL_RELATION_TYPES.has(this.getRelationType(edge));
+  }
+
+  isCaseContextEdge(edge, rawNodeMap = null) {
+    const relationType = this.getRelationType(edge);
+    if (CASE_CONTEXT_RELATION_TYPES.has(relationType)) return true;
+    if (!rawNodeMap) return false;
+    const fromType = this.getNodeType(rawNodeMap.get(edge.from));
+    const toType = this.getNodeType(rawNodeMap.get(edge.to));
+    return relationType !== 'proves_fact'
+      && relationType !== 'matches_element'
+      && relationType !== 'element_of_provision'
+      && relationType !== 'judgment_cites'
+      && relationType !== 'leads_to'
+      && relationType !== 'resolved_by'
+      && (fromType === 'CourtCase' || toType === 'CourtCase')
+      && (fromType === 'LegalSubject' || toType === 'LegalSubject' || fromType === 'Judge' || toType === 'Judge' || fromType === 'Attorney' || toType === 'Attorney' || fromType === 'CaseType' || toType === 'CaseType');
+  }
+
+  isAggregateNode(node) {
+    return this.getNodeType(node) === 'AggregateGroup';
+  }
+
+  toggleAggregateGroup(aggregateKey) {
+    const state = store.getState();
+    const expandedGroups = { ...(state.parseGraphExpandedGroups || {}) };
+    expandedGroups[aggregateKey] = !expandedGroups[aggregateKey];
+    store.setState({
+      parseGraphExpandedGroups: expandedGroups,
+      selectedNodeId: null,
+      selectedEdgeId: null,
+      isPanelOpen: false,
+    });
+    this.lastRenderedData = null;
+    this.render(store.getState());
+  }
+
   initGraphTools() {
     // We will place the tools in the terminal's "图" tab instead of the main container
     const termGraphInfo = document.getElementById('termGraphInfo');
@@ -263,38 +406,79 @@ export class ParseGraph {
         <div class="graph-tools-grid">
           <button id="btnSubgraph" class="tool-btn"><span class="icon">🎯</span> 核心子图透视</button>
           <button id="btnSmartLayout" class="tool-btn"><span class="icon">✨</span> 智能语义排版</button>
+          <button id="btnLocalFocus" class="tool-btn"><span class="icon">🧭</span> 局部展开</button>
+          <button id="btnEvidenceChain" class="tool-btn"><span class="icon">🧾</span> 证据链</button>
+          <button id="btnJudgmentBasis" class="tool-btn"><span class="icon">⚖</span> 裁判依据链</button>
+          <button id="btnTraceUpstream" class="tool-btn"><span class="icon">⬅</span> 上游追踪</button>
+          <button id="btnTraceDownstream" class="tool-btn"><span class="icon">➡</span> 下游追踪</button>
           <button id="btnPlayback" class="tool-btn"><span class="icon">▶</span> 逻辑动态回放</button>
           <button id="btnXRay" class="tool-btn"><span class="icon">🩻</span> 异常断链审查</button>
           <button id="btnRestoreGraph" class="tool-btn" style="grid-column: span 2; justify-content: center; background: #f8fafc; color: #64748b; border-color: #cbd5e1;"><span class="icon">↺</span> 恢复初始状态</button>
         </div>
-        <div class="graph-tools-desc" id="graphToolDesc">请选择上方的分析模式。这些工具可以帮助你过滤冗余信息、检查逻辑断裂或一键排版案件结构。</div>
+        <div class="graph-tools-desc" id="graphToolDesc"></div>
       `;
       termGraphInfo.appendChild(toolbar);
       
-      const updateDesc = (text) => {
-        const desc = toolbar.querySelector('#graphToolDesc');
-        if (desc) desc.textContent = text;
-      };
+      this.toolDescEl = toolbar.querySelector('#graphToolDesc');
+      this.ensureAnalysisModeElements();
+      this.renderToolDescription();
+      this.syncToolButtonStates();
 
       toolbar.querySelector('#btnSubgraph').addEventListener('click', () => {
         this.toggleSubgraphMode();
-        updateDesc(this.subgraphMode ? '已开启核心子图透视：隐藏边缘节点，仅显示 证据 -> 事实 -> 焦点 -> 法条 的骨架链路。' : '已恢复全量图谱显示。');
+        this.setToolDescription(this.subgraphMode ? '已开启核心子图透视：隐藏边缘节点，仅显示 证据 -> 事实 -> 焦点 -> 法条 的骨架链路。' : '已恢复全量图谱显示。');
       });
       toolbar.querySelector('#btnSmartLayout').addEventListener('click', () => {
         this.applySmartLayout();
-        updateDesc('已应用智能语义排版：事实纵向排列，焦点沉底，当事人分布四周。');
+        this.setToolDescription('已应用智能语义排版：事实纵向排列，焦点沉底，当事人分布四周。');
+      });
+      toolbar.querySelector('#btnLocalFocus').addEventListener('click', () => {
+        const changed = this.toggleLocalFocusMode();
+        if (changed === false) {
+          this.setToolDescription('请先点击一个节点，再使用局部展开。');
+          return;
+        }
+        this.setToolDescription(this.localFocusMode ? '已开启局部展开：围绕当前节点仅保留一跳关键邻域。' : '已关闭局部展开，恢复主图全貌。');
+      });
+      toolbar.querySelector('#btnEvidenceChain').addEventListener('click', () => {
+        const preset = this.togglePathPreset('evidence_chain');
+        this.setToolDescription(preset === 'evidence_chain' ? '已切到证据链：突出 证据 -> 事实 -> 法条元素/法条 -> 裁判 相关主链。' : '已关闭证据链聚焦，恢复默认主图。');
+      });
+      toolbar.querySelector('#btnJudgmentBasis').addEventListener('click', () => {
+        const preset = this.togglePathPreset('judgment_basis');
+        this.setToolDescription(preset === 'judgment_basis' ? '已切到裁判依据链：突出 事实/焦点 -> 法条元素 -> 法条 -> 裁判 的裁判依据路径。' : '已关闭裁判依据链聚焦，恢复默认主图。');
+      });
+      toolbar.querySelector('#btnTraceUpstream').addEventListener('click', () => {
+        const changed = this.toggleTraceDirection('upstream');
+        if (changed === false) {
+          this.setToolDescription('请先点击一个节点，再使用上游追踪。');
+          return;
+        }
+        this.setToolDescription(this.traceDirection === 'upstream' ? '已开启上游追踪：从当前节点反向回溯关键来源路径。' : '已关闭上游追踪。');
+      });
+      toolbar.querySelector('#btnTraceDownstream').addEventListener('click', () => {
+        const changed = this.toggleTraceDirection('downstream');
+        if (changed === false) {
+          this.setToolDescription('请先点击一个节点，再使用下游追踪。');
+          return;
+        }
+        this.setToolDescription(this.traceDirection === 'downstream' ? '已开启下游追踪：从当前节点向后追踪关键影响路径。' : '已关闭下游追踪。');
       });
       toolbar.querySelector('#btnPlayback').addEventListener('click', () => {
         this.togglePlayback();
-        updateDesc(this.playbackInterval ? '正在播放逻辑推导动画：按照 证据->事实->焦点->法条 顺序点亮。' : '逻辑回放已停止。');
+        this.setToolDescription(this.playbackInterval ? '正在播放逻辑推导动画：按照 证据->事实->焦点->法条 顺序点亮。' : '逻辑回放已停止。');
       });
       toolbar.querySelector('#btnXRay').addEventListener('click', () => {
         this.toggleXRayMode();
-        updateDesc(this.xrayMode ? '已开启 X 光审查：红色虚线高亮显示孤立节点、无证据事实和断链的争议焦点。' : '已关闭 X 光审查模式。');
+        this.setToolDescription(this.xrayMode ? '已开启 X 光审查：红色虚线高亮显示孤立节点、无证据事实和断链的争议焦点。' : '已关闭 X 光审查模式。');
       });
       toolbar.querySelector('#btnRestoreGraph').addEventListener('click', () => {
         this.subgraphMode = false;
         this.xrayMode = false;
+        this.localFocusMode = false;
+        this.pathPreset = 'none';
+        this.traceDirection = 'none';
+        this.traceSummaryText = '';
         if (this.playbackInterval) {
           clearInterval(this.playbackInterval);
           this.playbackInterval = null;
@@ -306,21 +490,133 @@ export class ParseGraph {
         
         this.lastRenderedData = null;
         this.render(store.getState());
+        this.syncToolButtonStates();
         
         setTimeout(() => {
           this.network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
         }, 100);
-        updateDesc('已恢复图谱的初始完整状态和默认排版。');
+        this.setToolDescription('已恢复图谱的初始完整状态和默认排版。');
       });
     }
   }
 
+  renderToolDescription() {
+    if (!this.toolDescEl) return;
+    const parts = [this.toolDescText, this.traceSummaryText].filter(Boolean);
+    this.toolDescEl.textContent = parts.join(' | ');
+  }
+
+  ensureAnalysisModeElements() {
+    if (!this.toolModeEl || !this.toolModeEl.isConnected) {
+      this.toolModeEl = document.getElementById('termGraphModeBar');
+    }
+    if (!this.toolModeBadgeEl || !this.toolModeBadgeEl.isConnected) {
+      this.toolModeBadgeEl = document.getElementById('termGraphModeBadge');
+    }
+    if (!this.toolModeSummaryEl || !this.toolModeSummaryEl.isConnected) {
+      this.toolModeSummaryEl = document.getElementById('termGraphModeSummary');
+    }
+  }
+
+  getActiveAnalysisMode() {
+    if (this.xrayMode) return 'xray';
+    if (this.playbackInterval) return 'playback';
+    if (this.traceDirection === 'upstream') return 'trace_upstream';
+    if (this.traceDirection === 'downstream') return 'trace_downstream';
+    if (this.pathPreset === 'evidence_chain') return 'evidence_chain';
+    if (this.pathPreset === 'judgment_basis') return 'judgment_basis';
+    if (this.localFocusMode) return 'local_focus';
+    if (this.subgraphMode) return 'subgraph';
+    return 'overview';
+  }
+
+  renderAnalysisModeState() {
+    this.ensureAnalysisModeElements();
+    this.currentAnalysisMode = this.getActiveAnalysisMode();
+    const meta = ANALYSIS_MODE_META[this.currentAnalysisMode] || ANALYSIS_MODE_META.overview;
+    if (this.toolModeEl) {
+      this.toolModeEl.dataset.mode = meta.theme;
+    }
+    if (this.toolModeBadgeEl) {
+      this.toolModeBadgeEl.textContent = meta.label;
+    }
+    if (this.toolModeSummaryEl) {
+      this.toolModeSummaryEl.textContent = meta.summary;
+    }
+  }
+
+  setToolDescription(text) {
+    this.toolDescText = text || '';
+    this.renderToolDescription();
+  }
+
+  setTraceSummary(text) {
+    this.traceSummaryText = text || '';
+    this.renderToolDescription();
+  }
+
+  setToolButtonState(buttonId, active, background = '#2563eb') {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
+    button.classList.toggle('active', active);
+    button.style.background = active ? background : '';
+    button.style.color = active ? 'white' : '';
+  }
+
+  syncToolButtonStates() {
+    this.setToolButtonState('btnLocalFocus', this.localFocusMode, '#0ea5e9');
+    this.setToolButtonState('btnEvidenceChain', this.pathPreset === 'evidence_chain', '#7c3aed');
+    this.setToolButtonState('btnJudgmentBasis', this.pathPreset === 'judgment_basis', '#dc2626');
+    this.setToolButtonState('btnTraceUpstream', this.traceDirection === 'upstream', '#0f766e');
+    this.setToolButtonState('btnTraceDownstream', this.traceDirection === 'downstream', '#ea580c');
+    this.setToolButtonState('btnSubgraph', this.subgraphMode, '#2563eb');
+    this.setToolButtonState('btnPlayback', Boolean(this.playbackInterval), '#f59e0b');
+    this.setToolButtonState('btnXRay', this.xrayMode, '#dc2626');
+    this.renderAnalysisModeState();
+  }
+
+  toggleLocalFocusMode() {
+    if (!this.localFocusMode && !store.getState().selectedNodeId) {
+      return false;
+    }
+    this.localFocusMode = !this.localFocusMode;
+    if (this.localFocusMode) {
+      this.pathPreset = 'none';
+    }
+    this.syncToolButtonStates();
+    this.updateView();
+    setTimeout(() => this.network?.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } }), 60);
+    return true;
+  }
+
+  togglePathPreset(preset) {
+    this.pathPreset = this.pathPreset === preset ? 'none' : preset;
+    if (this.pathPreset !== 'none') {
+      this.localFocusMode = false;
+    }
+    this.syncToolButtonStates();
+    this.updateView();
+    setTimeout(() => this.network?.fit({ animation: { duration: 450, easingFunction: 'easeInOutQuad' } }), 60);
+    return this.pathPreset;
+  }
+
+  toggleTraceDirection(direction) {
+    if (!store.getState().selectedNodeId) {
+      return false;
+    }
+    this.traceDirection = this.traceDirection === direction ? 'none' : direction;
+    if (this.traceDirection !== 'none') {
+      this.localFocusMode = false;
+    }
+    this.syncToolButtonStates();
+    this.updateView();
+    setTimeout(() => this.network?.fit({ animation: { duration: 420, easingFunction: 'easeInOutQuad' } }), 60);
+    return true;
+  }
+
   toggleSubgraphMode() {
     this.subgraphMode = !this.subgraphMode;
-    const btn = document.getElementById('btnSubgraph');
     if (this.subgraphMode) {
-      btn.classList.add('active');
-      btn.style.background = '#3b82f6'; btn.style.color = 'white';
       const coreTypes = ['Evidence', 'Fact', 'DisputeFocus', 'LegalProvision', 'JudgmentResult', 'CaseSummary'];
       const nodes = this.nodesDs.get();
       const updates = nodes.map(n => {
@@ -330,70 +626,21 @@ export class ParseGraph {
       this.nodesDs.update(updates);
       this.network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
     } else {
-      btn.classList.remove('active');
-      btn.style.background = ''; btn.style.color = '';
       const nodes = this.nodesDs.get();
       this.nodesDs.update(nodes.map(n => ({ id: n.id, hidden: false })));
       this.network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
     }
+    this.syncToolButtonStates();
   }
 
   applySmartLayout() {
     const nodes = this.nodesDs.get();
     const edges = this.edgesDs.get();
-    const updates = [];
-    
-    const facts = nodes.filter(n => (n.nodeType || n.group) === 'Fact');
-    const courts = nodes.filter(n => (n.nodeType || n.group) === 'CourtCase');
-    const subjects = nodes.filter(n => (n.nodeType || n.group) === 'LegalSubject' || (n.nodeType || n.group) === 'Person');
-    const provisions = nodes.filter(n => (n.nodeType || n.group) === 'LegalProvision');
-    const evidences = nodes.filter(n => (n.nodeType || n.group) === 'Evidence');
-    const disputeFocuses = nodes.filter(n => (n.nodeType || n.group) === 'DisputeFocus');
-    const others = nodes.filter(n => !['Fact', 'CourtCase', 'LegalSubject', 'Person', 'LegalProvision', 'Evidence', 'DisputeFocus'].includes(n.nodeType || n.group));
-
-    // Vertical Fact backbone
-    facts.forEach((n, i) => {
-      updates.push({ id: n.id, x: 0, y: i * 150 });
-    });
-
-    // Courts at top
-    courts.forEach((n, i) => {
-      updates.push({ id: n.id, x: (i - (courts.length-1)/2) * 300, y: -200 });
-    });
-
-    // Dispute Focuses near bottom center
-    const focusStartY = facts.length * 150 + 50;
-    disputeFocuses.forEach((n, i) => {
-      updates.push({ id: n.id, x: (i - (disputeFocuses.length-1)/2) * 250, y: focusStartY });
-    });
-
-    // Provisions at very bottom
-    const provStartY = focusStartY + 150;
-    provisions.forEach((n, i) => {
-      updates.push({ id: n.id, x: (i - (provisions.length-1)/2) * 250, y: provStartY });
-    });
-
-    // Subjects at corners
-    const corners = [[-800, -200], [800, -200], [-800, provStartY], [800, provStartY]];
-    subjects.forEach((n, i) => {
-      const corner = corners[i % 4];
-      updates.push({ id: n.id, x: corner[0], y: corner[1] + Math.floor(i/4)*120 });
-    });
-
-    // Evidence on left side, aligned with facts if possible
-    evidences.forEach((n, i) => {
-      updates.push({ id: n.id, x: -450, y: i * 100 });
-    });
-
-    // Others on right side
-    others.forEach((n, i) => {
-      updates.push({ id: n.id, x: 450, y: i * 100 });
-    });
-
-    this.nodesDs.update(updates);
+    this.nodesDs.update(this.buildVerticalLanePositions(nodes));
     this.network.fit({ animation: { duration: 800, easingFunction: 'easeInOutQuad' } });
     
     // Highlight CourtCase diff edges if multiple courts
+    const courts = nodes.filter(n => this.getNodeType(n) === 'CourtCase');
     if (courts.length > 1) {
       const courtIds = courts.map(c => c.id);
       const edgeUpdates = edges.map(e => {
@@ -413,9 +660,9 @@ export class ParseGraph {
       const btn = document.getElementById('btnPlayback');
       if (btn) {
         btn.textContent = '▶ 逻辑回放';
-        btn.style.background = ''; btn.style.color = '';
       }
       this.clearTypeFocus();
+      this.syncToolButtonStates();
       return;
     }
 
@@ -432,8 +679,8 @@ export class ParseGraph {
     const btn = document.getElementById('btnPlayback');
     if (btn) {
       btn.textContent = '⏹ 停止回放';
-      btn.style.background = '#e74c3c'; btn.style.color = 'white';
     }
+    this.syncToolButtonStates();
     
     this.playbackInterval = setInterval(() => {
       if (currentStep >= steps.length) {
@@ -441,8 +688,8 @@ export class ParseGraph {
         this.playbackInterval = null;
         if (btn) {
           btn.textContent = '▶ 逻辑回放';
-          btn.style.background = ''; btn.style.color = '';
         }
+        this.syncToolButtonStates();
         setTimeout(() => this.clearTypeFocus(), 2000);
         return;
       }
@@ -466,11 +713,7 @@ export class ParseGraph {
 
   toggleXRayMode() {
     this.xrayMode = !this.xrayMode;
-    const btn = document.getElementById('btnXRay');
     if (this.xrayMode) {
-      btn.classList.add('active');
-      btn.style.background = '#8e44ad'; btn.style.color = 'white';
-      
       const nodes = this.nodesDs.get();
       const edges = this.edgesDs.get();
       
@@ -513,10 +756,9 @@ export class ParseGraph {
       });
       this.nodesDs.update(updates);
     } else {
-      btn.classList.remove('active');
-      btn.style.background = ''; btn.style.color = '';
       this.clearTypeFocus();
     }
+    this.syncToolButtonStates();
   }
 
   locateAndFlashNode(targetKey) {
@@ -587,20 +829,49 @@ export class ParseGraph {
     
     const updatedNodes = nodes.map(n => {
       const isMatch = highlightNodeIds.includes(n.id);
+      const isFocus = n.id === nodeId;
       return {
         id: n.id,
-        color: isMatch ? undefined : { background: 'rgba(241, 245, 249, 0.3)', border: 'rgba(226, 232, 240, 0.3)' },
-        font: { color: isMatch ? undefined : 'rgba(203, 213, 225, 0.3)' }
+        color: isMatch
+          ? (isFocus ? { background: '#fef3c7', border: '#d97706' } : undefined)
+          : { background: 'rgba(241, 245, 249, 0.22)', border: 'rgba(226, 232, 240, 0.22)' },
+        borderWidth: isFocus ? 3.5 : undefined,
+        shadow: isFocus
+          ? { enabled: true, color: 'rgba(217,119,6,0.32)', size: 20 }
+          : (isMatch ? { enabled: true, color: 'rgba(37,99,235,0.18)', size: 10 } : { enabled: false }),
+        font: isMatch
+          ? (isFocus ? { color: '#7c2d12', strokeWidth: 4, strokeColor: '#ffffff' } : undefined)
+          : { color: 'rgba(203, 213, 225, 0.26)' }
       };
     });
     
     const updatedEdges = edges.map(e => {
       const isMatch = connectedEdges.includes(e.id);
+      const isP0 = e.edgePriority === 'P0';
+      const isP1 = e.edgePriority === 'P1';
+      const isContext = e.isCaseContextEdge;
       return {
         id: e.id,
-        color: isMatch ? { color: '#3b82f6', highlight: '#2563eb' } : { color: 'rgba(226, 232, 240, 0.2)' },
-        width: isMatch ? 3 : 1,
-        font: isMatch ? { size: 12, color: '#2563eb', strokeWidth: 3, strokeColor: '#ffffff' } : { size: 9, color: 'rgba(203, 213, 225, 0.3)' }
+        color: isMatch
+          ? (isP0
+              ? { color: '#2563eb', highlight: '#1d4ed8' }
+              : isP1
+                ? { color: '#4f46e5', highlight: '#4338ca' }
+                : isContext
+                  ? { color: 'rgba(148,163,184,0.38)', highlight: '#94a3b8' }
+                  : { color: '#64748b', highlight: '#475569' })
+          : { color: 'rgba(226, 232, 240, 0.16)' },
+        width: isMatch ? (isP0 ? 3.6 : isP1 ? 2.6 : isContext ? 1.1 : 1.8) : 0.8,
+        dashes: isMatch ? Boolean(isContext || e.edgePriority === 'P2') : true,
+        font: isMatch
+          ? {
+              size: isP0 ? 12 : 10,
+              color: isP0 ? '#1d4ed8' : isP1 ? '#4338ca' : '#64748b',
+              align: 'horizontal',
+              strokeWidth: 3,
+              strokeColor: '#ffffff'
+            }
+          : { size: 9, color: 'rgba(203, 213, 225, 0.22)', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' }
       };
     });
     
@@ -612,14 +883,7 @@ export class ParseGraph {
     if (!this.network) return;
     const state = store.getState();
     if (state.parseGraphData && !state.selectedNodeId) {
-      // Restore styles from store
-      this.nodesDs.update(this.styleNodes(state.parseGraphData.nodes));
-      this.edgesDs.update(state.parseGraphData.edges.map(e => ({ 
-        id: e.id, 
-        color: undefined, 
-        width: undefined, 
-        font: undefined 
-      })));
+      this.syncRenderedGraph({ preservePositions: true });
     }
   }
 
@@ -665,143 +929,870 @@ export class ParseGraph {
 
   updateView() {
     if (!this.lastRenderedData) return;
+    this.syncRenderedGraph({ reposition: true });
+  }
+
+  getRenderedGraph(state = store.getState()) {
+    if (!this.lastRenderedData) {
+      return { nodes: [], edges: [] };
+    }
 
     const { nodes = [], edges = [] } = this.lastRenderedData;
-    let filteredNodes = nodes;
-    let filteredEdges = edges;
-    const state = store.getState();
+    const displayGraph = this.buildDisplayGraph(nodes, edges, state);
+    let filteredNodes = displayGraph.nodes;
+    let filteredEdges = displayGraph.edges;
 
     if (this.viewMode === 'related' && state.selectedNodeId) {
       const focusNodeId = state.selectedNodeId;
-      const focusEdgeIds = new Set();
       const focusNodeIds = new Set([focusNodeId]);
-      
-      edges.forEach(e => {
-        if (e.from === focusNodeId || e.to === focusNodeId) {
-          focusEdgeIds.add(e.id);
-          focusNodeIds.add(e.from);
-          focusNodeIds.add(e.to);
+
+      filteredEdges.forEach((edge) => {
+        if (edge.from === focusNodeId || edge.to === focusNodeId) {
+          focusNodeIds.add(edge.from);
+          focusNodeIds.add(edge.to);
         }
       });
-      
-      filteredNodes = nodes.filter(n => focusNodeIds.has(n.id));
-      filteredEdges = edges.filter(e => focusEdgeIds.has(e.id));
+
+      filteredNodes = filteredNodes.filter((node) => focusNodeIds.has(node.id));
+      filteredEdges = filteredEdges.filter((edge) => focusNodeIds.has(edge.from) && focusNodeIds.has(edge.to));
     }
 
-    if (this.viewMode === 'related') {
-      this.nodesDs.clear();
-      this.nodesDs.add(this.styleNodes(filteredNodes));
-      this.edgesDs.clear();
-      this.edgesDs.add(filteredEdges);
+    ({ nodes: filteredNodes, edges: filteredEdges } = this.applyFocusFilters(filteredNodes, filteredEdges, state));
+
+    return {
+      nodes: filteredNodes,
+      edges: filteredEdges,
+    };
+  }
+
+  syncRenderedGraph({ reposition = false, preservePositions = false } = {}) {
+    const state = store.getState();
+    const renderedGraph = this.getRenderedGraph(state);
+    this.refreshTraceSummary(state, renderedGraph.nodes);
+    const styledNodes = this.styleNodes(renderedGraph.nodes, state);
+    const styledEdges = this.styleEdges(renderedGraph.edges, state);
+
+    let nodesToRender = styledNodes;
+    if (preservePositions) {
+      const currentNodeMap = new Map(this.nodesDs.get().map((node) => [node.id, node]));
+      nodesToRender = styledNodes.map((node) => {
+        const current = currentNodeMap.get(node.id);
+        if (!current) return node;
+        return {
+          ...node,
+          x: current.x ?? node.x,
+          y: current.y ?? node.y,
+        };
+      });
+    }
+
+    this.nodesDs.clear();
+    this.nodesDs.add(nodesToRender);
+    this.edgesDs.clear();
+    this.edgesDs.add(styledEdges);
+
+    if (reposition) {
       this.apply2DLayout();
-    } else {
-      this.nodesDs.clear();
-      this.nodesDs.add(this.styleNodes(nodes));
-      this.edgesDs.clear();
-      this.edgesDs.add(edges);
-      this.apply2DLayout();
+    } else if (this.network) {
+      this.network.redraw();
     }
   }
 
-  styleNodes(nodes) {
+  applyFocusFilters(nodes, edges, state) {
+    let filteredNodes = nodes;
+    let filteredEdges = edges;
+
+    if (this.localFocusMode && state.selectedNodeId) {
+      ({ nodes: filteredNodes, edges: filteredEdges } = this.filterLocalFocus(filteredNodes, filteredEdges, state.selectedNodeId));
+    }
+
+    if (this.pathPreset !== 'none') {
+      ({ nodes: filteredNodes, edges: filteredEdges } = this.filterPathPreset(filteredNodes, filteredEdges, this.pathPreset));
+    }
+
+    if (this.traceDirection !== 'none' && state.selectedNodeId) {
+      ({ nodes: filteredNodes, edges: filteredEdges } = this.filterDirectionalTrace(
+        filteredNodes,
+        filteredEdges,
+        state.selectedNodeId,
+        this.traceDirection
+      ));
+    }
+
+    return {
+      nodes: filteredNodes,
+      edges: filteredEdges,
+    };
+  }
+
+  filterLocalFocus(nodes, edges, focusNodeId) {
+    const keepNodeIds = new Set([focusNodeId]);
+    edges.forEach((edge) => {
+      if (edge.from === focusNodeId || edge.to === focusNodeId) {
+        keepNodeIds.add(edge.from);
+        keepNodeIds.add(edge.to);
+      }
+    });
+
+    return {
+      nodes: nodes.filter((node) => keepNodeIds.has(node.id)),
+      edges: edges.filter((edge) => keepNodeIds.has(edge.from) && keepNodeIds.has(edge.to)),
+    };
+  }
+
+  getPresetConfig(preset) {
+    if (preset === 'evidence_chain') {
+      return {
+        types: new Set(['CourtCase', 'AggregateGroup', 'Evidence', 'Fact', 'DisputeFocus', 'LegalProvisionElement', 'LegalProvision', 'JudgmentResult', 'CaseSummary']),
+        relations: new Set(['aggregate_link', 'proves_fact', 'matches_element', 'element_of_provision', 'judgment_cites', 'leads_to', 'resolved_by']),
+      };
+    }
+
+    if (preset === 'judgment_basis') {
+      return {
+        types: new Set(['CourtCase', 'AggregateGroup', 'Fact', 'DisputeFocus', 'LegalProvisionElement', 'LegalProvision', 'JudgmentResult', 'CaseSummary']),
+        relations: new Set(['aggregate_link', 'matches_element', 'element_of_provision', 'judgment_cites', 'leads_to', 'resolved_by']),
+      };
+    }
+
+    return null;
+  }
+
+  filterPathPreset(nodes, edges, preset) {
+    const config = this.getPresetConfig(preset);
+    if (!config) {
+      return { nodes, edges };
+    }
+
+    const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+    const keepEdgeIds = new Set();
+    const keepNodeIds = new Set();
+
+    edges.forEach((edge) => {
+      const relationType = this.getRelationType(edge);
+      const fromType = this.getNodeType(nodeMap.get(edge.from));
+      const toType = this.getNodeType(nodeMap.get(edge.to));
+      const relationMatched = config.relations.has(relationType);
+      const typeMatched = config.types.has(fromType) && config.types.has(toType);
+
+      if (relationMatched && typeMatched) {
+        keepEdgeIds.add(edge.id);
+        keepNodeIds.add(edge.from);
+        keepNodeIds.add(edge.to);
+      }
+    });
+
+    nodes.forEach((node) => {
+      if (this.isAggregateNode(node) && config.types.has(this.getNodeType(node))) {
+        keepNodeIds.add(node.id);
+      }
+    });
+
+    return {
+      nodes: nodes.filter((node) => keepNodeIds.has(node.id)),
+      edges: edges.filter((edge) => keepEdgeIds.has(edge.id)),
+    };
+  }
+
+  filterDirectionalTrace(nodes, edges, focusNodeId, direction) {
+    const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+    const keepNodeIds = new Set([focusNodeId]);
+    const keepEdgeIds = new Set();
+    const nodeDepthMap = new Map([[focusNodeId, 0]]);
+    const edgeDepthMap = new Map();
+    const queue = [{ nodeId: focusNodeId, depth: 0 }];
+    const visited = new Set([`${focusNodeId}:0`]);
+    const maxDepth = 3;
+
+    const eligibleEdges = edges.filter((edge) => {
+      if (edge.isAggregateEdge) return true;
+      if (edge.edgePriority === 'P0' || edge.edgePriority === 'P1') return true;
+      return Boolean(edge.isExpandedStructural);
+    });
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current || current.depth >= maxDepth) continue;
+
+      eligibleEdges.forEach((edge) => {
+        const matchesDirection = direction === 'upstream'
+          ? edge.to === current.nodeId
+          : edge.from === current.nodeId;
+        if (!matchesDirection) return;
+
+        const nextNodeId = direction === 'upstream' ? edge.from : edge.to;
+        if (!nodeMap.has(nextNodeId) && nextNodeId !== focusNodeId) return;
+
+        keepEdgeIds.add(edge.id);
+        keepNodeIds.add(edge.from);
+        keepNodeIds.add(edge.to);
+        if (!edgeDepthMap.has(edge.id)) {
+          edgeDepthMap.set(edge.id, current.depth + 1);
+        }
+        if (!nodeDepthMap.has(nextNodeId) || nodeDepthMap.get(nextNodeId) > current.depth + 1) {
+          nodeDepthMap.set(nextNodeId, current.depth + 1);
+        }
+
+        const visitKey = `${nextNodeId}:${current.depth + 1}`;
+        if (!visited.has(visitKey)) {
+          visited.add(visitKey);
+          queue.push({ nodeId: nextNodeId, depth: current.depth + 1 });
+        }
+      });
+    }
+
+    return {
+      nodes: nodes
+        .filter((node) => keepNodeIds.has(node.id))
+        .map((node) => ({
+          ...node,
+          isTraceNode: true,
+          isTraceFocus: node.id === focusNodeId,
+          traceDepth: nodeDepthMap.get(node.id) ?? 0,
+        })),
+      edges: edges
+        .filter((edge) => keepEdgeIds.has(edge.id))
+        .map((edge) => ({
+          ...edge,
+          isTraceEdge: true,
+          traceDepth: edgeDepthMap.get(edge.id) ?? 1,
+          traceDirection: direction,
+        })),
+    };
+  }
+
+  refreshTraceSummary(state, nodes) {
+    if (this.traceDirection === 'none' || !state.selectedNodeId) {
+      this.setTraceSummary('');
+      return;
+    }
+
+    const focusNode = nodes.find((node) => node.id === state.selectedNodeId)
+      || state.parseGraphData?.nodes?.find((node) => node.id === state.selectedNodeId);
+    const focusLabel = focusNode?.fullLabel || focusNode?.label || state.selectedNodeId;
+    const typeCounter = new Map();
+
+    (nodes || []).forEach((node) => {
+      if (!node || node.id === state.selectedNodeId || this.isAggregateNode(node)) return;
+      const type = this.getNodeType(node) || '未分类';
+      typeCounter.set(type, (typeCounter.get(type) || 0) + 1);
+    });
+
+    const summaryItems = Array.from(typeCounter.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'))
+      .slice(0, 4)
+      .map(([type, count]) => `${type} ${count}`);
+
+    const directionLabel = this.traceDirection === 'upstream' ? '上游' : '下游';
+    const summary = summaryItems.length
+      ? `追踪摘要：以 ${this.truncateLabel(focusLabel, 16)} 为中心，当前 ${directionLabel}路径覆盖 ${summaryItems.join('，')}`
+      : `追踪摘要：以 ${this.truncateLabel(focusLabel, 16)} 为中心，当前仅保留中心节点`;
+
+    this.setTraceSummary(summary);
+  }
+
+  buildDisplayGraph(rawNodes, rawEdges, state) {
+    const nodes = (rawNodes || []).map(node => ({ ...node }));
+    const rawNodeMap = new Map(nodes.map(node => [node.id, node]));
+    const expandedGroups = state.parseGraphExpandedGroups || {};
+    const displayMode = state.parseGraphDisplayMode || 'skeleton';
+    const displayEdges = [];
+    const aggregateGroups = new Map();
+    // NOTE: We keep all entity nodes visible by default.
+    // "skeleton" mode should reduce clutter mainly by weakening/hiding structural edges,
+    // not by removing core entities from the graph.
+
+    (rawEdges || []).forEach((edge, index) => {
+      const relationType = this.getRelationType(edge);
+      const normalizedEdge = {
+        ...edge,
+        id: edge.id || `edge_${index}`,
+        relationType,
+        edgePriority: this.getEdgePriority(edge),
+        isStructural: this.isStructuralEdge(edge),
+        isCaseContextEdge: this.isCaseContextEdge(edge, rawNodeMap),
+        fromLane: this.getNodeLane(rawNodeMap.get(edge.from)),
+        toLane: this.getNodeLane(rawNodeMap.get(edge.to)),
+      };
+
+      const aggregateMeta = this.getAggregateEdgeMeta(normalizedEdge, rawNodeMap);
+      if (displayMode === 'skeleton' && aggregateMeta) {
+        const aggregateKey = `${aggregateMeta.courtCaseId}:${aggregateMeta.groupKey}`;
+        if (!aggregateGroups.has(aggregateKey)) {
+          aggregateGroups.set(aggregateKey, {
+            aggregateKey,
+            courtCaseId: aggregateMeta.courtCaseId,
+            groupKey: aggregateMeta.groupKey,
+            label: aggregateMeta.groupLabel,
+            lane: aggregateMeta.lane,
+            nodeIds: new Set(),
+          });
+        }
+        const group = aggregateGroups.get(aggregateKey);
+        group.nodeIds.add(aggregateMeta.childId);
+
+        if (!expandedGroups[aggregateKey]) {
+          // Keep node + edge; we only add an aggregate entrance node for convenience.
+          normalizedEdge.isCollapsedStructural = true;
+        } else {
+          normalizedEdge.isExpandedStructural = true;
+        }
+
+        normalizedEdge.hidden = false;
+      }
+
+      displayEdges.push(normalizedEdge);
+    });
+
+    const aggregateNodes = [];
+    const aggregateEdges = [];
+    aggregateGroups.forEach((group) => {
+      const aggregateNodeId = `aggregate:${group.aggregateKey}`;
+      aggregateNodes.push({
+        id: aggregateNodeId,
+        nodeType: 'AggregateGroup',
+        group: 'AggregateGroup',
+        aggregateKey: group.aggregateKey,
+        aggregateCount: group.nodeIds.size,
+        aggregateLane: group.lane,
+        aggregateLabel: group.label,
+        label: `${group.label} ${group.nodeIds.size}`,
+        title: `${group.label} ${group.nodeIds.size}`,
+      });
+      aggregateEdges.push({
+        id: `aggregate-edge:${group.aggregateKey}`,
+        from: group.courtCaseId,
+        to: aggregateNodeId,
+        relationType: 'aggregate_link',
+        edgePriority: 'P2',
+        isAggregateEdge: true,
+        isCaseContextEdge: false,
+        hidden: false,
+        fromLane: 'caseLane',
+        toLane: group.lane,
+      });
+    });
+
+    return {
+      nodes: [...nodes, ...aggregateNodes],
+      edges: [...displayEdges, ...aggregateEdges],
+    };
+  }
+
+  getAggregateEdgeMeta(edge, rawNodeMap) {
+    if (!edge?.isStructural) return null;
+    const fromNode = rawNodeMap.get(edge.from);
+    const toNode = rawNodeMap.get(edge.to);
+    const fromType = this.getNodeType(fromNode);
+    const toType = this.getNodeType(toNode);
+
+    if (fromType === 'CourtCase' && AGGREGATE_GROUP_CONFIG[toType]) {
+      const config = AGGREGATE_GROUP_CONFIG[toType];
+      return {
+        courtCaseId: edge.from,
+        childId: edge.to,
+        groupKey: config.key,
+        groupLabel: config.label,
+        lane: config.lane,
+      };
+    }
+
+    if (toType === 'CourtCase' && AGGREGATE_GROUP_CONFIG[fromType]) {
+      const config = AGGREGATE_GROUP_CONFIG[fromType];
+      return {
+        courtCaseId: edge.to,
+        childId: edge.from,
+        groupKey: config.key,
+        groupLabel: config.label,
+        lane: config.lane,
+      };
+    }
+
+    return null;
+  }
+
+  getSemanticZoomLevel(scale = this.network?.getScale?.() ?? 1) {
+    if (scale <= 0.7) return 'far';
+    if (scale >= 1.35) return 'near';
+    return 'mid';
+  }
+
+  updateSemanticZoom(force = false) {
+    if (!this.network || !this.lastRenderedData) return;
+    const nextZoom = this.getSemanticZoomLevel();
+    if (!force && nextZoom === this.semanticZoom) return;
+
+    this.semanticZoom = nextZoom;
+    store.setState({ parseGraphSemanticZoom: nextZoom });
+    this.syncRenderedGraph({ preservePositions: true });
+  }
+
+  truncateLabel(text, maxLength) {
+    const source = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!source || !maxLength || source.length <= maxLength) return source;
+    return `${source.slice(0, Math.max(1, maxLength - 1))}…`;
+  }
+
+  getNodeDisplayLabel(node, state, type) {
+    const semanticZoom = state.parseGraphSemanticZoom || this.semanticZoom || 'mid';
+    const fullLabel = node.fullLabel || node.label || node.title || node.id || '';
+
+    if (type === 'AggregateGroup') {
+      const aggregateExpanded = Boolean(state.parseGraphExpandedGroups?.[node.aggregateKey]);
+      const prefix = aggregateExpanded ? '收起' : '展开';
+      return semanticZoom === 'far'
+        ? `${node.aggregateLabel || ''} ${node.aggregateCount ?? ''}`.trim()
+        : `${prefix}${node.aggregateLabel || ''}\n${node.aggregateCount ?? ''}`.trim();
+    }
+
+    if (semanticZoom === 'far') {
+      const farLimitMap = {
+        CourtCase: 12,
+        Evidence: 8,
+        Fact: 8,
+        LegalSubject: 8,
+        Judge: 8,
+        Attorney: 8,
+        Person: 8,
+        DisputeFocus: 8,
+        JudgmentResult: 8,
+        CaseSummary: 8,
+        LegalProvisionElement: 8,
+        LegalProvision: 8,
+        Law: 8,
+      };
+      return this.truncateLabel(fullLabel, farLimitMap[type] || 8);
+    }
+
+    if (semanticZoom === 'mid') {
+      const limitMap = {
+        CourtCase: 14,
+        Evidence: 10,
+        Fact: 12,
+        LegalProvisionElement: 10,
+        LegalProvision: 10,
+        Law: 10,
+        Person: 8,
+        LegalSubject: 8,
+        Judge: 6,
+        Attorney: 6,
+      };
+      return this.truncateLabel(fullLabel, limitMap[type] || 10);
+    }
+
+    return fullLabel;
+  }
+
+  getEdgeDisplayLabel(edge, state) {
+    const semanticZoom = state.parseGraphSemanticZoom || this.semanticZoom || 'mid';
+    const displayMode = state.parseGraphDisplayMode || 'skeleton';
+    const fullLabel = edge.fullLabel || edge.label || edge.relationType || '';
+    if (!fullLabel || edge.isAggregateEdge) return '';
+    if (edge.isCaseContextEdge) {
+      return semanticZoom === 'near' && displayMode !== 'skeleton' ? fullLabel : '';
+    }
+    if (semanticZoom === 'far') {
+      return edge.edgePriority === 'P0' ? fullLabel : '';
+    }
+    if (semanticZoom === 'mid') {
+      if (edge.edgePriority === 'P0') return fullLabel;
+      if (edge.edgePriority === 'P1' && displayMode !== 'skeleton') return fullLabel;
+      return '';
+    }
+    if (edge.edgePriority === 'P2' && !edge.isExpandedStructural) {
+      return '';
+    }
+    if (displayMode === 'skeleton' && edge.edgePriority === 'P1') {
+      return '';
+    }
+    return fullLabel;
+  }
+
+  getEdgeSmooth(edge) {
+    if (edge.isTraceEdge) {
+      return {
+        type: 'cubicBezier',
+        forceDirection: 'horizontal',
+        roundness: edge.traceDepth <= 1 ? 0.24 : edge.traceDepth === 2 ? 0.18 : 0.14,
+      };
+    }
+
+    if (edge.isAggregateEdge) {
+      return { type: 'cubicBezier', forceDirection: 'horizontal', roundness: 0.08 };
+    }
+
+    if (edge.isCaseContextEdge) {
+      if ((edge.fromLane === 'caseLane' && edge.toLane === 'subjectLane') || (edge.fromLane === 'subjectLane' && edge.toLane === 'caseLane')) {
+        return {
+          type: 'cubicBezier',
+          forceDirection: 'horizontal',
+          roundness: 0.012,
+        };
+      }
+      return {
+        type: 'cubicBezier',
+        forceDirection: 'horizontal',
+        roundness: 0.035,
+      };
+    }
+
+    const laneOrder = {
+      caseLane: 0,
+      subjectLane: 1,
+      evidenceLane: 2,
+      factLane: 3,
+      elementLane: 4,
+      lawLane: 5,
+      resultLane: 6,
+    };
+    const fromLaneIndex = laneOrder[edge.fromLane] ?? 0;
+    const toLaneIndex = laneOrder[edge.toLane] ?? 0;
+    const laneDistance = Math.max(1, Math.abs(toLaneIndex - fromLaneIndex));
+
+    if (edge.edgePriority === 'P2') {
+      return {
+        type: 'cubicBezier',
+        forceDirection: 'horizontal',
+        roundness: edge.isExpandedStructural ? 0.08 : 0.04,
+      };
+    }
+
+    if (edge.edgePriority === 'P0') {
+      return {
+        type: 'cubicBezier',
+        forceDirection: 'horizontal',
+        roundness: laneDistance >= 3 ? 0.2 : 0.12,
+      };
+    }
+
+    return {
+      type: 'cubicBezier',
+      forceDirection: 'horizontal',
+      roundness: laneDistance >= 3 ? 0.14 : 0.1,
+    };
+  }
+
+  styleEdges(edges, state = store.getState()) {
+    return (edges || []).map(e => ({
+      ...e,
+      fullLabel: e.fullLabel || e.label || e.relationType || '',
+      label: this.getEdgeDisplayLabel(e, state),
+      smooth: e.smooth || this.getEdgeSmooth(e),
+      hidden: Boolean(e.hidden),
+      dashes: e.dashes || e.isAggregateEdge || e.isCaseContextEdge || (e.edgePriority === 'P2') || (e.edgePriority === 'P1' && state.parseGraphDisplayMode === 'skeleton'),
+      color: e.color || (
+        e.isTraceEdge
+          ? {
+              color: e.traceDirection === 'upstream'
+                ? (e.traceDepth <= 1 ? '#0f766e' : e.traceDepth === 2 ? '#14b8a6' : '#7dd3fc')
+                : (e.traceDepth <= 1 ? '#ea580c' : e.traceDepth === 2 ? '#f97316' : '#fdba74'),
+              highlight: e.traceDirection === 'upstream' ? '#115e59' : '#c2410c'
+            }
+          : e.isAggregateEdge
+          ? { color: '#94a3b8', highlight: '#64748b' }
+          : e.isCaseContextEdge
+            ? { color: 'rgba(148, 163, 184, 0.26)', highlight: '#94a3b8' }
+          : e.edgePriority === 'P0'
+            ? { color: '#2563eb', highlight: '#1d4ed8' }
+            : e.edgePriority === 'P2'
+              ? { color: e.isExpandedStructural ? 'rgba(148, 163, 184, 0.45)' : 'rgba(203, 213, 225, 0.12)', highlight: '#94a3b8' }
+              : state.parseGraphDisplayMode === 'skeleton'
+                ? { color: 'rgba(99, 102, 241, 0.52)', highlight: '#4f46e5' }
+                : { color: '#6366f1', highlight: '#4f46e5' }
+      ),
+      width: e.width || (
+        e.isTraceEdge
+          ? (e.traceDepth <= 1 ? 3.6 : e.traceDepth === 2 ? 2.8 : 2.1)
+          : e.isAggregateEdge
+          ? 1.6
+          : e.isCaseContextEdge
+            ? 0.75
+          : e.edgePriority === 'P0'
+            ? 2.8
+            : e.edgePriority === 'P2'
+              ? (e.isExpandedStructural ? 1.1 : 0.55)
+              : state.parseGraphDisplayMode === 'skeleton'
+                ? 1.55
+                : 1.8
+      ),
+      font: {
+        size: state.parseGraphSemanticZoom === 'near' ? (e.edgePriority === 'P0' ? 11 : 10) : (e.edgePriority === 'P0' ? 10 : 9),
+        color: e.isTraceEdge
+          ? (e.traceDirection === 'upstream' ? '#115e59' : '#c2410c')
+          : e.isAggregateEdge
+          ? '#64748b'
+          : e.isCaseContextEdge
+            ? 'rgba(100, 116, 139, 0.48)'
+          : e.edgePriority === 'P2'
+            ? 'rgba(148, 163, 184, 0.82)'
+            : state.parseGraphDisplayMode === 'skeleton'
+              ? 'rgba(79, 70, 229, 0.82)'
+              : '#4f46e5',
+        align: 'horizontal',
+        strokeWidth: 2,
+        strokeColor: '#ffffff',
+        vadjust: e.isAggregateEdge ? -6 : 0,
+        multi: 'md',
+        ...(e.font || {})
+      }
+    }));
+  }
+
+  styleNodes(nodes, state = store.getState()) {
     const defaultStyles = {
       CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A' },
+      CaseType:   { shape: 'box', color: '#fff7ed', border: '#fb923c', fontColor: '#9a3412' },
       Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B' },
-      LegalProvision: { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E' },
-      Law:        { shape: 'hexagon', color: '#483D8B', border: '#3A2D6E' },
-      Evidence:   { shape: 'database', color: '#CD853F', border: '#A06B32' },
+      Judge:      { shape: 'box', color: '#dbeafe', border: '#60a5fa', fontColor: '#1d4ed8' },
+      Attorney:   { shape: 'box', color: '#ede9fe', border: '#8b5cf6', fontColor: '#6d28d9' },
+      LegalProvision: { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
+      LegalProvisionElement: { shape: 'box', color: '#eef2ff', border: '#7c8cff', fontColor: '#243b8f' },
+      Law:        { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
+      Evidence:   { shape: 'box', color: '#f7e2bf', border: '#c9852b', fontColor: '#6b3f08' },
+      Fact:       { shape: 'box', color: '#e0f2fe', border: '#0284c7', fontColor: '#0f172a' },
+      DisputeFocus: { shape: 'diamond', color: '#fef3c7', border: '#d97706', fontColor: '#92400e' },
+      JudgmentResult: { shape: 'box', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
       LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400' },
       CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428' },
       LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
       LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
       GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C' },
+      AggregateGroup: { shape: 'box', color: '#f8fafc', border: '#94a3b8', fontColor: '#475569' },
     };
 
     return nodes.map(n => {
       const type = n.nodeType || n.group || '';
       const style = defaultStyles[type] || { shape: 'box', color: '#f8fafc', border: '#cbd5e1' };
+      const aggregateExpanded = type === 'AggregateGroup' && state.parseGraphExpandedGroups?.[n.aggregateKey];
+      const fullLabel = n.fullLabel || n.label || n.title || n.id;
+      const label = this.getNodeDisplayLabel({ ...n, fullLabel }, state, type);
+      const isBoxLike = ['box', 'square', 'hexagon'].includes(style.shape);
+      const baseSize = type === 'AggregateGroup'
+        ? 24
+        : style.shape === 'triangle'
+          ? 18
+          : style.shape === 'diamond'
+            ? 18
+            : style.shape === 'star'
+              ? 20
+              : style.shape === 'hexagon'
+                ? 20
+                : 18;
+      const traceColors = n.isTraceNode
+        ? (n.isTraceFocus
+            ? { background: '#fef3c7', border: '#d97706', font: '#7c2d12' }
+            : n.traceDepth <= 1
+              ? { background: '#eff6ff', border: '#2563eb', font: '#1e3a8a' }
+              : n.traceDepth === 2
+                ? { background: '#f8fafc', border: '#60a5fa', font: '#1e40af' }
+                : { background: '#f8fafc', border: '#cbd5e1', font: '#475569' })
+        : null;
       
       return {
         ...n,
-        label: n.label || n.title || n.id,
+        fullLabel,
+        label,
         nodeType: type,
         shape: style.shape,
-        color: { background: style.color, border: style.border },
-        font: { size: 12, color: type === 'LegalProvision' || type === 'Law' ? '#fff' : '#333' }
+        color: {
+          background: traceColors?.background || (aggregateExpanded ? '#e0f2fe' : style.color),
+          border: traceColors?.border || (aggregateExpanded ? '#0284c7' : style.border),
+        },
+        borderWidth: n.isTraceFocus ? 3 : (type === 'AggregateGroup' ? 1.5 : (n.isTraceNode ? 2.5 : 2)),
+        margin: type === 'AggregateGroup'
+          ? { top: 8, right: 10, bottom: 8, left: 10 }
+          : isBoxLike
+            ? { top: 8, right: 12, bottom: 8, left: 12 }
+            : undefined,
+        size: state.parseGraphSemanticZoom === 'far' && type !== 'CourtCase'
+          ? Math.max(baseSize, 22)
+          : baseSize,
+        widthConstraint: isBoxLike ? { minimum: type === 'AggregateGroup' ? 74 : 78 } : undefined,
+        heightConstraint: isBoxLike ? { minimum: type === 'AggregateGroup' ? 34 : 38 } : undefined,
+        shadow: n.isTraceNode
+          ? { enabled: true, color: n.isTraceFocus ? 'rgba(217,119,6,0.35)' : 'rgba(37,99,235,0.18)', size: n.isTraceFocus ? 18 : 10 }
+          : { enabled: true, color: 'rgba(15,23,42,0.12)', size: 8, x: 0, y: 2 },
+        font: {
+          size: type === 'AggregateGroup'
+            ? (state.parseGraphSemanticZoom === 'far' ? 10 : 11)
+            : (state.parseGraphSemanticZoom === 'near' ? 13 : 12),
+          color: traceColors?.font || (aggregateExpanded ? '#0f172a' : (style.fontColor || '#333')),
+          face: 'Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif',
+          strokeWidth: 3,
+          strokeColor: '#ffffff',
+        }
       };
     });
   }
 
   applyClustering() {
     if (!this.network) return;
-    const nodes = this.nodesDs.get();
-    const clusterTypes = ['Judge', 'Attorney', 'Evidence', 'LegalProvision'];
-    clusterTypes.forEach(type => {
-      const count = nodes.filter(n => (n.nodeType || n.group) === type).length;
-      if (count >= 3) {
-        try {
-          this.network.cluster({
-            joinCondition: function(nodeOpts) {
-              return nodeOpts.nodeType === type || nodeOpts.group === type;
-            },
-            clusterNodeProperties: {
-              id: 'cluster_' + type,
-              label: `${type}组 (${count})`,
-              shape: 'box',
-              color: { background: '#94a3b8', border: '#64748b' },
-              font: { size: 12, color: '#fff' },
-              title: '双击展开查看详情',
-            },
-            processProperties: function(clusterProps, childNodes) {
-              return clusterProps;
-            }
-          });
-        } catch(e) {
-          console.warn(`聚类失败 [${type}]:`, e);
-        }
-      }
+  }
+
+  getNodeType(node) {
+    return node?.nodeType || node?.group || '';
+  }
+
+  getNodeLane(node) {
+    const type = this.getNodeType(node);
+    if (type === 'AggregateGroup' && node?.aggregateLane) {
+      return node.aggregateLane;
+    }
+    if (['GuidingCase', 'CaseType', 'CourtCase'].includes(type)) return 'caseLane';
+    if (['Judge', 'Attorney', 'LegalRole', 'LegalSubject', 'Person'].includes(type)) return 'subjectLane';
+    if (type === 'Evidence') return 'evidenceLane';
+    if (type === 'Fact') return 'factLane';
+    if (type === 'LegalProvisionElement') return 'elementLane';
+    if (['LegalProvision', 'Law', 'LegalNorm'].includes(type)) return 'lawLane';
+    if (['DisputeFocus', 'JudgmentResult', 'CaseSummary'].includes(type)) return 'resultLane';
+    return 'caseLane';
+  }
+
+  getNodeOrderKey(node, typeRank) {
+    const type = this.getNodeType(node);
+    return `${String(typeRank[type] ?? 9).padStart(2, '0')}|${node.label || node.id || ''}`;
+  }
+
+  reorderLaneBuckets(laneBuckets, edges) {
+    const laneOrder = ['caseLane', 'subjectLane', 'evidenceLane', 'factLane', 'elementLane', 'lawLane', 'resultLane'];
+    const edgeList = edges || [];
+    const nodeLaneMap = new Map();
+    const nodeIndexMap = new Map();
+
+    const refreshIndices = () => {
+      nodeLaneMap.clear();
+      nodeIndexMap.clear();
+      laneOrder.forEach((laneKey) => {
+        (laneBuckets[laneKey] || []).forEach((node, index) => {
+          nodeLaneMap.set(node.id, laneKey);
+          nodeIndexMap.set(node.id, index);
+        });
+      });
+    };
+
+    const computeScore = (nodeId, laneIndex) => {
+      let total = 0;
+      let weightSum = 0;
+      edgeList.forEach((edge) => {
+        let neighborId = null;
+        if (edge.from === nodeId) neighborId = edge.to;
+        else if (edge.to === nodeId) neighborId = edge.from;
+        if (!neighborId || !nodeIndexMap.has(neighborId)) return;
+
+        const neighborLane = nodeLaneMap.get(neighborId);
+        const neighborLaneIndex = laneOrder.indexOf(neighborLane);
+        if (neighborLaneIndex === -1) return;
+
+        const distance = Math.abs(neighborLaneIndex - laneIndex) || 1;
+        const priorityWeight = edge.edgePriority === 'P0' ? 2.6 : edge.edgePriority === 'P1' ? 1.6 : 0.65;
+        const laneWeight = priorityWeight / distance;
+        total += nodeIndexMap.get(neighborId) * laneWeight;
+        weightSum += laneWeight;
+      });
+      return weightSum ? (total / weightSum) : null;
+    };
+
+    const sortLane = (laneKey) => {
+      const laneIndex = laneOrder.indexOf(laneKey);
+      const bucket = laneBuckets[laneKey] || [];
+      bucket.sort((a, b) => {
+        const scoreA = computeScore(a.id, laneIndex);
+        const scoreB = computeScore(b.id, laneIndex);
+        if (scoreA == null && scoreB == null) return 0;
+        if (scoreA == null) return 1;
+        if (scoreB == null) return -1;
+        return scoreA - scoreB;
+      });
+    };
+
+    refreshIndices();
+    for (let round = 0; round < 2; round += 1) {
+      laneOrder.forEach((laneKey) => {
+        sortLane(laneKey);
+        refreshIndices();
+      });
+      [...laneOrder].reverse().forEach((laneKey) => {
+        sortLane(laneKey);
+        refreshIndices();
+      });
+    }
+  }
+
+  buildVerticalLanePositions(nodes, edges = []) {
+    const laneBuckets = {
+      caseLane: [],
+      subjectLane: [],
+      evidenceLane: [],
+      factLane: [],
+      elementLane: [],
+      lawLane: [],
+      resultLane: [],
+    };
+
+    const typeRank = {
+      GuidingCase: 0,
+      CaseType: 1,
+      CourtCase: 2,
+      AggregateGroup: 3,
+      Evidence: 0,
+      Fact: 0,
+      LegalProvision: 0,
+      LegalProvisionElement: 1,
+      Law: 2,
+      LegalNorm: 3,
+      CaseSummary: 0,
+      DisputeFocus: 1,
+      JudgmentResult: 2,
+      Judge: 0,
+      Attorney: 1,
+      LegalRole: 2,
+      LegalSubject: 3,
+      Person: 4,
+    };
+
+    nodes.forEach((node) => {
+      const laneKey = this.getNodeLane(node);
+      (laneBuckets[laneKey] || laneBuckets.caseLane).push(node);
     });
+
+    Object.values(laneBuckets).forEach((bucket) => bucket.sort((a, b) => this.getNodeOrderKey(a, typeRank).localeCompare(this.getNodeOrderKey(b, typeRank), 'zh-CN')));
+    this.reorderLaneBuckets(laneBuckets, edges);
+
+    const updates = [];
+    Object.entries(laneBuckets).forEach(([laneKey, bucket]) => {
+      const xBase = MAIN_LANE_X[laneKey];
+      const yBase = MAIN_LANE_Y[laneKey];
+      const spacing = MAIN_LANE_SPACING[laneKey];
+
+      bucket.forEach((node, index) => {
+        const type = this.getNodeType(node);
+        let targetX = xBase;
+        let targetY = yBase + index * spacing;
+
+        if (laneKey === 'caseLane' || laneKey === 'resultLane' || laneKey === 'subjectLane') {
+          targetX += AUXILIARY_LANE_X_JITTER[type] || 0;
+        }
+
+        updates.push({ id: node.id, x: targetX, y: targetY });
+      });
+    });
+
+    return updates;
   }
 
   apply2DLayout() {
     const nodes = this.nodesDs.get();
-    const zoneBuckets = {};
-    
-    nodes.forEach(n => {
-      const zone = ZONE_MAP[n.nodeType] || 'center';
-      const yLvl = Y_LEVEL_MAP[n.nodeType] !== undefined ? Y_LEVEL_MAP[n.nodeType] : 2;
-      const key = `${zone}|${yLvl}`;
-      if (!zoneBuckets[key]) zoneBuckets[key] = [];
-      zoneBuckets[key].push(n);
-    });
-
-    const updatedPositions = [];
-    nodes.forEach(n => {
-      const zone = ZONE_MAP[n.nodeType] || 'centerDetail';
-      const yLvl = Y_LEVEL_MAP[n.nodeType] !== undefined ? Y_LEVEL_MAP[n.nodeType] : 2;
-      const xBase = ZONE_X_OFFSET[zone] || 0;
-      const yBase = (ZONE_Y_BASE[zone] || 90) + yLvl * (zone === 'bottom' ? 110 : 125);
-
-      const key = `${zone}|${yLvl}`;
-      const bucket = zoneBuckets[key] || [];
-      const idx = bucket.indexOf(n);
-      const bucketSize = bucket.length;
-      const spacing = ZONE_SPACING[zone] || 240;
-      const startX = xBase - (bucketSize - 1) * spacing / 2;
-      const targetX = startX + idx * spacing;
-
-      updatedPositions.push({ id: n.id, x: targetX, y: yBase });
-    });
-    
-    this.nodesDs.update(updatedPositions);
+    const edges = this.edgesDs.get();
+    this.nodesDs.update(this.buildVerticalLanePositions(nodes, edges));
 
     this.applyClustering();
 
     this.network.fit({ animation: true, minZoomLevel: 0.76, maxZoomLevel: 1.18 });
     setTimeout(() => {
       if (this.network) {
-        this.network.moveTo({ scale: 0.9, animation: { duration: 220, easingFunction: 'easeInOutQuad' } });
+        this.network.moveTo({ scale: 0.98, animation: { duration: 220, easingFunction: 'easeInOutQuad' } });
         this.renderZoneOverlay();
+        this.updateSemanticZoom(true);
       }
     }, 180);
   }
@@ -813,12 +1804,13 @@ export class ParseGraph {
     
     let overlay = host.querySelector('.term-zone-overlay');
     const zoneDefs = [
-      { key: 'left', title: '证据区', desc: '证据材料', x: -760, y: 34 },
-      { key: 'leftDetail', title: '事实区', desc: '案件事实', x: -440, y: 260 },
-      { key: 'core', title: '案件核心', desc: '案件与主轴', x: 0, y: 30 },
-      { key: 'right', title: '主体角色', desc: '人物与主体', x: 760, y: 36 },
-      { key: 'rightDetail', title: '裁判结果', desc: '结果与摘要', x: 460, y: 290 },
-      { key: 'bottom', title: '法条依据', desc: '规范支撑', x: 0, y: 640 }
+      { key: 'caseLane', title: '案件区', desc: 'CourtCase 主轴', x: MAIN_LANE_X.caseLane, y: 24 },
+      { key: 'subjectLane', title: '主体区', desc: '案件当事人', x: MAIN_LANE_X.subjectLane, y: 28 },
+      { key: 'evidenceLane', title: '证据区', desc: '证据材料', x: MAIN_LANE_X.evidenceLane, y: 28 },
+      { key: 'factLane', title: '事实区', desc: '案件事实', x: MAIN_LANE_X.factLane, y: 28 },
+      { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, y: 28 },
+      { key: 'lawLane', title: '法条区', desc: '法条依据', x: MAIN_LANE_X.lawLane, y: 28 },
+      { key: 'resultLane', title: '裁判区', desc: '焦点与结果', x: MAIN_LANE_X.resultLane, y: 28 },
     ];
 
     if (!overlay) {
@@ -842,6 +1834,7 @@ export class ParseGraph {
       }
     });
   }
+
 
   focusNodesByType(typeKey) {
     if (!this.network || !typeKey) return;
@@ -905,11 +1898,9 @@ export class ParseGraph {
   clearTypeFocus() {
     if (!this.network) return;
     this.network.unselectAll();
-    // Restore styles by re-styling nodes and edges from store data
     const state = store.getState();
     if (state.parseGraphData) {
-      this.nodesDs.update(this.styleNodes(state.parseGraphData.nodes));
-      this.edgesDs.update(state.parseGraphData.edges.map(e => ({ id: e.id, color: undefined })));
+      this.syncRenderedGraph({ preservePositions: true });
     }
   }
 
@@ -938,6 +1929,7 @@ export class ParseGraph {
       }
 
       this.updateView();
+      this.syncToolButtonStates();
     }
   }
 }

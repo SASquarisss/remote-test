@@ -15,7 +15,18 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-EVALUATION_PROMPT_PATH = os.path.join(
+from ontology.generators.evaluation_prompt_renderer import (
+    render_evaluation_prompt,
+    render_evaluation_schema_summary,
+)
+from ontology.generators.ontology_reader import load_ontology
+
+AUTO_EVALUATION_PROMPT_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "ontology", "prompts", "auto_ontology_evaluation.txt",
+)
+
+LEGACY_EVALUATION_PROMPT_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "scripts", "prompts", "ontology_evaluation_prompt_v1.txt",
 )
@@ -30,38 +41,26 @@ ONTOLOGY_SCHEMA_PATH = os.path.join(
 
 def load_evaluation_prompt() -> str:
     """Load the ontology evaluation system prompt."""
-    with open(EVALUATION_PROMPT_PATH, "r", encoding="utf-8") as f:
-        return f.read()
+    if os.path.exists(AUTO_EVALUATION_PROMPT_PATH):
+        with open(AUTO_EVALUATION_PROMPT_PATH, "r", encoding="utf-8") as f:
+            return f.read()
+
+    ontology = load_ontology(ONTOLOGY_SCHEMA_PATH)
+    prompt = render_evaluation_prompt(ontology)
+    try:
+        os.makedirs(os.path.dirname(AUTO_EVALUATION_PROMPT_PATH), exist_ok=True)
+        with open(AUTO_EVALUATION_PROMPT_PATH, "w", encoding="utf-8") as f:
+            f.write(prompt)
+    except OSError:
+        pass
+    return prompt
 
 
 def load_ontology_schema_summary() -> str:
     """Load and summarize the ontology schema for use in the evaluation prompt."""
     try:
-        with open(ONTOLOGY_SCHEMA_PATH, "r", encoding="utf-8") as f:
-            content = f.read()
-        # Extract key enum definitions and constraints for a compact summary
-        lines = content.split("\n")
-        summary_parts = []
-        enum_section = []
-        constraint_section = []
-        in_constraint = False
-        for line in lines:
-            if "enum:" in line and ("_enum" in line or "enum" in line):
-                enum_section.append(line.strip())
-            if "constraints:" in line:
-                in_constraint = True
-                continue
-            if in_constraint:
-                if line.strip().startswith("-") or line.strip().startswith("  -"):
-                    constraint_section.append(line.strip())
-                elif line.strip() == "":
-                    in_constraint = False
-
-        summary = "## 本体论枚举值\n"
-        summary += "\n".join(enum_section[:50])
-        summary += "\n\n## 本体论约束规则\n"
-        summary += "\n".join(constraint_section[:20])
-        return summary
+        ontology = load_ontology(ONTOLOGY_SCHEMA_PATH)
+        return render_evaluation_schema_summary(ontology)
     except (FileNotFoundError, IOError):
         return "本体论 Schema 加载失败，使用默认约束。"
 
@@ -128,6 +127,159 @@ def call_llm(prompt: str, user_input: str) -> Dict[str, Any]:
 
 # ── Quick Local Evaluation (fallback / lightweight) ────────────────────────
 
+GRAPH_REQUIRED_RELATIONS = {
+    "facts": ["has_fact"],
+    "dispute_focuses": ["has_dispute_focus"],
+    "evidence": ["submitted_for"],
+    "evidence_to_claims": ["proves_fact"],
+    "judgment_results": ["judgment_cites"],
+}
+
+
+def _make_issue(field: str, msg: str, severity: str = "major") -> Dict[str, str]:
+    return {"field": field, "msg": msg, "severity": severity}
+
+
+def _generated_item_id(prefix: str, idx: int, item: Dict[str, Any]) -> str:
+    if isinstance(item, dict) and item.get("id"):
+        return str(item["id"])
+    return f"{prefix}_{idx}"
+
+
+def _normalize_graph_ref(ref: str) -> str:
+    if not isinstance(ref, str):
+        return str(ref)
+    mapping = {
+        "evidence_": "evid_",
+        "judgment_result_": "jr_",
+        "judgment_results_": "jr_",
+        "legal_provision_": "prov_",
+        "legal_provisions_": "prov_",
+        "dispute_focus_": "focus_",
+        "dispute_focuses_": "focus_",
+    }
+    for old, new in mapping.items():
+        if ref.startswith(old):
+            return new + ref[len(old):]
+    return ref
+
+
+def _collect_valid_graph_refs(output: Dict[str, Any]) -> Dict[str, set]:
+    refs = {
+        "all": set(),
+        "court_cases": set(),
+        "facts": set(),
+        "dispute_focuses": set(),
+        "evidence": set(),
+        "judgment_results": set(),
+        "legal_provisions": set(),
+    }
+
+    for cc in (output.get("court_cases") or []):
+        case_number = (cc.get("case_number") or "").strip()
+        if case_number:
+            refs["court_cases"].add(case_number)
+            refs["all"].add(case_number)
+
+    for idx, fact in enumerate(output.get("facts") or []):
+        fact_id = _normalize_graph_ref(_generated_item_id("fact", idx, fact))
+        refs["facts"].add(fact_id)
+        refs["all"].add(fact_id)
+
+    for idx, focus in enumerate(output.get("dispute_focuses") or []):
+        focus_id = _normalize_graph_ref(_generated_item_id("focus", idx, focus))
+        refs["dispute_focuses"].add(focus_id)
+        refs["all"].add(focus_id)
+
+    for idx, evid in enumerate(output.get("evidence") or []):
+        evid_id = _normalize_graph_ref(_generated_item_id("evid", idx, evid))
+        refs["evidence"].add(evid_id)
+        refs["all"].add(evid_id)
+
+    for idx, jr in enumerate(output.get("judgment_results") or []):
+        jr_id = _normalize_graph_ref(_generated_item_id("jr", idx, jr))
+        refs["judgment_results"].add(jr_id)
+        refs["all"].add(jr_id)
+
+    for idx, prov in enumerate(output.get("legal_provisions") or []):
+        prov_id = _normalize_graph_ref(_generated_item_id("prov", idx, prov))
+        refs["legal_provisions"].add(prov_id)
+        refs["all"].add(prov_id)
+
+    return refs
+
+
+def _assess_relation_graph(output: Dict[str, Any]) -> Dict[str, Any]:
+    issues: List[Dict[str, str]] = []
+    relation_types = {}
+    valid_refs = _collect_valid_graph_refs(output)
+    relations = output.get("relations") or []
+
+    dangling_edges = 0
+    missing_endpoints = 0
+    duplicate_edges = 0
+    seen_edges = set()
+
+    for idx, rel in enumerate(relations):
+        if not isinstance(rel, dict):
+            issues.append(_make_issue(f"relations[{idx}]", "关系项不是对象", "major"))
+            continue
+
+        src = _normalize_graph_ref((rel.get("source_id") or "").strip())
+        tgt = _normalize_graph_ref((rel.get("target_id") or "").strip())
+        rtype = (rel.get("relation_type") or "").strip()
+        edge_key = (src, tgt, rtype)
+
+        if edge_key in seen_edges:
+            duplicate_edges += 1
+            issues.append(_make_issue(f"relations[{idx}]", f"重复关系边 {src}->{tgt}:{rtype}", "minor"))
+        seen_edges.add(edge_key)
+
+        if not src or not tgt or not rtype:
+            missing_endpoints += 1
+            issues.append(_make_issue(f"relations[{idx}]", "source_id / target_id / relation_type 存在空值", "critical"))
+            continue
+
+        relation_types[rtype] = relation_types.get(rtype, 0) + 1
+        if src not in valid_refs["all"] or tgt not in valid_refs["all"]:
+            dangling_edges += 1
+            issues.append(_make_issue(
+                f"relations[{idx}]",
+                f"关系引用悬空: {src}->{tgt} ({rtype}) 未能在输出节点中找到",
+                "major",
+            ))
+
+    facts = output.get("facts") or []
+    focuses = output.get("dispute_focuses") or []
+    evidence = output.get("evidence") or []
+    judgment_results = output.get("judgment_results") or []
+    provisions = output.get("legal_provisions") or []
+
+    def require_relation(group_key: str, field: str, reason: str, severity: str = "major"):
+        expected = GRAPH_REQUIRED_RELATIONS[group_key]
+        if not any(relation_types.get(name) for name in expected):
+            issues.append(_make_issue(field, reason + "，缺少 " + "/".join(expected), severity))
+
+    if facts:
+        require_relation("facts", "relations", "存在 facts 但没有把案件挂到事实")
+    if focuses:
+        require_relation("dispute_focuses", "relations", "存在 dispute_focuses 但没有把案件挂到争议焦点")
+    if evidence:
+        require_relation("evidence", "relations", "存在 evidence 但没有 submitted_for 关系")
+    if evidence and (facts or focuses):
+        require_relation("evidence_to_claims", "relations", "存在 evidence 且存在 facts/dispute_focuses，但没有证明链")
+    if judgment_results and provisions:
+        require_relation("judgment_results", "relations", "存在 judgment_results 与 legal_provisions，但没有裁判依据链")
+
+    return {
+        "issues": issues,
+        "relation_types": relation_types,
+        "relation_count": len(relations),
+        "dangling_edges": dangling_edges,
+        "missing_endpoints": missing_endpoints,
+        "duplicate_edges": duplicate_edges,
+    }
+
 def quick_evaluate(output: Dict[str, Any], row_id: str = "") -> Dict[str, Any]:
     """
     Lightweight local evaluation — does NOT call LLM.
@@ -144,53 +296,83 @@ def quick_evaluate(output: Dict[str, Any], row_id: str = "") -> Dict[str, Any]:
     required_top_keys = [
         "guiding_case", "case_type", "court_cases",
         "legal_subjects", "legal_provisions", "case_summary",
+        "facts", "dispute_focuses", "relations",
     ]
     for key in required_top_keys:
         if key not in output:
-            issues.append({"field": key, "msg": f"顶层键 '{key}' 缺失", "severity": "critical"})
-            score -= 8
+            severity = "critical" if key in {"court_cases", "facts", "dispute_focuses", "relations"} else "major"
+            issues.append(_make_issue(key, f"顶层键 '{key}' 缺失", severity))
+            score -= 10 if severity == "critical" else 6
 
     # --- D4: Ontology Consistency - Required fields check ---
     gc = output.get("guiding_case") or {}
     for field in ["guiding_case_number", "guiding_case_name", "binding_force"]:
         if not gc.get(field):
-            issues.append({"field": f"guiding_case.{field}", "msg": f"{field} 为空", "severity": "major"})
+            issues.append(_make_issue(f"guiding_case.{field}", f"{field} 为空", "major"))
             score -= 4
 
     ct = output.get("case_type") or {}
     if not ct.get("category"):
-        issues.append({"field": "case_type.category", "msg": "案例类型为空", "severity": "major"})
+        issues.append(_make_issue("case_type.category", "案例类型为空", "major"))
         score -= 4
 
     # --- D2: Entity Completeness ---
     court_cases = output.get("court_cases") or []
     if not court_cases:
-        issues.append({"field": "court_cases", "msg": "法院案件列表为空", "severity": "critical"})
+        issues.append(_make_issue("court_cases", "法院案件列表为空", "critical"))
         score -= 20
     else:
         has_case_number = any(cc.get("case_number") for cc in court_cases)
         if not has_case_number:
-            issues.append({"field": "court_cases[].case_number", "msg": "所有 court_cases 均无案号", "severity": "major"})
+            issues.append(_make_issue("court_cases[].case_number", "所有 court_cases 均无案号", "major"))
             score -= 8
 
     provisions = output.get("legal_provisions") or []
     if not provisions:
-        issues.append({"field": "legal_provisions", "msg": "法条引用为空", "severity": "major"})
+        issues.append(_make_issue("legal_provisions", "法条引用为空", "major"))
         score -= 10
     else:
         for i, p in enumerate(provisions):
             if not p.get("article"):
-                issues.append({"field": f"legal_provisions[{i}].article", "msg": f"第{i+1}条法条缺少条号", "severity": "major"})
+                issues.append(_make_issue(f"legal_provisions[{i}].article", f"第{i+1}条法条缺少条号", "major"))
                 score -= 4
             if not p.get("content"):
-                issues.append({"field": f"legal_provisions[{i}].content", "msg": f"第{i+1}条法条缺少原文上下文", "severity": "minor"})
+                issues.append(_make_issue(f"legal_provisions[{i}].content", f"第{i+1}条法条缺少原文上下文", "minor"))
                 score -= 2
 
     cs = output.get("case_summary") or {}
     for field in ["key_facts", "disputed_issues", "conclusion"]:
         if not cs.get(field):
-            issues.append({"field": f"case_summary.{field}", "msg": f"案件摘要.{field} 为空", "severity": "major"})
+            issues.append(_make_issue(f"case_summary.{field}", f"案件摘要.{field} 为空", "major"))
             score -= 5
+
+    facts = output.get("facts") or []
+    if not facts:
+        issues.append(_make_issue("facts", "事实节点为空", "critical"))
+        score -= 12
+    else:
+        if not any((fact.get("content") or "").strip() for fact in facts if isinstance(fact, dict)):
+            issues.append(_make_issue("facts[].content", "facts 存在但内容均为空", "major"))
+            score -= 8
+
+    dispute_focuses = output.get("dispute_focuses") or []
+    if not dispute_focuses:
+        issues.append(_make_issue("dispute_focuses", "争议焦点节点为空", "critical"))
+        score -= 12
+    else:
+        if not any((focus.get("content") or "").strip() for focus in dispute_focuses if isinstance(focus, dict)):
+            issues.append(_make_issue("dispute_focuses[].content", "dispute_focuses 存在但内容均为空", "major"))
+            score -= 8
+
+    relation_eval = _assess_relation_graph(output)
+    issues.extend(relation_eval["issues"])
+    score -= relation_eval["dangling_edges"] * 4
+    score -= relation_eval["missing_endpoints"] * 6
+    score -= relation_eval["duplicate_edges"] * 2
+
+    if not relation_eval["relation_count"]:
+        issues.append(_make_issue("relations", "关系边为空", "critical"))
+        score -= 14
 
     # --- D4.6: Temporal constraints ---
     for i, cc in enumerate(court_cases):
@@ -229,6 +411,15 @@ def quick_evaluate(output: Dict[str, Any], row_id: str = "") -> Dict[str, Any]:
             score -= 3
         seen_case_numbers.add(cn)
 
+    dim_scores = {
+        "D1": 100,
+        "D2": max(0, 100 - 6 * len([x for x in issues if x["field"] in {"court_cases", "facts", "dispute_focuses", "legal_provisions"}])),
+        "D3": max(0, 100 - 4 * len([x for x in issues if "case_number" in x["field"] or "date" in x["field"] or "category" in x["field"]])),
+        "D4": max(0, 100 - 6 * (relation_eval["dangling_edges"] + relation_eval["missing_endpoints"]) - 4 * len([x for x in issues if x["field"] == "relations"])),
+        "D5": max(0, 100 - 8 * len([x for x in issues if x["field"] in {"relations", "legal_provisions", "evidence"}])),
+        "D6": max(0, 100 - 6 * len([x for x in issues if x["field"].startswith("case_summary.")])),
+    }
+
     return {
         "row_id": row_id,
         "score": round(max(0, score), 1),
@@ -236,10 +427,19 @@ def quick_evaluate(output: Dict[str, Any], row_id: str = "") -> Dict[str, Any]:
         "total_score": round(max(0, score), 1),
         "confidence": "优" if score >= 90 else ("良" if score >= 70 else ("中" if score >= 50 else "差")),
         "dimension_scores": {
-            "D1": {"name": "structure_integrity", "score": 0},  # Not computable locally
-            "D2": {"name": "entity_completeness", "score": 0},
-            "D3": {"name": "attribute_accuracy", "score": 0},
-            "D4": {"name": "ontology_consistency", "score": 0},
+            "D1": {"name": "structure_integrity", "score": dim_scores["D1"]},
+            "D2": {"name": "entity_and_graph_completeness", "score": dim_scores["D2"]},
+            "D3": {"name": "attribute_accuracy", "score": dim_scores["D3"]},
+            "D4": {"name": "ontology_consistency_and_relation_validity", "score": dim_scores["D4"]},
+            "D5": {"name": "citation_and_reasoning_chain", "score": dim_scores["D5"]},
+            "D6": {"name": "semantic_coherence", "score": dim_scores["D6"]},
+        },
+        "graph_summary": {
+            "facts_count": len(facts),
+            "dispute_focuses_count": len(dispute_focuses),
+            "relations_count": relation_eval["relation_count"],
+            "relation_types": relation_eval["relation_types"],
+            "dangling_edges": relation_eval["dangling_edges"],
         },
     }
 
