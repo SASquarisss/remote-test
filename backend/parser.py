@@ -1138,14 +1138,34 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         "persuasive": "典型案例",
     }
     RESULT_TYPE_MAP = {
+        "guilty": "有罪判决",
+        "not_guilty": "无罪判决",
+        "liable": "承担责任",
+        "not_liable": "不承担责任",
         "dismissed": "驳回",
+        "withdrawn": "撤诉",
         "upheld": "维持",
         "reversed": "撤销",
         "partially_upheld": "部分维持",
         "remanded": "发回重审",
+        "punitive_damages": "惩罚性赔偿",
+        "procedural_ruling": "程序性裁定",
+        "bankruptcy_declared": "宣告破产",
+        "mediation_agreement": "调解协议",
+        "arbitration_award": "仲裁裁决",
+        "administrative_decision": "行政决定",
         "accepted": "支持",
         "rejected": "驳回",
     }
+
+    def summarize_judgment_result(jr: Dict[str, Any], result_type_cn: str) -> str:
+        specific = str(jr.get("specific_judgment") or "").strip()
+        if specific:
+            return specific[:40] + ("..." if len(specific) > 40 else "")
+        reasoning = str(jr.get("reasoning") or "").strip()
+        if reasoning:
+            return reasoning[:40] + ("..." if len(reasoning) > 40 else "")
+        return result_type_cn or "裁判结果"
 
     nodes: List[Dict] = []
     edges: List[Dict] = []
@@ -1181,6 +1201,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             return
         edge_set.add(key)
         edge_entry = {
+            "id": key,
             "from": fr, "to": to, "label": label,
             "color": {"color": "#7f8c8d", "highlight": "#333", "hover": "#333", "opacity": 0.7},
             "font": {"size": 10, "color": "#555", "strokeWidth": 2, "strokeColor": "#fff"},
@@ -1301,7 +1322,10 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     for i, j in enumerate(judges):
         name = j.get("name", f"法官_{i}")
         nid = f"judge_{i}"
-        add_node(nid, name, "Judge", "LegalSubject", 1)
+        add_node(nid, name, "Judge", "LegalSubject", 1, extra={
+            "entitySourceId": j.get("id") or j.get("node_id") or nid,
+            "entityStableId": j.get("stable_id") or "",
+        })
         case_num = j.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "审判")
@@ -1313,7 +1337,10 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     for i, a in enumerate(attorneys):
         name = a.get("name", f"律师_{i}")
         nid = f"atty_{i}"
-        add_node(nid, name, "Attorney", "LegalSubject", 1)
+        add_node(nid, name, "Attorney", "LegalSubject", 1, extra={
+            "entitySourceId": a.get("id") or a.get("node_id") or nid,
+            "entityStableId": a.get("stable_id") or "",
+        })
         case_num = a.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "代理")
@@ -1328,7 +1355,11 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         label = f"{statute}第{article}条"
         nid = f"prov_{i}"
         add_node(nid, label[:60], "LegalProvision", "LegalNorm", 1,
-                 p.get("content", ""))
+                 p.get("content", ""),
+                 extra={
+                     "entitySourceId": p.get("id") or p.get("provision_id") or nid,
+                     "entityStableId": p.get("stable_id") or "",
+                 })
         case_num = p.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "引用")
@@ -1349,7 +1380,10 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             f"要件内容: {elem.get('content', '')[:80]}",
             f"适用事实模式: {elem.get('applicable_fact_pattern', '')[:80]}",
         ]
-        add_node(nid, label, "LegalProvisionElement", "LegalNorm", 2, "<br>".join(x for x in detail_lines if x and not x.endswith(": ")))
+        add_node(nid, label, "LegalProvisionElement", "LegalNorm", 2, "<br>".join(x for x in detail_lines if x and not x.endswith(": ")), extra={
+            "entitySourceId": elem.get("id") or elem.get("element_id") or nid,
+            "entityStableId": elem.get("stable_id") or "",
+        })
 
     # ── Evidence — 按 case_number 或 submitted_by 关联 ──────────────────
     evids = output.get("evidence") or []
@@ -1364,7 +1398,9 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
                  f"类型: {e.get('evidence_type', '')}<br>提交: {e.get('submitted_by', '')}<br>关键证据: {'是' if e.get('is_key_evidence') else '否'}<br>采信: {admission_status}<br>理由: {admission_reason[:40]}<br>证明力: {probative_force}",
                  extra={"admission_status": admission_status,
                         "admission_reason": admission_reason,
-                        "probative_force": probative_force})
+                       "probative_force": probative_force,
+                       "entitySourceId": e.get("id") or e.get("evidence_id") or nid,
+                       "entityStableId": e.get("stable_id") or e.get("evidence_id") or ""})
         case_num = e.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "证据")
@@ -1397,7 +1433,27 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         rtype_raw = jr.get("result_type", "裁判结果")
         rtype_cn = RESULT_TYPE_MAP.get(rtype_raw, rtype_raw)
         nid = jr.get("id") or f"jr_{i}"
-        add_node(nid, rtype_cn, "JudgmentResult", "JudicialEntity", 0)
+        label = summarize_judgment_result(jr, rtype_cn)
+        details = [
+            f"结果类型: {rtype_cn}" if rtype_cn else "",
+            f"具体裁判: {jr.get('specific_judgment', '')}" if jr.get("specific_judgment") else "",
+            f"裁判理由: {jr.get('reasoning', '')[:120]}" if jr.get("reasoning") else "",
+            f"案号: {jr.get('case_number', '')}" if jr.get("case_number") else "",
+        ]
+        add_node(
+            nid,
+            label,
+            "JudgmentResult",
+            "JudicialEntity",
+            0,
+            "<br>".join(part for part in details if part),
+            extra={
+                "entitySourceId": jr.get("id") or jr.get("result_id") or nid,
+                "entityStableId": jr.get("stable_id") or "",
+                "resultType": rtype_raw,
+                "resultTypeLabel": rtype_cn,
+            },
+        )
         case_num = jr.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], nid, "裁判")
@@ -1410,7 +1466,11 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         fid = f.get("id", f"fact_{i}")
         label = f.get("content", "")[:40]
         add_node(fid, label, "Fact", "JudicialEntity", 1,
-                 f"类型: {f.get('fact_type', '')}<br>案号: {f.get('case_number', '')}")
+                 f"类型: {f.get('fact_type', '')}<br>案号: {f.get('case_number', '')}",
+                 extra={
+                     "entitySourceId": f.get("id") or f.get("fact_id") or fid,
+                     "entityStableId": f.get("stable_id") or "",
+                 })
         case_num = f.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], fid, "事实")
@@ -1423,7 +1483,11 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         dfid = df.get("id", f"focus_{i}")
         label = df.get("content", "")[:40]
         add_node(dfid, label, "DisputeFocus", "JudicialEntity", 0,
-                 f"类型: {df.get('focus_type', '')}<br>案号: {df.get('case_number', '')}")
+                 f"类型: {df.get('focus_type', '')}<br>案号: {df.get('case_number', '')}",
+                 extra={
+                     "entitySourceId": df.get("id") or df.get("focus_id") or dfid,
+                     "entityStableId": df.get("stable_id") or "",
+                 })
         case_num = df.get("case_number", "")
         if case_num and case_num in cn_to_cc:
             add_edge(cn_to_cc[case_num], dfid, "争议焦点")
@@ -1444,6 +1508,8 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
                 "relation_type": rtype,
                 "edge_type": "explicit",
                 "is_derived": False,
+                "sourceRef": src,
+                "targetRef": tgt,
             })
 
     derived_rels = output.get("derived_relations") or []
@@ -1459,6 +1525,8 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
                 "relation_type": rtype,
                 "edge_type": "derived",
                 "is_derived": True,
+                "sourceRef": src,
+                "targetRef": tgt,
                 "dashes": [6, 4],
                 "color": {"color": "#6366f1", "highlight": "#4338ca", "hover": "#4338ca", "opacity": 0.82},
                 "font": {"size": 10, "color": "#4338ca", "strokeWidth": 2, "strokeColor": "#fff"},

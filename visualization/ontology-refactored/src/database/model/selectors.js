@@ -36,6 +36,26 @@ function normalizeCaseCategoryLabel(value) {
   return mapping[value] || value || '';
 }
 
+function normalizeJudgmentResultType(value) {
+  const mapping = {
+    guilty: '有罪判决',
+    not_guilty: '无罪判决',
+    liable: '承担责任',
+    not_liable: '不承担责任',
+    dismissed: '驳回',
+    withdrawn: '撤诉',
+    partially_upheld: '部分维持',
+    remanded: '发回重审',
+    punitive_damages: '惩罚性赔偿',
+    procedural_ruling: '程序性裁定',
+    bankruptcy_declared: '宣告破产',
+    mediation_agreement: '调解协议',
+    arbitration_award: '仲裁裁决',
+    administrative_decision: '行政决定'
+  };
+  return mapping[value] || value || '';
+}
+
 function uniqueText(values = []) {
   return [...new Set((values || []).filter(Boolean).map(value => String(value)))];
 }
@@ -580,11 +600,14 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
   (output.judgment_results || []).forEach((jr, index) => {
     jr = jr || {};
     const jrLocal = jr.id || `jr_${index}`;
-    addNode(jrLocal, jr.result_type || `裁判结果_${index}`, 'JudgmentResult', 0, nodeTitle([
+    const resultTypeLabel = normalizeJudgmentResultType(jr.result_type);
+    const judgmentLabel = shortText(jr.specific_judgment || jr.reasoning || resultTypeLabel || `裁判结果_${index}`, 48);
+    addNode(jrLocal, judgmentLabel, 'JudgmentResult', 0, nodeTitle([
       '<b>裁判结果</b>',
-      jr.result_type ? `结果类型: ${jr.result_type}` : '',
+      resultTypeLabel ? `结果类型: ${resultTypeLabel}` : '',
       jr.specific_judgment ? `具体裁判: ${shortText(jr.specific_judgment, 180)}` : '',
-      jr.reasoning ? `理由: ${shortText(jr.reasoning, 180)}` : ''
+      jr.reasoning ? `理由: ${shortText(jr.reasoning, 180)}` : '',
+      jr.case_number ? `案号: ${jr.case_number}` : ''
     ]), { size: 24 });
     addEdge(jr.case_number || firstCourtLocalId, jrLocal, '裁判');
   });

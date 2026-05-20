@@ -93,10 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       if (data.json_result) {
+        const hydratedVersions = Array.isArray(data.parse_versions) ? data.parse_versions : [];
+        const activeVersionId = data.active_version_id || (hydratedVersions[hydratedVersions.length - 1] || {}).version_id || 'v0';
+        const activeVersion = hydratedVersions.find((item) => item?.version_id === activeVersionId) || null;
         const result = {
-          json_result: data.json_result,
-          nodes: data.nodes || [],
-          edges: data.edges || [],
+          json_result: activeVersion?.json_result || data.json_result,
+          nodes: activeVersion?.nodes || data.nodes || [],
+          edges: activeVersion?.edges || data.edges || [],
           score: data.score || 0,
           issues: data.issues || [],
           row_id: data.row_id || null,
@@ -113,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.active_tab === 'eval') targetTab = 'termEvalTabContent';
         else if (data.active_tab === 'issues') targetTab = 'termIssuesTabContent';
         else if (data.active_tab === 'enhance') targetTab = 'termEnhanceTabContent';
+        else if (data.active_tab === 'retrieval') targetTab = 'termRetrievalTabContent';
         
         store.setState({ 
           parseGraphData: result,
@@ -120,7 +124,22 @@ document.addEventListener('DOMContentLoaded', () => {
           isParseResultAvailable: true,
           workspaceLayoutMode: 'parse_primary',
           isOntologyVisible: true,
-          activeTab: targetTab
+          activeTab: targetTab,
+          parseVersions: hydratedVersions,
+          parseActiveVersionId: activeVersionId,
+          parseEnhancementRuns: data.term_enhancement_runs || [],
+          parseMergeHighlight: activeVersion?.highlight_patch || data.term_merge_highlight || null,
+          parseEnhancementPreviewActive: false,
+          parseEnhancementPreviewRunId: null,
+          parseEnhancementPreviewPatch: null,
+          retrievalBundle: data.retrieval_bundle || null,
+          retrievalEntries: (data.retrieval_bundle?.entries || []),
+          retrievalActiveEntryId: data.retrieval_bundle?.entries?.[0]?.entry_id || null,
+          retrievalDirty: Boolean(data.retrieval_bundle?.status?.has_manual_edits),
+          retrievalEmbeddingStatus: data.retrieval_bundle?.status?.has_stale_embeddings ? 'stale' : 'ready',
+          retrievalWriteStatus: data.retrieval_bundle?.status?.write_status || 'idle',
+          retrievalSourceParseVersionId: data.retrieval_bundle?.source_parse_version_id || null,
+          retrievalWriteManifest: data.retrieval_write_manifest || null,
         });
         
         terminalPanel.switchTab(targetTab);
@@ -138,6 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data.term_enhancement_result) {
           terminalPanel.renderEnhancementResult(data.term_enhancement_result);
+        }
+        if (typeof terminalPanel.renderVersionRail === 'function') {
+          terminalPanel.renderVersionRail(hydratedVersions, activeVersionId);
+        }
+        if (data.retrieval_bundle && typeof terminalPanel.renderRetrievalBundle === 'function') {
+          terminalPanel.lastRetrievalWriteManifest = data.retrieval_write_manifest || null;
+          terminalPanel.renderRetrievalBundle(data.retrieval_bundle);
         }
         
         terminalPanel.setStatus('测试数据已加载（含上次解析结果）', '#27ae60');

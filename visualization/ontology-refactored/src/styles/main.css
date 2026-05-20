@@ -730,6 +730,7 @@ body.detail-panel-docked.detail-panel-open #parseTerminal {
 .term-graph-mode-bar {
   margin: 8px 12px 0;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .graph-tools-mode-badge,
 .term-graph-mode-badge {
@@ -740,6 +741,83 @@ body.detail-panel-docked.detail-panel-open #parseTerminal {
 .graph-tools-mode-summary,
 .term-graph-mode-summary {
   font-size: 12px; line-height: 1.45; color: #475569;
+  flex: 1 1 320px;
+  min-width: 220px;
+}
+.term-graph-change-legend {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+.term-graph-change-title {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.term-graph-change-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  background: rgba(255, 255, 255, 0.88);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.term-graph-change-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  background: rgba(255, 255, 255, 0.9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 700;
+}
+.term-graph-change-line {
+  width: 18px;
+  border-top: 2px solid currentColor;
+}
+.term-graph-change-line.dashed {
+  border-top-style: dashed;
+}
+.term-graph-change-chip.is-added {
+  color: #0369a1;
+  border-color: rgba(14, 165, 233, 0.28);
+  background: rgba(240, 249, 255, 0.96);
+}
+.term-graph-change-chip.is-updated {
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(255, 251, 235, 0.96);
+}
+.term-graph-change-chip.is-explicit,
+.term-graph-change-chip.is-derived {
+  color: #475569;
+}
+.term-graph-mode-bar[data-change-mode="preview"] .term-graph-change-title {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+.term-graph-mode-bar[data-change-mode="preview"] .term-graph-change-chip.is-added {
+  box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.08), 0 0 12px rgba(14, 165, 233, 0.12);
+}
+.term-graph-mode-bar[data-change-mode="preview"] .term-graph-change-chip.is-updated {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.08), 0 0 12px rgba(245, 158, 11, 0.12);
 }
 .graph-tools-mode[data-mode="overview"], .term-graph-mode-bar[data-mode="overview"] { background: #f8fafc; border-color: #dbe3ee; }
 .graph-tools-mode[data-mode="overview"] .graph-tools-mode-badge, .term-graph-mode-bar[data-mode="overview"] .term-graph-mode-badge { background: #dbeafe; color: #1d4ed8; }

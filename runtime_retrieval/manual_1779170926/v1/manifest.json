@@ -1,0 +1,21 @@
+{
+  "bundle_id": "rb_manual_1779170926_v1",
+  "row_id": "manual_1779170926",
+  "source_parse_version_id": "v1",
+  "written_at": "2026-05-20T10:29:45+00:00",
+  "writer_version": "retrieval_writer_v1",
+  "embedding_profile": "default_zh_v1",
+  "embedding_provider": "http://10.1.5.3:8080/v1/embeddings",
+  "embedding_model": "BAAI/bge-base-zh-v1.5",
+  "entry_total": 31,
+  "vector_doc_total": 31,
+  "graph_doc_total": 11,
+  "remote_embedding_total": 0,
+  "fallback_embedding_total": 3,
+  "has_manual_edits": true,
+  "stale_entry_count": 0,
+  "target": {
+    "mode": "file_only",
+    "base_dir": "runtime_retrieval/manual_1779170926/v1"
+  }
+}

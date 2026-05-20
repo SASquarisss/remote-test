@@ -157,6 +157,8 @@ export class ParseGraph {
     this.traceSummaryText = '';
     this.currentAnalysisMode = 'overview';
     this.init();
+    this.bindResizeObserver();
+    this.bindVisibilityEvents();
   }
 
   mountToMainView() {
@@ -165,12 +167,7 @@ export class ParseGraph {
     this.layer.style.display = 'block';
     this.container.style.display = 'block';
     this.overlayHost = this.layer;
-    setTimeout(() => {
-      this.network.setSize('100%', '100%');
-      this.network.redraw();
-      this.renderZoneOverlay();
-      this.network.fit({ animation: true });
-    }, 100);
+    this.scheduleRelayout({ fit: true, delay: 30 });
   }
 
   mountToTerminal() {
@@ -179,6 +176,52 @@ export class ParseGraph {
     this.layer.style.display = 'none';
     this.container.style.display = 'none';
     this.overlayHost = this.layer;
+  }
+
+  scheduleRelayout({ fit = false, delay = 60, preserveView = false } = {}) {
+    if (!this.network) return;
+    window.clearTimeout(this.relayoutTimer);
+    this.relayoutTimer = window.setTimeout(() => {
+      if (!this.network || !this.container || this.container.style.display === 'none') return;
+      this.network.setSize('100%', '100%');
+      this.network.redraw();
+      this.renderZoneOverlay();
+      if (fit) {
+        this.network.fit({ animation: true });
+      } else if (!preserveView) {
+        this.network.moveTo({ scale: this.network.getScale() });
+      }
+    }, delay);
+  }
+
+  bindResizeObserver() {
+    if (typeof ResizeObserver === 'undefined') return;
+    this.resizeObserver?.disconnect?.();
+    this.resizeObserver = new ResizeObserver(() => {
+      if (!this.network || !this.lastRenderedData) return;
+      if (!this.container || this.container.style.display === 'none') return;
+      this.scheduleRelayout({ fit: false, delay: 30, preserveView: true });
+    });
+    if (this.container) {
+      this.resizeObserver.observe(this.container);
+    }
+    if (this.layer) {
+      this.resizeObserver.observe(this.layer);
+    }
+  }
+
+  bindVisibilityEvents() {
+    window.addEventListener('parse-graph-visible', (event) => {
+      this.initGraphTools();
+      this.renderAnalysisModeState(store.getState());
+      if (!this.network || !this.lastRenderedData) return;
+      const fit = Boolean(event?.detail?.fit);
+      this.scheduleRelayout({ fit, delay: fit ? 40 : 20, preserveView: !fit });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible' || !this.lastRenderedData) return;
+      this.scheduleRelayout({ fit: false, delay: 40, preserveView: true });
+    });
   }
 
   init() {
@@ -516,6 +559,26 @@ export class ParseGraph {
     if (!this.toolModeSummaryEl || !this.toolModeSummaryEl.isConnected) {
       this.toolModeSummaryEl = document.getElementById('termGraphModeSummary');
     }
+    if (this.toolModeEl && (!this.changeLegendEl || !this.changeLegendEl.isConnected)) {
+      let legend = document.getElementById('termGraphChangeLegend');
+      if (!legend) {
+        legend = document.createElement('div');
+        legend.className = 'term-graph-change-legend';
+        legend.id = 'termGraphChangeLegend';
+        legend.innerHTML = `
+          <span class="term-graph-change-title" id="termGraphChangeTitle">版本变化</span>
+          <span class="term-graph-change-chip is-added"><span class="term-graph-change-dot">+</span>新增</span>
+          <span class="term-graph-change-chip is-updated"><span class="term-graph-change-dot">●</span>更新</span>
+          <span class="term-graph-change-chip is-explicit"><span class="term-graph-change-line"></span>显式</span>
+          <span class="term-graph-change-chip is-derived"><span class="term-graph-change-line dashed"></span>派生</span>
+        `;
+        this.toolModeEl.appendChild(legend);
+      }
+      this.changeLegendEl = legend;
+    }
+    if (!this.changeLegendTitleEl || !this.changeLegendTitleEl.isConnected) {
+      this.changeLegendTitleEl = document.getElementById('termGraphChangeTitle');
+    }
   }
 
   getActiveAnalysisMode() {
@@ -530,10 +593,40 @@ export class ParseGraph {
     return 'overview';
   }
 
-  renderAnalysisModeState() {
+  getHighlightVisualMeta(state = store.getState()) {
+    const highlight = this.getActiveMergeHighlight(state);
+    const previewActive = Boolean(state.parseEnhancementPreviewActive && state.parseEnhancementPreviewPatch);
+    const hasHighlight = Boolean(
+      highlight && (
+        (highlight.addedNodeIds?.length || 0)
+        + (highlight.updatedNodeIds?.length || 0)
+        + (highlight.addedEdgeIds?.length || 0)
+        + (highlight.updatedEdgeIds?.length || 0)
+        + (highlight.addedDerivedEdgeIds?.length || 0)
+        + (highlight.updatedDerivedEdgeIds?.length || 0)
+      ) > 0
+    );
+    return { highlight, previewActive, hasHighlight };
+  }
+
+  renderChangeLegend(state = store.getState()) {
+    this.ensureAnalysisModeElements();
+    if (!this.changeLegendEl) return;
+    const visualMeta = this.getHighlightVisualMeta(state);
+    this.changeLegendEl.style.display = visualMeta.hasHighlight ? 'flex' : 'none';
+    if (this.changeLegendTitleEl) {
+      this.changeLegendTitleEl.textContent = visualMeta.previewActive ? '应用预览' : '版本变化';
+    }
+    if (this.toolModeEl) {
+      this.toolModeEl.dataset.changeMode = visualMeta.previewActive ? 'preview' : (visualMeta.hasHighlight ? 'merged' : 'none');
+    }
+  }
+
+  renderAnalysisModeState(state = store.getState()) {
     this.ensureAnalysisModeElements();
     this.currentAnalysisMode = this.getActiveAnalysisMode();
     const meta = ANALYSIS_MODE_META[this.currentAnalysisMode] || ANALYSIS_MODE_META.overview;
+    const visualMeta = this.getHighlightVisualMeta(state);
     if (this.toolModeEl) {
       this.toolModeEl.dataset.mode = meta.theme;
     }
@@ -541,8 +634,11 @@ export class ParseGraph {
       this.toolModeBadgeEl.textContent = meta.label;
     }
     if (this.toolModeSummaryEl) {
-      this.toolModeSummaryEl.textContent = meta.summary;
+      this.toolModeSummaryEl.textContent = visualMeta.hasHighlight
+        ? `${meta.summary} ${visualMeta.previewActive ? '当前为应用预览。' : '当前显示版本变化。'}青蓝表示新增，橙色表示更新，实线表示显式关系，虚线表示派生关系，节点标签前的 + / ● 对应新增与更新。`
+        : meta.summary;
     }
+    this.renderChangeLegend(state);
   }
 
   setToolDescription(text) {
@@ -572,7 +668,7 @@ export class ParseGraph {
     this.setToolButtonState('btnSubgraph', this.subgraphMode, '#2563eb');
     this.setToolButtonState('btnPlayback', Boolean(this.playbackInterval), '#f59e0b');
     this.setToolButtonState('btnXRay', this.xrayMode, '#dc2626');
-    this.renderAnalysisModeState();
+    this.renderAnalysisModeState(store.getState());
   }
 
   toggleLocalFocusMode() {
@@ -1383,6 +1479,17 @@ export class ParseGraph {
     return fullLabel;
   }
 
+  getNodeChangeMarker(nodeId, highlight, semanticZoom = 'mid') {
+    if (!highlight || !nodeId) return '';
+    if ((highlight.addedNodeIds || []).includes(nodeId)) {
+      return semanticZoom === 'far' ? '+' : '+ ';
+    }
+    if ((highlight.updatedNodeIds || []).includes(nodeId)) {
+      return semanticZoom === 'far' ? '●' : '● ';
+    }
+    return '';
+  }
+
   getEdgeDisplayLabel(edge, state) {
     const semanticZoom = state.parseGraphSemanticZoom || this.semanticZoom || 'mid';
     const displayMode = state.parseGraphDisplayMode || 'skeleton';
@@ -1472,15 +1579,39 @@ export class ParseGraph {
     };
   }
 
+  getActiveMergeHighlight(state = store.getState()) {
+    if (state.parseEnhancementPreviewActive && state.parseEnhancementPreviewPatch) {
+      return state.parseEnhancementPreviewPatch;
+    }
+    return state.parseMergeHighlight || null;
+  }
+
   styleEdges(edges, state = store.getState()) {
+    const highlight = this.getActiveMergeHighlight(state);
+    const isPreview = Boolean(state.parseEnhancementPreviewActive && state.parseEnhancementPreviewPatch);
+    const addedEdgeIds = new Set(highlight?.addedEdgeIds || []);
+    const updatedEdgeIds = new Set(highlight?.updatedEdgeIds || []);
+    const addedDerivedEdgeIds = new Set(highlight?.addedDerivedEdgeIds || []);
+    const updatedDerivedEdgeIds = new Set(highlight?.updatedDerivedEdgeIds || []);
     return (edges || []).map(e => ({
       ...e,
       fullLabel: e.fullLabel || e.label || e.relationType || '',
       label: this.getEdgeDisplayLabel(e, state),
       smooth: e.smooth || this.getEdgeSmooth(e),
       hidden: Boolean(e.hidden),
-      dashes: e.dashes || e.isAggregateEdge || e.isCaseContextEdge || (e.edgePriority === 'P2') || (e.edgePriority === 'P1' && state.parseGraphDisplayMode === 'skeleton'),
-      color: e.color || (
+      dashes: (
+        addedDerivedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
+          ? true
+          : addedEdgeIds.has(e.id) || updatedEdgeIds.has(e.id)
+            ? false
+            : e.dashes || e.isAggregateEdge || e.isCaseContextEdge || (e.edgePriority === 'P2') || (e.edgePriority === 'P1' && state.parseGraphDisplayMode === 'skeleton')
+      ),
+      color: (
+        addedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id)
+          ? { color: '#0ea5e9', highlight: '#0284c7' }
+          : updatedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
+            ? { color: '#f59e0b', highlight: '#d97706' }
+          : e.color || (
         e.isTraceEdge
           ? {
               color: e.traceDirection === 'upstream'
@@ -1499,8 +1630,11 @@ export class ParseGraph {
               : state.parseGraphDisplayMode === 'skeleton'
                 ? { color: 'rgba(99, 102, 241, 0.52)', highlight: '#4f46e5' }
                 : { color: '#6366f1', highlight: '#4f46e5' }
-      ),
-      width: e.width || (
+      )),
+      width: (
+        addedEdgeIds.has(e.id) || updatedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
+          ? (isPreview ? 4.1 : 3.3)
+          : e.width || (
         e.isTraceEdge
           ? (e.traceDepth <= 1 ? 3.6 : e.traceDepth === 2 ? 2.8 : 2.1)
           : e.isAggregateEdge
@@ -1514,10 +1648,14 @@ export class ParseGraph {
               : state.parseGraphDisplayMode === 'skeleton'
                 ? 1.55
                 : 1.8
-      ),
+      )),
       font: {
         size: state.parseGraphSemanticZoom === 'near' ? (e.edgePriority === 'P0' ? 11 : 10) : (e.edgePriority === 'P0' ? 10 : 9),
-        color: e.isTraceEdge
+        color: addedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id)
+          ? '#0369a1'
+          : updatedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
+            ? '#b45309'
+          : e.isTraceEdge
           ? (e.traceDirection === 'upstream' ? '#115e59' : '#c2410c')
           : e.isAggregateEdge
           ? '#64748b'
@@ -1539,6 +1677,10 @@ export class ParseGraph {
   }
 
   styleNodes(nodes, state = store.getState()) {
+    const highlight = this.getActiveMergeHighlight(state);
+    const isPreview = Boolean(state.parseEnhancementPreviewActive && state.parseEnhancementPreviewPatch);
+    const addedNodeIds = new Set(highlight?.addedNodeIds || []);
+    const updatedNodeIds = new Set(highlight?.updatedNodeIds || []);
     const defaultStyles = {
       CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A' },
       CaseType:   { shape: 'box', color: '#fff7ed', border: '#fb923c', fontColor: '#9a3412' },
@@ -1565,7 +1707,11 @@ export class ParseGraph {
       const style = defaultStyles[type] || { shape: 'box', color: '#f8fafc', border: '#cbd5e1' };
       const aggregateExpanded = type === 'AggregateGroup' && state.parseGraphExpandedGroups?.[n.aggregateKey];
       const fullLabel = n.fullLabel || n.label || n.title || n.id;
-      const label = this.getNodeDisplayLabel({ ...n, fullLabel }, state, type);
+      const baseLabel = this.getNodeDisplayLabel({ ...n, fullLabel }, state, type);
+      const labelMarker = type === 'AggregateGroup'
+        ? ''
+        : this.getNodeChangeMarker(n.id, highlight, state.parseGraphSemanticZoom || this.semanticZoom || 'mid');
+      const label = labelMarker ? `${labelMarker}${baseLabel}` : baseLabel;
       const isBoxLike = ['box', 'square', 'hexagon'].includes(style.shape);
       const baseSize = type === 'AggregateGroup'
         ? 24
@@ -1587,6 +1733,21 @@ export class ParseGraph {
                 ? { background: '#f8fafc', border: '#60a5fa', font: '#1e40af' }
                 : { background: '#f8fafc', border: '#cbd5e1', font: '#475569' })
         : null;
+      const mergeColors = addedNodeIds.has(n.id)
+        ? {
+            border: '#0ea5e9',
+            shadow: isPreview ? 'rgba(14,165,233,0.34)' : 'rgba(14,165,233,0.22)',
+            borderWidth: isPreview ? 4.5 : 3.4,
+            borderDashes: false
+          }
+        : updatedNodeIds.has(n.id)
+          ? {
+              border: '#f59e0b',
+              shadow: isPreview ? 'rgba(245,158,11,0.26)' : 'rgba(245,158,11,0.18)',
+              borderWidth: isPreview ? 4.2 : 3.2,
+              borderDashes: [7, 5]
+            }
+          : null;
       
       return {
         ...n,
@@ -1596,9 +1757,13 @@ export class ParseGraph {
         shape: style.shape,
         color: {
           background: traceColors?.background || (aggregateExpanded ? '#e0f2fe' : style.color),
-          border: traceColors?.border || (aggregateExpanded ? '#0284c7' : style.border),
+          border: mergeColors?.border || traceColors?.border || (aggregateExpanded ? '#0284c7' : style.border),
         },
-        borderWidth: n.isTraceFocus ? 3 : (type === 'AggregateGroup' ? 1.5 : (n.isTraceNode ? 2.5 : 2)),
+        borderWidth: mergeColors?.borderWidth || (n.isTraceFocus ? 3 : (type === 'AggregateGroup' ? 1.5 : (n.isTraceNode ? 2.5 : 2))),
+        shapeProperties: {
+          ...(n.shapeProperties || {}),
+          borderDashes: mergeColors?.borderDashes || false,
+        },
         margin: type === 'AggregateGroup'
           ? { top: 8, right: 10, bottom: 8, left: 10 }
           : isBoxLike
@@ -1611,7 +1776,7 @@ export class ParseGraph {
         heightConstraint: isBoxLike ? { minimum: type === 'AggregateGroup' ? 34 : 38 } : undefined,
         shadow: n.isTraceNode
           ? { enabled: true, color: n.isTraceFocus ? 'rgba(217,119,6,0.35)' : 'rgba(37,99,235,0.18)', size: n.isTraceFocus ? 18 : 10 }
-          : { enabled: true, color: 'rgba(15,23,42,0.12)', size: 8, x: 0, y: 2 },
+          : { enabled: true, color: mergeColors?.shadow || 'rgba(15,23,42,0.12)', size: mergeColors ? (isPreview ? 18 : 11) : 8, x: 0, y: 2 },
         font: {
           size: type === 'AggregateGroup'
             ? (state.parseGraphSemanticZoom === 'far' ? 10 : 11)
@@ -1930,6 +2095,24 @@ export class ParseGraph {
 
       this.updateView();
       this.syncToolButtonStates();
+      this.lastMergeHighlight = state.parseMergeHighlight;
+      this.lastPreviewPatch = state.parseEnhancementPreviewPatch;
+      this.lastPreviewActive = state.parseEnhancementPreviewActive;
+      this.scheduleRelayout({ fit: this.isMainView, delay: 40, preserveView: !this.isMainView });
+      return;
+    }
+
+    const highlightChanged =
+      state.parseMergeHighlight !== this.lastMergeHighlight
+      || state.parseEnhancementPreviewPatch !== this.lastPreviewPatch
+      || state.parseEnhancementPreviewActive !== this.lastPreviewActive;
+    if (state.parseGraphData && highlightChanged) {
+      this.lastMergeHighlight = state.parseMergeHighlight;
+      this.lastPreviewPatch = state.parseEnhancementPreviewPatch;
+      this.lastPreviewActive = state.parseEnhancementPreviewActive;
+      this.renderAnalysisModeState(state);
+      this.syncRenderedGraph({ preservePositions: true });
+      this.scheduleRelayout({ fit: false, delay: 20, preserveView: true });
     }
   }
 }

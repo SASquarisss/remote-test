@@ -1,0 +1,3780 @@
+{
+  "bundle_id": "rb_manual_1779170926_v1",
+  "bundle_schema_version": "retrieval_bundle_v1",
+  "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+  "entries": [
+    {
+      "edit_state": {
+        "dirty": true,
+        "dirty_fields": [
+          "summary"
+        ],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": "2026-05-20T10:10:28+00:00",
+        "last_embedded_at": "2026-05-20T10:29:34+00:00",
+        "source_mode": "edited"
+      },
+      "entry_id": "rb_manual_1779170926_v1_case_profile_d02f669292",
+      "entry_type": "case_profile",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact",
+          "DisputeFocus",
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [],
+        "result_types": [
+          "guilty",
+          "guilty",
+          "guilty",
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "case_overview"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n案件类型：刑事案件\n案由：走私普通货物、物品\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…；陈雪玲在二审期间主动缴纳罚金20万元。\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元；陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n涉及法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "吴某某等走私普通货物、物品罪二审判决书",
+        "2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…",
+        "2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…",
+        "2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…",
+        "陈雪玲在二审期间主动缴纳罚金20万元。",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "CourtCase",
+          "Fact",
+          "DisputeFocus",
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "case_type",
+          "facts",
+          "dispute_focuses",
+          "judgment_results",
+          "legal_provisions"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.95,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n案件类型：刑事案件\n案由：走私普通货物、物品\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…；陈雪玲在二审期间主动缴纳罚金20万元。\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元；陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n涉及法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "scene_tags": [
+        "case_overview"
+      ],
+      "source_refs": {
+        "entity_ids": [],
+        "json_paths": [
+          "$"
+        ],
+        "stable_ids": [],
+        "version_id": "v1"
+      },
+      "summary": "案件类型：刑事案件；争点：陈雪玲的罚金是否过高，是否应减轻处罚。、陈雪玲的罚金是否过高，是否应减轻处罚。、陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。；裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元【已编辑】",
+      "title": "吴某某等走私普通货物、物品罪二审判决书｜整案概览",
+      "vector_payload": {
+        "embedding": [
+          0.72549,
+          0.913725,
+          -0.231373,
+          -0.07451,
+          0.317647,
+          0.364706,
+          -0.678431,
+          -0.545098,
+          -0.388235,
+          -0.913725,
+          -0.129412,
+          0.027451
+        ],
+        "embedding_meta": {
+          "dimension": 12,
+          "error": "<urlopen error timed out>",
+          "model": "BAAI/bge-base-zh-v1.5",
+          "provider": "http://10.1.5.3:8080/v1/embeddings",
+          "source": "mock_fallback"
+        },
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n案件类型：刑事案件\n案由：走私普通货物、物品\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…；陈雪玲在二审期间主动缴纳罚金20万元。\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元；陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n涉及法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "case_profile",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n案件类型：刑事案件\n案由：走私普通货物、物品\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…；陈雪玲在二审期间主动缴纳罚金20万元。\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元；陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n涉及法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "summary_text": "案件类型：刑事案件；争点：陈雪玲的罚金是否过高，是否应减轻处罚。、陈雪玲的罚金是否过高，是否应减轻处罚。、陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。；裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元【已编辑】"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:29:34+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_3c73893f28",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_0"
+        ],
+        "json_paths": [
+          "$.facts[0]"
+        ],
+        "stable_ids": [
+          ""
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税…",
+      "title": "2020年开始，吴宏海等人接受单清迎委托，通过水客走私…",
+      "vector_payload": {
+        "embedding": [
+          0.32549,
+          0.72549,
+          -0.129412,
+          -1.0,
+          0.701961,
+          -0.443137,
+          -0.388235,
+          0.301961,
+          -0.027451,
+          -0.2,
+          -0.74902,
+          0.505882
+        ],
+        "embedding_meta": {
+          "dimension": 12,
+          "error": "<urlopen error timed out>",
+          "model": "BAAI/bge-base-zh-v1.5",
+          "provider": "http://10.1.5.3:8080/v1/embeddings",
+          "source": "mock_fallback"
+        },
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税…"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:29:34+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_f497941940",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_1"
+        ],
+        "json_paths": [
+          "$.facts[1]"
+        ],
+        "stable_ids": [
+          ""
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额…",
+      "title": "2021年4月至2022年3月，刘丹丹按照郑哲泰安排，…",
+      "vector_payload": {
+        "embedding": [
+          0.952941,
+          0.207843,
+          -0.05098,
+          0.85098,
+          -0.145098,
+          -0.678431,
+          0.066667,
+          -0.835294,
+          0.882353,
+          0.137255,
+          -0.105882,
+          0.772549
+        ],
+        "embedding_meta": {
+          "dimension": 12,
+          "error": "<urlopen error timed out>",
+          "model": "BAAI/bge-base-zh-v1.5",
+          "provider": "http://10.1.5.3:8080/v1/embeddings",
+          "source": "mock_fallback"
+        },
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额…"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_3c558b37d8",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_2"
+        ],
+        "json_paths": [
+          "$.facts[2]"
+        ],
+        "stable_ids": [
+          ""
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利…",
+      "title": "2020年1月至2021年3月，陈雪玲明知他人通过海上…",
+      "vector_payload": {
+        "embedding": [
+          -0.87451,
+          -0.458824,
+          -0.411765,
+          -0.427451,
+          -0.309804,
+          0.662745,
+          -0.796078,
+          -0.043137,
+          -0.905882,
+          0.835294,
+          0.639216,
+          0.654902
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利…"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_254e2fd348",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_3"
+        ],
+        "json_paths": [
+          "$.facts[3]"
+        ],
+        "stable_ids": [
+          ""
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：陈雪玲在二审期间主动缴纳罚金20万元。",
+      "title": "陈雪玲在二审期间主动缴纳罚金20万元。",
+      "vector_payload": {
+        "embedding": [
+          -0.152941,
+          0.341176,
+          0.678431,
+          -0.87451,
+          -0.443137,
+          -0.631373,
+          -0.317647,
+          0.568627,
+          0.490196,
+          0.207843,
+          0.458824,
+          0.87451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：陈雪玲在二审期间主动缴纳罚金20万元。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_8bb08f85eb",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_0"
+        ],
+        "json_paths": [
+          "$.facts[4]"
+        ],
+        "stable_ids": [
+          "fact_sig_0130ab77f4ae"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税…",
+      "title": "2020年开始，吴宏海等人接受单清迎委托，通过水客走私…",
+      "vector_payload": {
+        "embedding": [
+          0.32549,
+          0.72549,
+          -0.129412,
+          -1.0,
+          0.701961,
+          -0.443137,
+          -0.388235,
+          0.301961,
+          -0.027451,
+          -0.2,
+          -0.74902,
+          0.505882
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税额15715853.48元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责在拱北口岸收货并安排送货，偷逃税…"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_ead686edc8",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_1"
+        ],
+        "json_paths": [
+          "$.facts[5]"
+        ],
+        "stable_ids": [
+          "fact_sig_fcfffd709019"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额…",
+      "title": "2021年4月至2022年3月，刘丹丹按照郑哲泰安排，…",
+      "vector_payload": {
+        "embedding": [
+          0.952941,
+          0.207843,
+          -0.05098,
+          0.85098,
+          -0.145098,
+          -0.678431,
+          0.066667,
+          -0.835294,
+          0.882353,
+          0.137255,
+          -0.105882,
+          0.772549
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额5128727.66元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，提供个人账户供走私使用，偷逃税额…"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_699ac79126",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_2"
+        ],
+        "json_paths": [
+          "$.facts[6]"
+        ],
+        "stable_ids": [
+          "fact_sig_18e631ffee49"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利…",
+      "title": "2020年1月至2021年3月，陈雪玲明知他人通过海上…",
+      "vector_payload": {
+        "embedding": [
+          -0.87451,
+          -0.458824,
+          -0.411765,
+          -0.427451,
+          -0.309804,
+          0.662745,
+          -0.796078,
+          -0.043137,
+          -0.905882,
+          0.835294,
+          0.639216,
+          0.654902
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利，偷逃税额1799200元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍帮助核对到货、收取运费并从中获利…"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_fact_unit_07d6e02c9c",
+      "entry_type": "fact_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "Fact"
+        ],
+        "fact_types": [
+          "undisputed"
+        ],
+        "law_names": [],
+        "relation_types": [],
+        "result_types": [],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "fact_similarity"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "graph_payload": {},
+      "keywords": [
+        "undisputed",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "Fact"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "Fact.content",
+          "Fact.fact_type"
+        ],
+        "relation_types": []
+      },
+      "priority": 0.8,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+      "scene_tags": [
+        "fact_similarity"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "fact_3"
+        ],
+        "json_paths": [
+          "$.facts[7]"
+        ],
+        "stable_ids": [
+          "fact_sig_8225778864cd"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "事实：陈雪玲在二审期间主动缴纳罚金20万元。",
+      "title": "陈雪玲在二审期间主动缴纳罚金20万元。",
+      "vector_payload": {
+        "embedding": [
+          -0.152941,
+          0.341176,
+          0.678431,
+          -0.87451,
+          -0.443137,
+          -0.631373,
+          -0.317647,
+          0.568627,
+          0.490196,
+          0.207843,
+          0.458824,
+          0.87451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号\n相关争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "fact_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n事实内容：陈雪玲在二审期间主动缴纳罚金20万元。\n事实类型：undisputed\n案号：(2024)粤刑终906号",
+        "summary_text": "事实：陈雪玲在二审期间主动缴纳罚金20万元。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_focus_unit_2e61bc9bcd",
+      "entry_type": "focus_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "DisputeFocus"
+        ],
+        "focus_labels": [
+          "陈雪玲的罚金是否过高，是否应减轻处罚。"
+        ],
+        "law_names": [],
+        "relation_types": [
+          "leads_to"
+        ],
+        "result_types": [
+          "guilty",
+          "guilty",
+          "guilty",
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "graph_payload": {},
+      "keywords": [
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元",
+        "刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "DisputeFocus"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "DisputeFocus.content"
+        ],
+        "relation_types": [
+          "leads_to"
+        ]
+      },
+      "priority": 0.84,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "focus_0"
+        ],
+        "json_paths": [
+          "$.dispute_focuses[0]"
+        ],
+        "stable_ids": [
+          ""
+        ],
+        "version_id": "v1"
+      },
+      "summary": "争点：陈雪玲的罚金是否过高，是否应减轻处罚。",
+      "title": "陈雪玲的罚金是否过高，是否应减轻处罚。",
+      "vector_payload": {
+        "embedding": [
+          -0.866667,
+          0.678431,
+          0.741176,
+          -0.545098,
+          -0.035294,
+          -0.74902,
+          -0.027451,
+          0.34902,
+          0.341176,
+          -0.811765,
+          0.615686,
+          -0.72549
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "focus_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "summary_text": "争点：陈雪玲的罚金是否过高，是否应减轻处罚。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_focus_unit_6469903d5b",
+      "entry_type": "focus_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "DisputeFocus"
+        ],
+        "focus_labels": [
+          "陈雪玲的罚金是否过高，是否应减轻处罚。"
+        ],
+        "law_names": [],
+        "relation_types": [
+          "leads_to"
+        ],
+        "result_types": [
+          "guilty",
+          "guilty",
+          "guilty",
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "graph_payload": {},
+      "keywords": [
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元",
+        "刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "DisputeFocus"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "DisputeFocus.content"
+        ],
+        "relation_types": [
+          "leads_to"
+        ]
+      },
+      "priority": 0.84,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "focus_0"
+        ],
+        "json_paths": [
+          "$.dispute_focuses[1]"
+        ],
+        "stable_ids": [
+          "focus_sig_672800183207"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "争点：陈雪玲的罚金是否过高，是否应减轻处罚。",
+      "title": "陈雪玲的罚金是否过高，是否应减轻处罚。",
+      "vector_payload": {
+        "embedding": [
+          -0.866667,
+          0.678431,
+          0.741176,
+          -0.545098,
+          -0.035294,
+          -0.74902,
+          -0.027451,
+          0.34902,
+          0.341176,
+          -0.811765,
+          0.615686,
+          -0.72549
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "focus_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "summary_text": "争点：陈雪玲的罚金是否过高，是否应减轻处罚。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_focus_unit_8a0639ca14",
+      "entry_type": "focus_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "DisputeFocus"
+        ],
+        "focus_labels": [
+          "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+        ],
+        "law_names": [],
+        "relation_types": [
+          "leads_to"
+        ],
+        "result_types": [
+          "guilty",
+          "guilty",
+          "guilty",
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n相关事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "graph_payload": {},
+      "keywords": [
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+        "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元",
+        "刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "DisputeFocus"
+        ],
+        "enum_refs": [],
+        "field_refs": [
+          "DisputeFocus.content"
+        ],
+        "relation_types": [
+          "leads_to"
+        ]
+      },
+      "priority": 0.84,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "focus_1"
+        ],
+        "json_paths": [
+          "$.dispute_focuses[2]"
+        ],
+        "stable_ids": [
+          "focus_sig_675e90b06e7e"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "争点：陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "title": "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。",
+      "vector_payload": {
+        "embedding": [
+          -0.701961,
+          0.396078,
+          -0.333333,
+          0.843137,
+          -0.380392,
+          -0.380392,
+          -0.411765,
+          0.262745,
+          0.858824,
+          -0.098039,
+          0.521569,
+          0.521569
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n相关事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "focus_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n相关裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元；刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元；陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+        "summary_text": "争点：陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_unit_29746e2b4c",
+      "entry_type": "judgment_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.result_type",
+          "JudgmentResult.specific_judgment",
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.88,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0"
+        ],
+        "json_paths": [
+          "$.judgment_results[0]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "有罪判决：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元",
+      "title": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元",
+      "vector_payload": {
+        "embedding": [
+          -0.513725,
+          0.552941,
+          0.984314,
+          -0.74902,
+          0.419608,
+          0.890196,
+          -0.027451,
+          -0.607843,
+          -0.129412,
+          0.960784,
+          0.858824,
+          0.145098
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "有罪判决：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_reasoning_unit_aa73242418",
+      "entry_type": "reasoning_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.9,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0"
+        ],
+        "json_paths": [
+          "$.judgment_results[0]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "title": "裁判理由｜吴宏海犯走私普通货物罪，判处有期徒刑六年六个月…",
+      "vector_payload": {
+        "embedding": [
+          -0.929412,
+          -0.615686,
+          -0.913725,
+          0.639216,
+          -0.584314,
+          -0.388235,
+          -0.772549,
+          0.396078,
+          -0.576471,
+          -0.545098,
+          0.592157,
+          -0.247059
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "reasoning_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_unit_6f5175a52e",
+      "entry_type": "judgment_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.result_type",
+          "JudgmentResult.specific_judgment",
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.88,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_1"
+        ],
+        "json_paths": [
+          "$.judgment_results[1]"
+        ],
+        "stable_ids": [
+          "jr_sig_14317c602809"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "有罪判决：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元",
+      "title": "刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元",
+      "vector_payload": {
+        "embedding": [
+          0.6,
+          -0.152941,
+          0.247059,
+          0.090196,
+          0.239216,
+          0.576471,
+          0.388235,
+          0.733333,
+          -0.419608,
+          0.098039,
+          -0.223529,
+          -0.709804
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。",
+        "summary_text": "有罪判决：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_reasoning_unit_ee904493da",
+      "entry_type": "reasoning_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.9,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_1"
+        ],
+        "json_paths": [
+          "$.judgment_results[1]"
+        ],
+        "stable_ids": [
+          "jr_sig_14317c602809"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。",
+      "title": "裁判理由｜刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑…",
+      "vector_payload": {
+        "embedding": [
+          -0.694118,
+          0.552941,
+          -0.317647,
+          0.184314,
+          -0.882353,
+          -0.192157,
+          0.05098,
+          0.192157,
+          0.921569,
+          0.215686,
+          0.443137,
+          -0.552941
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "reasoning_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：刘丹丹犯走私普通货物罪，判处有期徒刑三年，缓刑四年，并处罚金人民币十万元\n裁判理由：刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。",
+        "summary_text": "刘丹丹系从犯，减轻处罚；坦白、认罪认罚、主动缴纳罚金，有悔罪表现，适用缓刑。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_unit_08a37014f0",
+      "entry_type": "judgment_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.result_type",
+          "JudgmentResult.specific_judgment",
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.88,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_2"
+        ],
+        "json_paths": [
+          "$.judgment_results[2]"
+        ],
+        "stable_ids": [
+          "jr_sig_3413c26cf058"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "有罪判决：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "title": "陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元",
+      "vector_payload": {
+        "embedding": [
+          -0.419608,
+          0.098039,
+          -0.027451,
+          0.992157,
+          0.105882,
+          0.937255,
+          -0.709804,
+          -0.654902,
+          -0.113725,
+          -0.521569,
+          -0.427451,
+          0.764706
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。",
+        "summary_text": "有罪判决：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_reasoning_unit_e32c993a07",
+      "entry_type": "reasoning_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.9,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_2"
+        ],
+        "json_paths": [
+          "$.judgment_results[2]"
+        ],
+        "stable_ids": [
+          "jr_sig_3413c26cf058"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "陈雪玲系从犯，减轻处罚；坦白、认罪认罚。",
+      "title": "裁判理由｜陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处…",
+      "vector_payload": {
+        "embedding": [
+          -0.780392,
+          0.701961,
+          0.301961,
+          -0.819608,
+          -0.905882,
+          -0.192157,
+          -0.694118,
+          -0.427451,
+          -0.905882,
+          -0.082353,
+          0.639216,
+          -0.913725
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "reasoning_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑二年，并处罚金人民币五十万元\n裁判理由：陈雪玲系从犯，减轻处罚；坦白、认罪认罚。",
+        "summary_text": "陈雪玲系从犯，减轻处罚；坦白、认罪认罚。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_unit_6a9f907fdf",
+      "entry_type": "judgment_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.result_type",
+          "JudgmentResult.specific_judgment",
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.88,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_3"
+        ],
+        "json_paths": [
+          "$.judgment_results[3]"
+        ],
+        "stable_ids": [
+          "jr_sig_b413cda72108"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "有罪判决：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）",
+      "title": "陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳…",
+      "vector_payload": {
+        "embedding": [
+          0.466667,
+          0.027451,
+          0.294118,
+          0.270588,
+          0.811765,
+          0.043137,
+          -0.207843,
+          -0.176471,
+          -0.309804,
+          0.576471,
+          0.262745,
+          -0.294118
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+        "summary_text": "有罪判决：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_reasoning_unit_a84c44dfd9",
+      "entry_type": "reasoning_unit",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "law_names": [
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法",
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "judgment_reasoning"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+      "graph_payload": {},
+      "keywords": [
+        "有罪判决",
+        "陈雪玲的罚金是否过高，是否应减轻处罚。",
+        "陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "DisputeFocus"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.reasoning"
+        ],
+        "relation_types": [
+          "leads_to",
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.9,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+      "scene_tags": [
+        "judgment_reasoning"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_3"
+        ],
+        "json_paths": [
+          "$.judgment_results[3]"
+        ],
+        "stable_ids": [
+          "jr_sig_b413cda72108"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+      "title": "裁判理由｜陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月…",
+      "vector_payload": {
+        "embedding": [
+          -0.992157,
+          0.592157,
+          -0.058824,
+          -0.521569,
+          -0.121569,
+          0.066667,
+          0.803922,
+          -0.05098,
+          -0.396078,
+          -0.733333,
+          -0.87451,
+          0.223529
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n关键事实：2020年开始，吴宏海等人接受单清迎委托，通过水客走私摄影器材入境，吴宏海负责…；2021年4月至2022年3月，刘丹丹按照郑哲泰安排，清点走私入境的摄影器材，…；2020年1月至2021年3月，陈雪玲明知他人通过海上偷运方式走私摄影器材，仍…\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲与刘丹丹在共同犯罪中的参与程度和罪责比较。\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。\n相关法条：中华人民共和国刑法；中华人民共和国刑法；中华人民共和国刑法",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "reasoning_unit",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n争点：陈雪玲的罚金是否过高，是否应减轻处罚。；陈雪玲的罚金是否过高，是否应减轻处罚。\n结果类型：有罪判决\n具体裁判：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+        "summary_text": "陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_9d44d12e26",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_0|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_0"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_0"
+        ],
+        "json_paths": [
+          "$.relations[26]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_0"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_38cd3b6f1a",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_1|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_1"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_1"
+        ],
+        "json_paths": [
+          "$.relations[27]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_1"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_2fec27fb3b",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_2|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_2"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_2"
+        ],
+        "json_paths": [
+          "$.relations[28]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_2"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_c904ad4db7",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_3|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_3"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_3"
+        ],
+        "json_paths": [
+          "$.relations[29]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_3"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_fb5429fd17",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_4|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_4"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_4"
+        ],
+        "json_paths": [
+          "$.relations[30]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_4"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_fcd4016c42",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_5|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_5"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_5"
+        ],
+        "json_paths": [
+          "$.relations[31]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_5"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_d2105c38d5",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_6|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_6"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_6"
+        ],
+        "json_paths": [
+          "$.relations[32]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_6"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_9272f0eaac",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_7|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_7"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_7"
+        ],
+        "json_paths": [
+          "$.relations[33]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_7"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法",
+      "title": "裁判依据链｜中华人民共和国刑法",
+      "vector_payload": {
+        "embedding": [
+          -0.615686,
+          0.372549,
+          0.482353,
+          0.85098,
+          0.011765,
+          0.223529,
+          -0.733333,
+          0.47451,
+          0.898039,
+          -0.396078,
+          -0.560784,
+          0.027451
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_58798c0b43",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑事诉讼法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_8|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_8"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑事诉讼法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_8"
+        ],
+        "json_paths": [
+          "$.relations[34]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_8"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑事诉讼法",
+      "title": "裁判依据链｜中华人民共和国刑事诉讼法",
+      "vector_payload": {
+        "embedding": [
+          0.803922,
+          -0.898039,
+          0.254902,
+          0.003922,
+          -0.027451,
+          0.905882,
+          -0.098039,
+          -0.427451,
+          -0.47451,
+          0.403922,
+          -0.2,
+          -0.72549
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑事诉讼法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_f262d33dfb",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑事诉讼法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_0|prov_9|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_0",
+          "prov_9"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_0"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑事诉讼法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_0",
+          "prov_9"
+        ],
+        "json_paths": [
+          "$.relations[35]"
+        ],
+        "stable_ids": [
+          "jr_sig_dd30caaf4e1d",
+          "prov_9"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑事诉讼法",
+      "title": "裁判依据链｜中华人民共和国刑事诉讼法",
+      "vector_payload": {
+        "embedding": [
+          0.803922,
+          -0.898039,
+          0.254902,
+          0.003922,
+          -0.027451,
+          0.905882,
+          -0.098039,
+          -0.427451,
+          -0.47451,
+          0.403922,
+          -0.2,
+          -0.72549
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：吴宏海犯走私普通货物罪，判处有期徒刑六年六个月，并处罚金人民币三百万元\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：吴宏海在共同犯罪中起次要、辅助作用，系从犯，依法减轻处罚；具有坦白情节，从轻处罚。",
+        "summary_text": "吴宏海犯走私普通货物罪，判处有期徒刑六年六个月… -> 中华人民共和国刑事诉讼法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    },
+    {
+      "edit_state": {
+        "dirty": false,
+        "dirty_fields": [],
+        "editor": null,
+        "embedding_status": "ready",
+        "last_edited_at": null,
+        "last_embedded_at": "2026-05-20T10:10:28+00:00",
+        "source_mode": "generated"
+      },
+      "entry_id": "rb_manual_1779170926_v1_judgment_provision_chain_2922bc1463",
+      "entry_type": "judgment_provision_chain",
+      "exact_payload": {
+        "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+        "case_reason": "走私普通货物、物品",
+        "case_type": "刑事案件",
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "law_names": [
+          "中华人民共和国刑事诉讼法"
+        ],
+        "provision_refs": [
+          "中华人民共和国刑事诉讼法"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "result_types": [
+          "guilty"
+        ],
+        "row_id": "manual_1779170926",
+        "scene_tags": [
+          "law_application"
+        ],
+        "trial_level": "first_instance,second_instance"
+      },
+      "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+      "graph_payload": {
+        "edge_ids": [
+          "jr_3|prov_9|judgment_cites"
+        ],
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "node_ids": [
+          "jr_3",
+          "prov_9"
+        ],
+        "path_type": "judgment_provision_chain",
+        "relation_types": [
+          "judgment_cites"
+        ],
+        "seed_node_ids": [
+          "jr_3"
+        ]
+      },
+      "keywords": [
+        "有罪判决",
+        "中华人民共和国刑事诉讼法"
+      ],
+      "language": "zh-CN",
+      "notes": "",
+      "ontology_payload": {
+        "entity_types": [
+          "JudgmentResult",
+          "LegalProvision"
+        ],
+        "enum_refs": [
+          "JudgmentResult.result_type:guilty"
+        ],
+        "field_refs": [
+          "JudgmentResult.specific_judgment",
+          "LegalProvision.statute"
+        ],
+        "relation_types": [
+          "judgment_cites"
+        ]
+      },
+      "priority": 0.86,
+      "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+      "scene_tags": [
+        "law_application"
+      ],
+      "source_refs": {
+        "entity_ids": [
+          "jr_3",
+          "prov_9"
+        ],
+        "json_paths": [
+          "$.relations[55]"
+        ],
+        "stable_ids": [
+          "jr_sig_b413cda72108",
+          "prov_9"
+        ],
+        "version_id": "v1"
+      },
+      "summary": "陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月… -> 中华人民共和国刑事诉讼法",
+      "title": "裁判依据链｜中华人民共和国刑事诉讼法",
+      "vector_payload": {
+        "embedding": [
+          0.898039,
+          0.835294,
+          -0.027451,
+          -0.294118,
+          -0.2,
+          0.262745,
+          -0.254902,
+          -0.254902,
+          0.082353,
+          -0.858824,
+          0.529412,
+          -0.396078
+        ],
+        "expanded_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+        "metadata": {
+          "case_type": "刑事案件",
+          "entry_type": "judgment_provision_chain",
+          "row_id": "manual_1779170926",
+          "version_id": "v1"
+        },
+        "retrieval_text": "案件名称：吴某某等走私普通货物、物品罪二审判决书\n裁判结果：陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月，并处罚金人民币五十万元（已缴纳二十万元）\n结果类型：有罪判决\n关联法条：中华人民共和国刑事诉讼法\n裁判理由：陈雪玲在二审期间主动缴纳部分罚金，认罪悔罪态度良好，酌情从轻处罚。",
+        "summary_text": "陈雪玲犯走私普通货物罪，判处有期徒刑一年十个月… -> 中华人民共和国刑事诉讼法"
+      },
+      "write_state": {
+        "confirmed": true,
+        "last_written_at": "2026-05-20T10:29:45+00:00",
+        "written": true
+      }
+    }
+  ],
+  "generated_at": "2026-05-20T10:10:28+00:00",
+  "generator_version": "retrieval_builder_v1",
+  "meta": {
+    "case_categories": [
+      "刑事案件"
+    ],
+    "case_reasons": [
+      "刑事",
+      "走私普通货物、物品"
+    ],
+    "judgment_years": [
+      "2024"
+    ],
+    "procedures": [
+      "一审",
+      "二审"
+    ],
+    "publication_years": [
+      "2024"
+    ],
+    "source": "retrieval",
+    "stats": {
+      "evidence": 8,
+      "facts": 8,
+      "focuses": 3,
+      "provisions": 11,
+      "relations": 63
+    },
+    "trial_levels": [
+      "first_instance",
+      "second_instance"
+    ],
+    "types": [
+      "刑事",
+      "刑事案件",
+      "走私普通货物、物品"
+    ],
+    "years": [
+      "2024"
+    ]
+  },
+  "row_id": "manual_1779170926",
+  "source_enhancement_run_id": null,
+  "source_parse_version_id": "v1",
+  "stats": {
+    "entry_total": 31,
+    "entry_generated": 31,
+    "entry_edited": 1,
+    "exact_doc_total": 31,
+    "vector_doc_total": 31,
+    "graph_doc_total": 11,
+    "ready_embedding_total": 31,
+    "stale_embedding_total": 0,
+    "remote_embedding_total": 0,
+    "fallback_embedding_total": 3,
+    "written_total": 31
+  },
+  "status": {
+    "draft": true,
+    "has_manual_edits": true,
+    "has_stale_embeddings": false,
+    "write_status": "written"
+  },
+  "updated_at": "2026-05-20T10:29:45+00:00"
+}
