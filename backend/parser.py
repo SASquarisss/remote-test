@@ -1359,6 +1359,8 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
                  extra={
                      "entitySourceId": p.get("id") or p.get("provision_id") or nid,
                      "entityStableId": p.get("stable_id") or "",
+                     "articleNumber": str(article or ""),
+                     "statuteName": str(statute or ""),
                  })
         case_num = p.get("case_number", "")
         if case_num and case_num in cn_to_cc:

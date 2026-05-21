@@ -1429,9 +1429,34 @@ export class ParseGraph {
     return `${source.slice(0, Math.max(1, maxLength - 1))}…`;
   }
 
+  getLegalProvisionArticleMarker(node) {
+    const explicit = String(node?.articleNumber || node?.article || '').trim();
+    if (explicit) return explicit;
+    const fullLabel = String(node?.fullLabel || node?.label || '');
+    const match = fullLabel.match(/第([^条]{1,12})条/);
+    return match ? String(match[1] || '').trim() : '';
+  }
+
+  getLegalProvisionStatuteShort(node) {
+    const explicit = String(node?.statuteName || '').trim();
+    const raw = explicit || String(node?.fullLabel || node?.label || '').split('第')[0] || '';
+    return raw.replace(/^中华人民共和国/, '').trim();
+  }
+
   getNodeDisplayLabel(node, state, type) {
     const semanticZoom = state.parseGraphSemanticZoom || this.semanticZoom || 'mid';
     const fullLabel = node.fullLabel || node.label || node.title || node.id || '';
+
+    if (type === 'LegalProvision') {
+      const articleMarker = this.getLegalProvisionArticleMarker(node);
+      const statuteShort = this.getLegalProvisionStatuteShort(node);
+      if (semanticZoom === 'far' && articleMarker) {
+        return articleMarker;
+      }
+      if (semanticZoom === 'mid' && articleMarker) {
+        return statuteShort ? `${articleMarker}\n${this.truncateLabel(statuteShort, 6)}` : articleMarker;
+      }
+    }
 
     if (type === 'AggregateGroup') {
       const aggregateExpanded = Boolean(state.parseGraphExpandedGroups?.[node.aggregateKey]);

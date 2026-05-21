@@ -444,6 +444,7 @@ export class TerminalPanel {
             const mode = action.getAttribute('data-preview-mode');
             if (mode && this.lastRetrievalBundle) {
               store.setState({ retrievalPreviewMode: mode });
+              this.persistRetrievalUIState({ previewMode: mode });
               this.renderRetrievalBundle(this.lastRetrievalBundle);
             }
           }
@@ -452,7 +453,10 @@ export class TerminalPanel {
         const item = e.target.closest('[data-entry-id]');
         if (item) {
           const entryId = item.getAttribute('data-entry-id');
-          if (entryId) this.renderRetrievalBundle(this.lastRetrievalBundle, { activeEntryId: entryId });
+          if (entryId) {
+            this.persistRetrievalUIState({ activeEntryId: entryId });
+            this.renderRetrievalBundle(this.lastRetrievalBundle, { activeEntryId: entryId });
+          }
         }
       });
       retrievalPane.addEventListener('change', (e) => {
@@ -460,6 +464,13 @@ export class TerminalPanel {
         if (target?.id === 'retrievalFilterType' || target?.id === 'retrievalFilterStatus') {
           store.setState({
             retrievalFilters: {
+              ...(store.getState().retrievalFilters || {}),
+              type: document.getElementById('retrievalFilterType')?.value || 'all',
+              status: document.getElementById('retrievalFilterStatus')?.value || 'all',
+            }
+          });
+          this.persistRetrievalUIState({
+            filters: {
               ...(store.getState().retrievalFilters || {}),
               type: document.getElementById('retrievalFilterType')?.value || 'all',
               status: document.getElementById('retrievalFilterStatus')?.value || 'all',
@@ -473,6 +484,12 @@ export class TerminalPanel {
         if (target?.id === 'retrievalSearchInput') {
           store.setState({
             retrievalFilters: {
+              ...(store.getState().retrievalFilters || {}),
+              search: target.value || '',
+            }
+          });
+          this.persistRetrievalUIState({
+            filters: {
               ...(store.getState().retrievalFilters || {}),
               search: target.value || '',
             }
@@ -1326,6 +1343,7 @@ export class TerminalPanel {
       retrievalWriteStatus: 'idle',
       retrievalSourceParseVersionId: null,
       retrievalWriteManifest: null,
+      retrievalLastWriteSummary: null,
       retrievalFilters: { type: 'all', status: 'all', search: '' },
       retrievalPreviewMode: 'vector',
     });
@@ -1342,23 +1360,51 @@ export class TerminalPanel {
     return entries.find(item => item?.entry_id === state.retrievalActiveEntryId) || entries[0] || null;
   }
 
+  getRetrievalStorageKey() {
+    const rowId = this.lastResult?.row_id || store.getState().parseGraphData?.row_id || 'default';
+    return `workspace:retrieval-ui:${rowId}`;
+  }
+
+  readPersistedRetrievalUIState() {
+    try {
+      const raw = window.localStorage.getItem(this.getRetrievalStorageKey());
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  persistRetrievalUIState(extra = {}) {
+    try {
+      const state = store.getState();
+      const payload = {
+        activeEntryId: state.retrievalActiveEntryId || null,
+        filters: state.retrievalFilters || { type: 'all', status: 'all', search: '' },
+        previewMode: state.retrievalPreviewMode || 'vector',
+        lastWriteSummary: state.retrievalLastWriteSummary || null,
+        ...extra,
+      };
+      window.localStorage.setItem(this.getRetrievalStorageKey(), JSON.stringify(payload));
+    } catch {}
+  }
+
   getRetrievalFilters() {
     return store.getState().retrievalFilters || { type: 'all', status: 'all', search: '' };
   }
 
-  getFilteredRetrievalEntries(entries) {
-    const filters = this.getRetrievalFilters();
-    const search = String(filters.search || '').trim().toLowerCase();
+  getFilteredRetrievalEntries(entries, filters = null) {
+    const currentFilters = filters || this.getRetrievalFilters();
+    const search = String(currentFilters.search || '').trim().toLowerCase();
     return (entries || []).filter((item) => {
       const embeddingStatus = item?.edit_state?.embedding_status || 'pending';
       const dirty = Boolean(item?.edit_state?.dirty);
       const written = Boolean(item?.write_state?.written);
-      const statusMatch = filters.status === 'all'
-        || (filters.status === 'edited' && dirty)
-        || (filters.status === 'stale' && ['pending', 'stale', 'failed'].includes(embeddingStatus))
-        || (filters.status === 'ready' && embeddingStatus === 'ready')
-        || (filters.status === 'written' && written);
-      const typeMatch = filters.type === 'all' || item?.entry_type === filters.type;
+      const statusMatch = currentFilters.status === 'all'
+        || (currentFilters.status === 'edited' && dirty)
+        || (currentFilters.status === 'stale' && ['pending', 'stale', 'failed'].includes(embeddingStatus))
+        || (currentFilters.status === 'ready' && embeddingStatus === 'ready')
+        || (currentFilters.status === 'written' && written);
+      const typeMatch = currentFilters.type === 'all' || item?.entry_type === currentFilters.type;
       const haystack = [
         item?.title,
         item?.summary,
@@ -1374,13 +1420,14 @@ export class TerminalPanel {
   buildRetrievalValidation(bundle) {
     const issues = [];
     for (const item of (bundle?.entries || [])) {
-      const title = item?.title || item?.entry_id || '未命名条目';
+      const title = item?.primary_entity?.label || item?.title || item?.entry_id || '未命名条目';
       const embeddingStatus = item?.edit_state?.embedding_status || 'pending';
+      const hasValidChain = Boolean(item?.graph_payload?.is_valid_chain);
+      if (!hasValidChain) {
+        issues.push({ level: 'error', label: title, message: item?.graph_payload?.warning_text || '未形成有效实体关系链，不能生成主检索正文' });
+      }
       if (!String(item?.retrieval_text || '').trim()) {
         issues.push({ level: 'error', label: title, message: '检索正文为空' });
-      }
-      if (!Array.isArray(item?.scene_tags) || item.scene_tags.length === 0) {
-        issues.push({ level: 'warn', label: title, message: '缺少 scene_tags' });
       }
       if (['pending', 'stale', 'failed'].includes(embeddingStatus)) {
         issues.push({ level: 'warn', label: title, message: `向量状态为 ${embeddingStatus}` });
@@ -1398,6 +1445,7 @@ export class TerminalPanel {
       return {
         entry_id: activeEntry.entry_id,
         title: activeEntry.title,
+        meta_header: activeEntry.meta_header || {},
         exact_payload: activeEntry.exact_payload || {},
         scene_tags: activeEntry.scene_tags || [],
         keywords: activeEntry.keywords || [],
@@ -1407,6 +1455,8 @@ export class TerminalPanel {
       return {
         entry_id: activeEntry.entry_id,
         title: activeEntry.title,
+        view_label: activeEntry.view_label || activeEntry.entry_type,
+        meta_header: activeEntry.meta_header || {},
         summary_text: activeEntry?.vector_payload?.summary_text || '',
         retrieval_text: activeEntry?.vector_payload?.retrieval_text || '',
         expanded_text: activeEntry?.vector_payload?.expanded_text || '',
@@ -1417,11 +1467,70 @@ export class TerminalPanel {
       return {
         entry_id: activeEntry.entry_id,
         title: activeEntry.title,
+        view_label: activeEntry.view_label || activeEntry.entry_type,
+        meta_header: activeEntry.meta_header || {},
         graph_payload: activeEntry.graph_payload || {},
         ontology_payload: activeEntry.ontology_payload || {},
       };
     }
     return activeEntry;
+  }
+
+  buildRetrievalWriteSummary(bundle) {
+    const manifest = this.lastRetrievalWriteManifest || store.getState().retrievalWriteManifest || {};
+    const lastWriteSummary = store.getState().retrievalLastWriteSummary || this.readPersistedRetrievalUIState()?.lastWriteSummary || null;
+    const baseDir = lastWriteSummary?.outputDir || manifest?.target?.base_dir || '-';
+    const files = [
+      { name: 'bundle.json', count: bundle?.stats?.entry_total ?? 0 },
+      { name: 'exact_docs.jsonl', count: bundle?.stats?.exact_doc_total ?? 0 },
+      { name: 'vector_docs.jsonl', count: bundle?.stats?.vector_doc_total ?? 0 },
+      { name: 'graph_docs.jsonl', count: bundle?.stats?.graph_doc_total ?? 0 },
+      { name: 'manifest.json', count: 1 },
+    ];
+    return {
+      baseDir,
+      writtenAt: lastWriteSummary?.writtenAt || manifest?.written_at || '-',
+      fileCount: files.length,
+      files,
+      remoteEmbeddingTotal: manifest?.remote_embedding_total ?? bundle?.stats?.remote_embedding_total ?? 0,
+      fallbackEmbeddingTotal: manifest?.fallback_embedding_total ?? bundle?.stats?.fallback_embedding_total ?? 0,
+    };
+  }
+
+
+  getRetrievalFieldHelp() {
+    return {
+      title: '用于快速识别这份检索资产，方便人工浏览、筛选和后续管理。',
+      summary: '用一句话概括这份资产的核心含义，适合快速扫读，不替代完整正文。',
+      retrieval_text: '这是最核心的检索文本，后续做向量化或检索测试时主要基于这里。',
+      expanded_text: '用于补充主检索正文未展开的图谱链路、背景事实或额外上下文。',
+      keywords: '补充关键词和人工标签，便于过滤、测试和后续管理。',
+      notes: '记录人工调整说明、版本备注或特殊提醒，不直接等于主检索正文。',
+      scene_tags: '表示这份资产当前的视角或测试标签，主要用于后续筛选和管理。',
+    };
+  }
+
+  buildRetrievalFieldLabel(label, key) {
+    const help = this.getRetrievalFieldHelp()[key] || '';
+    return `${escapeHtml(label)} <span title="${escapeHtml(help)}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:999px;border:1px solid #cbd5e1;color:#64748b;font-size:10px;cursor:help;vertical-align:middle;">?</span>`;
+  }
+
+  buildRetrievalMetaHeaderLines(metaHeader = {}) {
+    return [
+      ['案件类型', metaHeader.case_type],
+      ['一级案由', metaHeader.reason_level1],
+      ['二级案由', metaHeader.reason_level2],
+      ['三级案由', metaHeader.reason_level3],
+      ['审级', metaHeader.trial_level],
+      ['裁判年份', metaHeader.judgment_year],
+      ['发布时间', metaHeader.publication_year],
+    ].filter(([, value]) => value);
+  }
+
+  getRetrievalBuildActionLabel(bundle, versionMismatch) {
+    if (!bundle?.entries?.length) return '生成检索资产';
+    if (versionMismatch) return '按当前版本重生成';
+    return '重新生成检索资产';
   }
 
   renderRetrievalBundle(bundle, { activeEntryId = null } = {}) {
@@ -1440,26 +1549,41 @@ export class TerminalPanel {
         retrievalSourceParseVersionId: null,
         retrievalFilters: { type: 'all', status: 'all', search: '' },
         retrievalPreviewMode: 'vector',
+        retrievalLastWriteSummary: null,
       });
       return;
     }
     this.lastRetrievalBundle = bundle;
     const entries = bundle.entries || [];
-    const filters = this.getRetrievalFilters();
-    const filteredEntries = this.getFilteredRetrievalEntries(entries);
-    const selectedId = activeEntryId || store.getState().retrievalActiveEntryId || filteredEntries[0]?.entry_id || entries[0]?.entry_id || null;
+    const persistedUiState = this.readPersistedRetrievalUIState() || {};
+    const filters = store.getState().retrievalFilters || persistedUiState.filters || { type: 'all', status: 'all', search: '' };
+    const filteredEntries = this.getFilteredRetrievalEntries(entries, filters);
+    const selectedId = activeEntryId || store.getState().retrievalActiveEntryId || persistedUiState.activeEntryId || filteredEntries[0]?.entry_id || entries[0]?.entry_id || null;
     const activeEntry = filteredEntries.find(item => item?.entry_id === selectedId) || entries.find(item => item?.entry_id === selectedId) || filteredEntries[0] || entries[0];
-    const previewMode = store.getState().retrievalPreviewMode || 'vector';
+    const previewMode = store.getState().retrievalPreviewMode || persistedUiState.previewMode || 'vector';
     const previewDoc = this.getRetrievalPreviewDoc(previewMode, bundle, activeEntry);
     const validationIssues = this.buildRetrievalValidation(bundle);
-    const staleCount = entries.filter(item => ['pending', 'stale', 'failed'].includes(item?.edit_state?.embedding_status)).length;
+    const blockingIssues = validationIssues.filter((item) => item.level === 'error' || item.message.includes('pending') || item.message.includes('stale') || item.message.includes('failed'));
     const editedCount = entries.filter(item => item?.edit_state?.dirty).length;
+    const invalidChainCount = entries.filter(item => !item?.graph_payload?.is_valid_chain).length;
     const currentParseVersionId = store.getState().parseActiveVersionId || 'v0';
     const versionMismatch = (bundle.source_parse_version_id || 'v0') !== currentParseVersionId;
-    const remoteEmbeddingCount = bundle.stats?.remote_embedding_total || 0;
-    const fallbackEmbeddingCount = bundle.stats?.fallback_embedding_total || 0;
-    const activeEmbeddingMeta = activeEntry?.vector_payload?.embedding_meta || {};
-    const activeEmbeddingDim = activeEmbeddingMeta.dimension || (Array.isArray(activeEntry?.vector_payload?.embedding) ? activeEntry.vector_payload.embedding.length : 0);
+    const writeSummary = this.buildRetrievalWriteSummary(bundle);
+    const hasWritten = Boolean(bundle.status?.write_status === 'written' || this.lastRetrievalWriteManifest || writeSummary.writtenAt !== '-');
+    const statusChips = [
+      { label: bundle.status?.draft === false ? '已定稿' : '草稿', color: '#1d4ed8', bg: '#eff6ff' },
+      { label: editedCount ? `已编辑 ${editedCount}` : '无未保存编辑', color: editedCount ? '#c2410c' : '#475569', bg: editedCount ? '#fff7ed' : '#f8fafc' },
+      { label: invalidChainCount ? `缺链 ${invalidChainCount}` : '关系链完整', color: invalidChainCount ? '#b91c1c' : '#166534', bg: invalidChainCount ? '#fef2f2' : '#ecfdf5' },
+      { label: hasWritten ? '已写入资产文件' : '尚未写入文件', color: hasWritten ? '#166534' : '#475569', bg: hasWritten ? '#ecfdf5' : '#f8fafc' },
+      { label: versionMismatch ? `版本落后于 ${currentParseVersionId}` : `绑定版本 ${bundle.source_parse_version_id || 'v0'}`, color: versionMismatch ? '#92400e' : '#4338ca', bg: versionMismatch ? '#fffbeb' : '#eef2ff' },
+    ];
+    const activeMetaHeader = activeEntry?.meta_header || {};
+    const activeGraphPayload = activeEntry?.graph_payload || {};
+    const activeOntologyPayload = activeEntry?.ontology_payload || {};
+    const activePrimaryEntity = activeEntry?.primary_entity || {};
+    const activeChainWarning = activeGraphPayload.warning_text || '当前未形成有效的实体关系链，暂不能自动生成主检索正文。';
+    const activeChainMissingItems = Array.isArray(activeGraphPayload.missing_items) ? activeGraphPayload.missing_items.filter(Boolean) : [];
+    const metaHeaderLines = this.buildRetrievalMetaHeaderLines(activeMetaHeader);
     const previewDocText = escapeHtml(JSON.stringify(previewDoc || {}, null, 2));
     const typeOptions = ['all', ...Array.from(new Set(entries.map(item => item?.entry_type).filter(Boolean)))];
     const previewModes = [
@@ -1469,81 +1593,71 @@ export class TerminalPanel {
       { key: 'graph', label: 'Graph' },
       { key: 'manifest', label: 'Manifest' },
     ];
+    const buildActionLabel = this.getRetrievalBuildActionLabel(bundle, versionMismatch);
     pane.innerHTML = `
       <div style="display:flex;flex-direction:column;flex:1;min-height:0;">
         <div style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fbfdff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button data-retrieval-action="build" style="padding:7px 12px;border:none;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer;">生成检索资产</button>
-            <button data-retrieval-action="regenerate" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;cursor:pointer;">重新生成</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1 1 420px;">
+            <button data-retrieval-action="${entries.length ? 'regenerate' : 'build'}" style="padding:7px 12px;border:none;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer;">${escapeHtml(buildActionLabel)}</button>
             <button data-retrieval-action="save-entry" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;cursor:pointer;">保存编辑</button>
             <button data-retrieval-action="reembed" style="padding:7px 12px;border:none;border-radius:8px;background:#7c3aed;color:#fff;cursor:pointer;">重新向量化</button>
             <button data-retrieval-action="write" style="padding:7px 12px;border:none;border-radius:8px;background:#16a34a;color:#fff;cursor:pointer;">确认写入</button>
+            <span style="font-size:12px;color:#64748b;">筛选：</span>
+            <input id="retrievalSearchInput" value="${escapeHtml(filters.search || '')}" placeholder="搜索标题、摘要、关键词、场景" style="min-width:220px;flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;" />
+            <select id="retrievalFilterType" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;background:#fff;">
+              ${typeOptions.map((item) => `<option value="${escapeHtml(item)}" ${filters.type === item ? 'selected' : ''}>${escapeHtml(item === 'all' ? '全部类型' : item)}</option>`).join('')}
+            </select>
+            <select id="retrievalFilterStatus" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;background:#fff;">
+              ${[
+                ['all', '全部状态'],
+                ['edited', '已编辑'],
+                ['stale', '待向量化'],
+                ['ready', '已就绪'],
+                ['written', '已写入'],
+              ].map(([value, label]) => `<option value="${value}" ${filters.status === value ? 'selected' : ''}>${label}</option>`).join('')}
+            </select>
           </div>
           <div style="font-size:12px;color:#64748b;display:flex;gap:10px;flex-wrap:wrap;">
             <span>来源版本：${escapeHtml(bundle.source_parse_version_id || 'v0')}</span>
             <span>条目：${entries.length}</span>
             <span>筛后：${filteredEntries.length}</span>
             <span>已编辑：${editedCount}</span>
-            <span>待向量化：${staleCount}</span>
-            <span>远程向量：${remoteEmbeddingCount}</span>
-            <span>兜底向量：${fallbackEmbeddingCount}</span>
+            <span>缺链：${invalidChainCount}</span>
             <span>状态：${escapeHtml(bundle.status?.write_status || 'pending')}</span>
           </div>
         </div>
+        <div style="padding:10px 14px;border-bottom:1px solid #e5e7eb;background:#ffffff;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1 1 420px;">
+            ${statusChips.map((item) => `<span style="font-size:11px;padding:4px 10px;border-radius:999px;background:${item.bg};color:${item.color};font-weight:700;">${escapeHtml(item.label)}</span>`).join('')}
+          </div>
+          <div style="font-size:12px;color:#64748b;min-width:260px;line-height:1.7;">
+            <div>当前工作态：${escapeHtml(hasWritten ? '已写入稿，可继续编辑并再次写出' : '内存草稿，需确认写入后落盘')}</div>
+            <div>最近写出：${escapeHtml(writeSummary.writtenAt || '-')}</div>
+          </div>
+        </div>
         ${versionMismatch ? `
-          <div style="padding:10px 14px;border-bottom:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-            <span>当前检索资产来源于解析版本 ${escapeHtml(bundle.source_parse_version_id || 'v0')}，当前解析版本是 ${escapeHtml(currentParseVersionId)}。建议基于当前版本重新生成。</span>
-            <button data-retrieval-action="regenerate" style="padding:6px 10px;border:none;border-radius:8px;background:#f59e0b;color:#fff;cursor:pointer;">按当前版本重生成</button>
+          <div style="padding:10px 14px;border-bottom:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:12px;">
+            当前检索资产来源于解析版本 ${escapeHtml(bundle.source_parse_version_id || 'v0')}，当前解析版本是 ${escapeHtml(currentParseVersionId)}。可直接使用上方主按钮按当前版本重新生成。
           </div>
         ` : ''}
-        <div style="padding:10px 14px;border-bottom:1px solid #e5e7eb;background:#fff;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <input id="retrievalSearchInput" value="${escapeHtml(filters.search || '')}" placeholder="搜索标题、摘要、关键词、场景" style="min-width:220px;flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;" />
-          <select id="retrievalFilterType" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;background:#fff;">
-            ${typeOptions.map((item) => `<option value="${escapeHtml(item)}" ${filters.type === item ? 'selected' : ''}>${escapeHtml(item === 'all' ? '全部类型' : item)}</option>`).join('')}
-          </select>
-          <select id="retrievalFilterStatus" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;background:#fff;">
-            ${[
-              ['all', '全部状态'],
-              ['edited', '已编辑'],
-              ['stale', '待向量化'],
-              ['ready', '已就绪'],
-              ['written', '已写入'],
-            ].map(([value, label]) => `<option value="${value}" ${filters.status === value ? 'selected' : ''}>${label}</option>`).join('')}
-          </select>
-        </div>
-        ${validationIssues.length ? `
-          <div style="padding:10px 14px;border-bottom:1px solid #fde68a;background:#fffdf5;">
-            <div style="font-size:12px;font-weight:700;color:#92400e;">写入前校验</div>
-            <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px;max-height:112px;overflow:auto;">
-              ${validationIssues.slice(0, 12).map((issue) => `
-                <div style="font-size:12px;color:${issue.level === 'error' ? '#b91c1c' : '#92400e'};background:${issue.level === 'error' ? '#fef2f2' : '#fffbeb'};border:1px solid ${issue.level === 'error' ? '#fecaca' : '#fde68a'};border-radius:8px;padding:7px 10px;">
-                  <span style="font-weight:700;">${escapeHtml(issue.label)}</span>：${escapeHtml(issue.message)}
-                </div>
-              `).join('')}
-              ${validationIssues.length > 12 ? `<div style="font-size:12px;color:#92400e;">其余 ${validationIssues.length - 12} 项问题未展开显示。</div>` : ''}
-            </div>
-          </div>
-        ` : `
-          <div style="padding:10px 14px;border-bottom:1px solid #bbf7d0;background:#f0fdf4;color:#166534;font-size:12px;">写入前校验通过，当前没有发现空正文、缺少场景标签或待向量化条目。</div>
-        `}
         <div style="display:flex;flex:1;min-height:0;">
           <div style="width:30%;border-right:1px solid #e5e7eb;overflow:auto;background:#fcfdff;">
             ${filteredEntries.map(item => {
               const active = item.entry_id === activeEntry?.entry_id;
               const dirty = item?.edit_state?.dirty;
               const embeddingStatus = item?.edit_state?.embedding_status || 'pending';
-              const embeddingSource = item?.vector_payload?.embedding_meta?.source || 'pending';
-              const sourceLabel = embeddingSource === 'remote' ? '真实向量' : (embeddingSource === 'mock_fallback' ? '兜底向量' : '待处理');
+              const hasValidChain = Boolean(item?.graph_payload?.is_valid_chain);
+              const primaryEntityLabel = item?.primary_entity?.label || item?.title || item?.entry_id || '';
               return `
-                <div data-entry-id="${escapeHtml(item.entry_id)}" style="padding:10px 12px;border-bottom:1px solid #eef2f7;cursor:pointer;background:${active ? '#eef6ff' : '#fff'};">
-                  <div style="font-size:12px;color:#6366f1;font-weight:700;">${escapeHtml(item.entry_type || '')}</div>
-                  <div style="margin-top:4px;font-size:13px;color:#0f172a;font-weight:600;line-height:1.5;">${escapeHtml(item.title || '')}</div>
-                  <div style="margin-top:4px;font-size:11px;color:#64748b;">${escapeHtml((item.scene_tags || []).join(' / '))}</div>
-                  <div style="margin-top:4px;font-size:11px;color:#94a3b8;line-height:1.5;">${escapeHtml(item.summary || '')}</div>
+                <div data-entry-id="${escapeHtml(item.entry_id)}" style="padding:10px 12px;border-bottom:1px solid #eef2f7;cursor:pointer;background:${active ? '#eef6ff' : '#fff'};box-shadow:${hasValidChain ? 'none' : 'inset 3px 0 0 #dc2626'};">
+                  <div style="font-size:12px;color:#6366f1;font-weight:700;">${escapeHtml(item.view_label || item.entry_type || '')}</div>
+                  <div style="margin-top:4px;font-size:13px;color:#0f172a;font-weight:600;line-height:1.5;">${escapeHtml(primaryEntityLabel)}</div>
+                  <div style="margin-top:4px;font-size:11px;color:#64748b;">${escapeHtml(item.title || '')}</div>
+                  <div style="margin-top:4px;font-size:11px;color:#64748b;">${escapeHtml(item?.meta_header?.reason_level2 || item?.meta_header?.reason_level1 || item?.meta_header?.case_type || '')}</div>
                   <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
                     ${dirty ? '<span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fff7ed;color:#c2410c;">已编辑</span>' : ''}
+                    ${hasValidChain ? '<span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#ecfdf5;color:#166534;">关系链完整</span>' : '<span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fef2f2;color:#b91c1c;">缺少关系链</span>'}
                     <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:${embeddingStatus === 'ready' ? '#ecfdf5' : '#fef3c7'};color:${embeddingStatus === 'ready' ? '#166534' : '#92400e'};">${escapeHtml(embeddingStatus)}</span>
-                    <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:${embeddingSource === 'remote' ? '#eff6ff' : (embeddingSource === 'mock_fallback' ? '#fef2f2' : '#f8fafc')};color:${embeddingSource === 'remote' ? '#1d4ed8' : (embeddingSource === 'mock_fallback' ? '#b91c1c' : '#64748b')};">${escapeHtml(sourceLabel)}</span>
                   </div>
                 </div>
               `;
@@ -1552,34 +1666,62 @@ export class TerminalPanel {
           </div>
           <div style="width:40%;padding:14px 16px;overflow:auto;display:flex;flex-direction:column;gap:10px;">
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;">${escapeHtml(activeEntry?.entry_type || '')}</span>
-              <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#f8fafc;color:#475569;">${escapeHtml((activeEntry?.scene_tags || []).join(' / ') || '未标注场景')}</span>
-              <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:${activeEmbeddingMeta.source === 'remote' ? '#eff6ff' : (activeEmbeddingMeta.source === 'mock_fallback' ? '#fef2f2' : '#f8fafc')};color:${activeEmbeddingMeta.source === 'remote' ? '#1d4ed8' : (activeEmbeddingMeta.source === 'mock_fallback' ? '#b91c1c' : '#64748b')};">向量来源：${escapeHtml(activeEmbeddingMeta.source || 'pending')}</span>
+              <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;">${escapeHtml(activeEntry?.view_label || activeEntry?.entry_type || '')}</span>
+              <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#f8fafc;color:#475569;">首要实体：${escapeHtml(activePrimaryEntity.label || activeEntry?.title || '-')}</span>
             </div>
-            <label style="font-size:12px;color:#475569;font-weight:700;">标题</label>
+            <div style="padding:10px 12px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff;display:flex;flex-direction:column;gap:6px;">
+              <div style="font-size:12px;font-weight:700;color:#1e3a8a;">统一元数据头</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${metaHeaderLines.map(([label, value]) => `<span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#fff;color:#334155;border:1px solid #dbeafe;">${escapeHtml(label)}：${escapeHtml(String(value))}</span>`).join('') || '<span style="font-size:12px;color:#64748b;">暂无元数据</span>'}
+              </div>
+            </div>
+            <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('标题', 'title')}</label>
             <input id="retrievalTitleInput" value="${escapeHtml(activeEntry?.title || '')}" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;" />
-            <label style="font-size:12px;color:#475569;font-weight:700;">摘要</label>
-            <textarea id="retrievalSummaryInput" style="min-height:74px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;">${escapeHtml(activeEntry?.summary || '')}</textarea>
-            <label style="font-size:12px;color:#475569;font-weight:700;">检索正文</label>
+            <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('主检索正文', 'retrieval_text')}</label>
+            ${activeGraphPayload.is_valid_chain ? '' : `
+              <div style="padding:10px 12px;border:1px solid #fecaca;border-radius:10px;background:#fef2f2;color:#b91c1c;font-size:12px;line-height:1.7;">
+                <div>${escapeHtml((activeChainWarning || '').split('\n')[0] || activeChainWarning)}</div>
+                ${activeChainMissingItems.length ? `<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">${activeChainMissingItems.map((item) => `<div>• ${escapeHtml(item)}</div>`).join('')}</div>` : ''}
+              </div>
+            `}
             <textarea id="retrievalTextInput" style="min-height:160px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;">${escapeHtml(activeEntry?.retrieval_text || '')}</textarea>
-            <label style="font-size:12px;color:#475569;font-weight:700;">扩展正文</label>
+            <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('补充上下文', 'expanded_text')}</label>
             <textarea id="retrievalExpandedInput" style="min-height:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;">${escapeHtml(activeEntry?.expanded_text || '')}</textarea>
-            <label style="font-size:12px;color:#475569;font-weight:700;">关键词（逗号分隔）</label>
+            <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('标签（逗号分隔）', 'keywords')}</label>
             <input id="retrievalKeywordsInput" value="${escapeHtml((activeEntry?.keywords || []).join('，'))}" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;" />
-            <label style="font-size:12px;color:#475569;font-weight:700;">场景标签（逗号分隔）</label>
-            <input id="retrievalScenesInput" value="${escapeHtml((activeEntry?.scene_tags || []).join('，'))}" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;" />
-            <label style="font-size:12px;color:#475569;font-weight:700;">备注</label>
-            <textarea id="retrievalNotesInput" style="min-height:72px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;">${escapeHtml(activeEntry?.notes || '')}</textarea>
           </div>
           <div style="width:30%;border-left:1px solid #e5e7eb;padding:14px 14px 16px;overflow:auto;background:#fafcff;">
-            <div style="font-size:12px;color:#475569;font-weight:700;">向量化状态</div>
-            <div style="margin-top:6px;padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;font-size:12px;color:#334155;line-height:1.7;">
-              <div>来源：${escapeHtml(activeEmbeddingMeta.source || 'pending')}</div>
-              <div>模型：${escapeHtml(activeEmbeddingMeta.model || '-')}</div>
-              <div>维度：${escapeHtml(String(activeEmbeddingDim || 0))}</div>
-              <div>时间：${escapeHtml(activeEntry?.edit_state?.last_embedded_at || '-')}</div>
-              ${activeEmbeddingMeta.error ? `<div style="margin-top:6px;color:#b45309;">远程服务异常，已自动切到兜底向量：${escapeHtml(activeEmbeddingMeta.error)}</div>` : ''}
+            <div style="font-size:12px;color:#475569;font-weight:700;">知识图谱链路</div>
+            <div style="margin-top:6px;padding:10px;border:1px solid ${activeGraphPayload.is_valid_chain ? '#e5e7eb' : '#fecaca'};border-radius:8px;background:${activeGraphPayload.is_valid_chain ? '#fff' : '#fef2f2'};font-size:12px;color:#334155;line-height:1.7;">
+              <div>链路名称：${escapeHtml(activeGraphPayload.path_label || activeGraphPayload.path_type || '-')}</div>
+              <div>链路说明：${escapeHtml(activeGraphPayload.description || '-')}</div>
+              <div>首要实体：${escapeHtml(activePrimaryEntity.label || '-')}</div>
+              <div style="margin-top:6px;color:${activeGraphPayload.is_valid_chain ? '#1e293b' : '#b91c1c'};white-space:pre-wrap;">${escapeHtml(activeGraphPayload.is_valid_chain ? (activeGraphPayload.chain_text || '暂无链路文本') : (((activeChainWarning || '').split('\n')[0]) || activeChainWarning))}</div>
+              ${activeGraphPayload.is_valid_chain || !activeChainMissingItems.length ? '' : `<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;color:#b91c1c;">${activeChainMissingItems.map((item) => `<div>• ${escapeHtml(item)}</div>`).join('')}</div>`}
             </div>
+            <div style="margin-top:10px;font-size:12px;color:#475569;font-weight:700;">本体结构</div>
+            <div style="margin-top:6px;padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;font-size:12px;color:#334155;line-height:1.7;">
+              <div>视角：${escapeHtml(activeOntologyPayload.view_label || activeEntry?.view_label || '-')}</div>
+              <div>结构说明：${escapeHtml(activeOntologyPayload.structure_text || '-')}</div>
+              <div>实体：${escapeHtml((activeOntologyPayload.entity_types || []).join(' / ') || '-')}</div>
+              <div>关系：${escapeHtml((activeOntologyPayload.relation_types || []).join(' / ') || '-')}</div>
+            </div>
+            <div style="margin-top:10px;font-size:12px;color:#475569;font-weight:700;">写入前校验</div>
+            ${validationIssues.length ? `
+              <div style="margin-top:6px;padding:10px;border:1px solid #fde68a;border-radius:8px;background:#fffdf5;">
+                <div style="font-size:12px;color:#92400e;">当前共有 ${validationIssues.length} 项校验提醒，其中阻塞项 ${blockingIssues.length} 项。</div>
+                <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px;max-height:132px;overflow:auto;">
+                  ${validationIssues.slice(0, 10).map((issue) => `
+                    <div style="font-size:12px;color:${issue.level === 'error' ? '#b91c1c' : '#92400e'};background:${issue.level === 'error' ? '#fef2f2' : '#fffbeb'};border:1px solid ${issue.level === 'error' ? '#fecaca' : '#fde68a'};border-radius:8px;padding:7px 10px;">
+                      <span style="font-weight:700;">${escapeHtml(issue.label)}</span>：${escapeHtml(issue.message)}
+                    </div>
+                  `).join('')}
+                  ${validationIssues.length > 10 ? `<div style="font-size:12px;color:#92400e;">其余 ${validationIssues.length - 10} 项问题未展开显示。</div>` : ''}
+                </div>
+              </div>
+            ` : `
+              <div style="margin-top:6px;padding:10px;border:1px solid #bbf7d0;border-radius:8px;background:#f0fdf4;color:#166534;font-size:12px;">写入前校验通过，当前没有发现空正文、缺失关系链或待向量化条目。</div>
+            `}
             <div style="margin-top:10px;font-size:12px;color:#475569;font-weight:700;">导出预览</div>
             <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
               ${previewModes.map((item) => `
@@ -1595,6 +1737,17 @@ export class TerminalPanel {
             }, null, 2))}</pre>
             <div style="margin-top:10px;font-size:12px;color:#475569;font-weight:700;">当前预览：${escapeHtml(previewModes.find((item) => item.key === previewMode)?.label || previewMode)}</div>
             <pre style="white-space:pre-wrap;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-size:12px;color:#334155;">${previewDocText}</pre>
+            <div style="margin-top:10px;font-size:12px;color:#475569;font-weight:700;">写出结果摘要</div>
+            <div style="margin-top:6px;padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;font-size:12px;color:#334155;line-height:1.7;">
+              <div>输出目录：${escapeHtml(writeSummary.baseDir || '-')}</div>
+              <div>最近写出：${escapeHtml(writeSummary.writtenAt || '-')}</div>
+              <div>文件数：${escapeHtml(String(writeSummary.fileCount || 0))}</div>
+              <div>真实向量：${escapeHtml(String(writeSummary.remoteEmbeddingTotal || 0))}</div>
+              <div>兜底向量：${escapeHtml(String(writeSummary.fallbackEmbeddingTotal || 0))}</div>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+                ${writeSummary.files.map((item) => `<div style="display:flex;justify-content:space-between;gap:10px;"><span>${escapeHtml(item.name)}</span><span style="color:#64748b;">${escapeHtml(String(item.count))}</span></div>`).join('')}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1608,8 +1761,15 @@ export class TerminalPanel {
       retrievalWriteStatus: bundle.status?.write_status || 'pending',
       retrievalSourceParseVersionId: bundle.source_parse_version_id || null,
       retrievalWriteManifest: this.lastRetrievalWriteManifest || store.getState().retrievalWriteManifest || null,
+      retrievalLastWriteSummary: writeSummary,
       retrievalFilters: filters,
       retrievalPreviewMode: previewMode,
+    });
+    this.persistRetrievalUIState({
+      activeEntryId: activeEntry?.entry_id || null,
+      filters,
+      previewMode,
+      lastWriteSummary: writeSummary,
     });
   }
 
@@ -1618,8 +1778,22 @@ export class TerminalPanel {
       this.setStatus('请先完成解析，再生成检索资产', '#ef4444');
       return;
     }
-    if (force && this.lastRetrievalBundle?.status?.has_manual_edits && !window.confirm('当前检索资产包含手动编辑，重新生成会覆盖当前草稿，确定继续吗？')) {
-      return;
+    if (force && this.lastRetrievalBundle) {
+      const currentParseVersionId = store.getState().parseActiveVersionId || 'v0';
+      const bundleVersionId = this.lastRetrievalBundle?.source_parse_version_id || 'v0';
+      const hasManualEdits = Boolean(this.lastRetrievalBundle?.status?.has_manual_edits);
+      const hasWritten = Boolean(
+        this.lastRetrievalBundle?.status?.write_status === 'written'
+        || this.lastRetrievalWriteManifest
+        || store.getState().retrievalLastWriteSummary
+      );
+      const warnings = [];
+      if (hasManualEdits) warnings.push('当前草稿包含手动编辑，重新生成会覆盖这些修改。');
+      if (hasWritten) warnings.push('当前草稿对应的资产已经写出过，重新生成后工作台会切回新的未写出草稿。');
+      if (bundleVersionId !== currentParseVersionId) warnings.push(`当前草稿来源版本是 ${bundleVersionId}，即将按当前解析版本 ${currentParseVersionId} 重新生成。`);
+      if (warnings.length && !window.confirm(`${warnings.join('\n')}\n\n确定继续重新生成吗？`)) {
+        return;
+      }
     }
     this.setStatus('正在生成检索资产...', '#2563eb');
     try {
@@ -1631,6 +1805,14 @@ export class TerminalPanel {
         json_result: this.lastResult.json_result,
       });
       this.lastRetrievalWriteManifest = null;
+      store.setState({
+        retrievalWriteManifest: null,
+        retrievalLastWriteSummary: null,
+      });
+      this.persistRetrievalUIState({
+        activeEntryId: result.bundle?.entries?.[0]?.entry_id || null,
+        lastWriteSummary: null,
+      });
       this.renderRetrievalBundle(result.bundle, { activeEntryId: result.bundle?.entries?.[0]?.entry_id || null });
       this.switchTab('termRetrievalTabContent');
       this.setStatus('检索资产已生成', '#16a34a');
@@ -1648,12 +1830,9 @@ export class TerminalPanel {
       .filter(Boolean);
     return {
       title: document.getElementById('retrievalTitleInput')?.value || '',
-      summary: document.getElementById('retrievalSummaryInput')?.value || '',
       retrieval_text: document.getElementById('retrievalTextInput')?.value || '',
       expanded_text: document.getElementById('retrievalExpandedInput')?.value || '',
       keywords: splitList(document.getElementById('retrievalKeywordsInput')?.value || ''),
-      scene_tags: splitList(document.getElementById('retrievalScenesInput')?.value || ''),
-      notes: document.getElementById('retrievalNotesInput')?.value || '',
     };
   }
 
@@ -1700,15 +1879,25 @@ export class TerminalPanel {
     const issues = this.buildRetrievalValidation(this.lastRetrievalBundle);
     const blockingIssues = issues.filter((item) => item.level === 'error' || item.message.includes('pending') || item.message.includes('stale') || item.message.includes('failed'));
     if (blockingIssues.length) {
-      this.setStatus(`写入前仍有 ${blockingIssues.length} 项待处理问题，请先查看校验面板`, '#d97706');
+      const preview = blockingIssues.slice(0, 5).map((item) => `${item.label}：${item.message}`).join('\n');
+      window.alert(`当前仍有 ${blockingIssues.length} 项阻塞问题，暂不能写入：\n\n${preview}${blockingIssues.length > 5 ? `\n\n其余 ${blockingIssues.length - 5} 项请在右侧写入前校验中查看。` : ''}`);
+      this.setStatus(`写入前仍有 ${blockingIssues.length} 项待处理问题，请先处理右侧写入前校验中的阻塞项`, '#d97706');
       return;
     }
     this.setStatus('正在写入检索资产文件...', '#16a34a');
     try {
       const result = await writeRetrievalBundle({ bundle: this.lastRetrievalBundle });
       this.lastRetrievalWriteManifest = result.manifest || null;
+      const lastWriteSummary = {
+        outputDir: result.output_dir || result.manifest?.target?.base_dir || '-',
+        writtenAt: result.manifest?.written_at || new Date().toISOString(),
+      };
+      store.setState({
+        retrievalWriteManifest: result.manifest || null,
+        retrievalLastWriteSummary: lastWriteSummary,
+      });
+      this.persistRetrievalUIState({ lastWriteSummary });
       this.renderRetrievalBundle(result.bundle);
-      store.setState({ retrievalWriteManifest: result.manifest || null });
       this.setStatus(`检索资产已写入 ${result.output_dir}`, '#16a34a');
     } catch (err) {
       this.setStatus(`写入检索资产失败: ${err.message}`, '#ef4444');

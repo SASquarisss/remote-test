@@ -565,7 +565,10 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       prov.article ? `条号: ${prov.article}` : '',
       prov.citation_purpose ? `目的: ${prov.citation_purpose}` : '',
       prov.content ? `内容: ${shortText(prov.content, 180)}` : ''
-    ]));
+    ]), {
+      articleNumber: String(prov.article || ''),
+      statuteName: String(prov.statute || ''),
+    });
     addEdge(prov.case_number || firstCourtLocalId, provLocal, '引用');
   });
 

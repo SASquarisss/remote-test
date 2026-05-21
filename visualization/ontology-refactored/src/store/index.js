@@ -50,6 +50,7 @@ export const store = new Store({
   retrievalWriteStatus: 'idle',
   retrievalSourceParseVersionId: null,
   retrievalWriteManifest: null,
+  retrievalLastWriteSummary: null,
   retrievalFilters: {
     type: 'all',
     status: 'all',
