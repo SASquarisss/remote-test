@@ -28,7 +28,7 @@ types:  # types（类型定义）
   LegalProvision:
     is_a: LegalNorm  # is_a（继承自）
     required: [article]  # required（必填字段）; article（条号）
-    optional: [law_id, paragraph, item, content, status, legislative_purpose, related_provisions, repealed_date]  # optional（可选字段）; paragraph（款号）; item（项号）; content（内容）; status（状态）; legislative_purpose（立法目的）; related_provisions（关联条文）; repealed_date（废止日期）
+    optional: [law_id, paragraph, item, content, status, legislative_purpose, related_provisions, repealed_date, references]  # optional（可选字段）; paragraph（款号）; item（项号）; content（内容）; status（状态）; legislative_purpose（立法目的）; related_provisions（关联条文）; repealed_date（废止日期）
     status_enum: [effective, amended, repealed]  # effective（有效/生效）; amended（已修正）; repealed（已废止）
     description: "法律条文（当前生效版本）"  # description（描述）
 
@@ -42,7 +42,7 @@ types:  # types（类型定义）
     is_a: LegalNorm  # is_a（继承自）
     required: [code, category, level1, level2]  # required（必填字段）; code（编码）; category（大类）; level1（一级分类）; level2（二级分类）
     optional: [description, typical_provision_ids]  # optional（可选字段）; description（描述）; typical_provision_ids（典型适用条文）
-    category_enum: [civil, criminal, administrative, ip, execution, state_compensation]  # civil（民事）; criminal（刑事）
+    category_enum: [civil, criminal, administrative, ip, execution, state_compensation]  # civil（民事）; criminal（刑事）; administrative（行政）; ip（知识产权）; execution（执行）; state_compensation（国家赔偿）
     description: "案由类型"  # description（描述）
 
   GuidingCase:
@@ -102,7 +102,7 @@ types:  # types（类型定义）
     is_a: LegalSubject  # is_a（继承自）
     required: [org_type]  # required（必填字段）; org_type（机构类型）
     optional: [credit_code, legal_representative, registered_capital, business_scope, legal_name_alias]  # optional（可选字段）; credit_code（统一社会信用代码）; legal_representative（法定代表人）; registered_capital（注册资本）; business_scope（经营范围）; legal_name_alias（曾用名/别名）
-    org_type_enum: [company, government_agency, ngo, law_firm, expert_institution, court, procuratorate, individual_business, partnership, sole_proprietorship]  # company（公司）; government_agency（政府机构）; ngo（非政府组织）; law_firm（律师事务所）; expert_institution（鉴定机构）; court（法院）; procuratorate（检察院）; individual_business（个体工商户）
+    org_type_enum: [company, government_agency, ngo, law_firm, expert_institution, court, procuratorate, individual_business, partnership, sole_proprietorship]  # company（公司）; government_agency（政府机构）; ngo（非政府组织）; individual_business（个体工商户）; partnership（合伙企业）; sole_proprietorship（个人独资企业）
     description: "组织机构（企业用credit_code跨案件全局关联，包含法人实体、个体工商户、合伙企业、个人独资企业）"  # description（描述）
 
   Court:
@@ -142,24 +142,24 @@ types:  # types（类型定义）
     is_a: JudicialEntity  # is_a（继承自）
     required: [name, code]  # required（必填字段）; name（名称）; code（编码）
     optional: [description, permissions]  # optional（可选字段）; description（描述）; permissions（权限）
-    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary]  # plaintiff（原告）; defendant（被告）; third_party（第三人）; witness（证人）; agent（代理人）; expert_witness（鉴定人）; interpreter（翻译）; applicant（申请人）
-    description: "法律角色"  # description（描述）
+    role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary, victim, criminal_defendant, enforcement_applicant, enforcement_respondent, judicial_review_applicant, insolvency_debtor, surety, class_representative, insurer]  # plaintiff（原告）; defendant（被告）; third_party（第三人）; witness（证人）; agent（代理人）; expert_witness（鉴定人）; interpreter（翻译）; applicant（申请人）
+    description: "法律角色（2026.05.v2.2新增insurer——保险人角色，用于标注保险公司在案件中的身份）"  # description（描述）
 
   # ==================== 案件层 ====================
   CourtCase:
     is_a: JudicialEntity  # is_a（继承自）
     required: [case_type_id, filing_date, court_id, status, trial_level]  # required（必填字段）; case_type_id（案由标识）; filing_date（立案日期）; court_id（法院标识）; status（状态）; trial_level（审级）
-    optional: [case_number, claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, dispute_resolution_type]  # optional（可选字段）; case_number（案号）; claim_amount（诉讼标的额）; cause_of_action（案由/诉讼请求）; summary（摘要）; related_cases（关联案件）; first_instance_case_number（一审案号）; source_text_hash（原文哈希）
+    optional: [case_number, claim_amount, cause_of_action, summary, related_cases, first_instance_case_number, source_text_hash, source_text_path, dispute_resolution_type, party_count]  # optional（可选字段）; case_number（案号）; claim_amount（诉讼标的额）; cause_of_action（案由/诉讼请求）; summary（摘要）; related_cases（关联案件）; first_instance_case_number（一审案号）; source_text_hash（原文哈希）
     trial_level_enum: [first_instance, second_instance, retrial]  # first_instance（一审）; second_instance（二审）; retrial（再审）
     status_enum: [filing, trial, judged, effective, appealed, retried, executing, terminated]  # filing（立案）; trial（审理中）; judged（已裁判）; effective（有效/生效）; appealed（已上诉）; retried（已再审）; executing（执行中）; terminated（已终结）
     dispute_resolution_type_enum: [litigation, mediation, arbitration, judicial_aid, administrative_review]  # litigation（诉讼）; mediation（调解）; arbitration（仲裁）; judicial_aid（司法救助）; administrative_review（行政复议）
-    description: "法院案件（精简节点，全文存ES）"  # description（描述）
+    description: "法院案件（精简节点，全文存ES。v2.2新增party_count——群体性案件当事人人数，dispute_resolution_type强制标注）"  # description（描述）
 
   CaseSummary:
     is_a: JudicialEntity  # is_a（继承自）
     required: [case_id]  # required（必填字段）
-    optional: [key_facts, disputed_issues, conclusion, fact_vector, issue_tags, amount_involved, sentencing_referral_id]  # optional（可选字段）; key_facts（关键事实）; disputed_issues（争议焦点）; conclusion（结论）; fact_vector（事实向量）; issue_tags（争议标签）; amount_involved（涉案金额）; sentencing_referral_id（量刑参照标识）
-    description: "案件结构化摘要（用于热层类案相似度计算）"  # description（描述）
+    optional: [key_facts, disputed_issues, conclusion, fact_vector, issue_tags, amount_involved, sentencing_referral_id, claim_amount, judgment_amount]  # optional（可选字段）; key_facts（关键事实）; disputed_issues（争议焦点）; conclusion（结论）; fact_vector（事实向量）; issue_tags（争议标签）; amount_involved（涉案金额）; sentencing_referral_id（量刑参照标识）
+    description: "案件结构化摘要（用于热层类案相似度计算。v2.2新增claim_amount/judgment_amount——诉请金额/判决金额区分）"  # description（描述）
 
   TrialOrganization:
     is_a: JudicialEntity  # is_a（继承自）
@@ -171,9 +171,9 @@ types:  # types（类型定义）
   JudgmentResult:
     is_a: JudicialEntity  # is_a（继承自）
     required: [case_id, result_type]  # required（必填字段）; result_type（结果类型）
-    optional: [judgment_date, effective_date, sentence_term, compensation_amount, reasoning, sentencing_standard_id]  # optional（可选字段）; judgment_date（裁判日期）; effective_date（生效日期）; sentence_term（刑期）; compensation_amount（赔偿金额）; reasoning（裁判理由）; sentencing_standard_id（量刑标准标识）
-    result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, mediation_agreement, arbitration_award, administrative_decision]  # guilty（有罪）; not_guilty（无罪）; liable（责任成立）; not_liable（责任不成立）; dismissed（驳回起诉）; withdrawn（撤诉）; mediation_agreement（调解协议）; arbitration_award（仲裁裁决）
-    description: "裁判结果"  # description（描述）
+    optional: [judgment_date, effective_date, sentence_term, compensation_amount, reasoning, sentencing_standard_id, cost_allocation]  # optional（可选字段）; judgment_date（裁判日期）; effective_date（生效日期）; sentence_term（刑期）; compensation_amount（赔偿金额）; reasoning（裁判理由）; sentencing_standard_id（量刑标准标识）
+    result_type_enum: [guilty, not_guilty, liable, not_liable, dismissed, withdrawn, partially_upheld, remanded, punitive_damages, procedural_ruling, bankruptcy_declared, mediation_agreement, arbitration_award, administrative_decision]  # guilty（有罪）; not_guilty（无罪）; liable（责任成立）; not_liable（责任不成立）; dismissed（驳回起诉）; withdrawn（撤诉）; mediation_agreement（调解协议）; arbitration_award（仲裁裁决）
+    description: "裁判结果（v2.2新增cost_allocation——诉讼费/案件受理费分担信息）"  # description（描述）
 
   ExecutionInfo:
     is_a: JudicialEntity  # is_a（继承自）
@@ -189,17 +189,23 @@ types:  # types（类型定义）
 
   Evidence:
     is_a: JudicialEntity  # is_a（继承自）
-    optional: [evidence_type, case_id, submitter_id, submission_date, examination_status, admission_status, description, file_path, chain_of_custody]  # optional（可选字段）; evidence_type（证据类型）; submitter_id（提交人标识）; submission_date（提交日期）; examination_status（质证状态）; admission_status（采信状态）; description（描述）; file_path（文件路径）
-    evidence_type_enum: [document, physical, digital, testimony, expert_opinion]  # document（书证）; physical（物证）; digital（电子证据）; testimony（证言）; expert_opinion（鉴定意见）
+    optional: [evidence_type, case_id, submitter_id, submission_date, examination_status, admission_status, description, file_path, chain_of_custody, expert_institution, expert_conclusion]  # optional（可选字段）; evidence_type（证据类型）; submitter_id（提交人标识）; submission_date（提交日期）; examination_status（质证状态）; admission_status（采信状态）; description（描述）; file_path（文件路径）
+    evidence_type_enum: [documentary, physical, audio_visual, electronic_data, witness_testimony, party_statement, expert_opinion, inspection_record]  # physical（物证）; expert_opinion（鉴定意见）
     examination_status_enum: [not_examined, examined]  # not_examined（未质证）; examined（已质证）
     admission_status_enum: [admitted, not_admitted]  # admitted（已采信）; not_admitted（未采信）
     probative_force_enum: [valid, invalid]  # valid（有效）; invalid（无效）
-    description: "证据"  # description（描述）
+    description: "证据（v2.2新增expert_institution/expert_conclusion——鉴定机构名称和鉴定结论摘要）"  # description（描述）
 
   DisputeFocus:
     is_a: JudicialEntity  # is_a（继承自）
-    optional: [case_id, content, focus_category_id, canonical_template_id]  # optional（可选字段）; content（内容）; focus_category_id（焦点分类标识）; canonical_template_id（规范模板标识）
-    description: "案件争议焦点"  # description（描述）
+    optional: [case_id, content, focus_category_id, canonical_template_id, resolved_by_provision_ids, resolution_logic]  # optional（可选字段）; content（内容）; focus_category_id（焦点分类标识）; canonical_template_id（规范模板标识）
+    description: "案件争议焦点（v2.1新增：resolved_by_provision_ids关联法律条文，resolution_logic法院解决逻辑）"  # description（描述）
+
+  LegalProvisionElement:
+    required: [provision_id, element_type]  # required（必填字段）; provision_id（条文标识）
+    optional: [content, applicable_fact_pattern]  # optional（可选字段）; content（内容）
+    element_type_enum: [subject_element, object_element, act_element, result_element, causality_element, subjective_element, legal_consequence, exception_clause]
+    description: "法条构成要件要素（主体/行为/结果/因果关系/主观要件等结构化分解，用于事实→法条匹配推理）"  # description（描述）
 
   Fact:
     is_a: JudicialEntity  # is_a（继承自）
@@ -211,7 +217,7 @@ types:  # types（类型定义）
     is_a: JudicialEntity  # is_a（继承自）
     required: [case_id, role_code]  # required（必填字段）; role_code（角色编码）
     optional: [subject_id, trial_level, is_primary, role_name]  # optional（可选字段）; subject_id（主体标识）; trial_level（审级）; is_primary（是否主要当事人）; role_name（角色名称）
-    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary]  # plaintiff（原告）; defendant（被告）; third_party（第三人）; witness（证人）; agent（代理人）; expert_witness（鉴定人）; interpreter（翻译）; applicant（申请人）
+    role_code_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary, victim, criminal_defendant, enforcement_applicant, enforcement_respondent, judicial_review_applicant, insolvency_debtor, surety, class_representative]  # plaintiff（原告）; defendant（被告）; third_party（第三人）; witness（证人）; agent（代理人）; expert_witness（鉴定人）; interpreter（翻译）; applicant（申请人）
     description: "案件参与人（含审级角色变更）"  # description（描述）
 
 relations:  # relations（关系定义）
@@ -265,12 +271,6 @@ relations:  # relations（关系定义）
     to: TrialOrganization
     cardinality: one_to_one  # cardinality（基数）
     description: "案件由审判组织审理"  # description（描述）
-
-  presides_over:  # presides_over（主持）
-    from: Judge
-    to: TrialOrganization
-    cardinality: one_to_one  # cardinality（基数）
-    description: "法官主持审判组织"  # description（描述）
 
   undertakes:  # undertakes（承办）
     from: Judge
@@ -363,7 +363,8 @@ relations:  # relations（关系定义）
     from: TrialOrganization
     to: Judge
     cardinality: one_to_many  # cardinality（基数）
-    description: "审判组织包含法官"  # description（描述）
+    attributes: [is_presiding]  # attributes（属性）
+    description: "审判组织包含法官（is_presiding=true 表示审判长）"  # description（描述）
 
   includes_clerk:  # includes_clerk（配备书记员）
     from: TrialOrganization
@@ -396,6 +397,49 @@ relations:  # relations（关系定义）
     to: Fact
     cardinality: one_to_many  # cardinality（基数）
     description: "案件具有事实"  # description（描述）
+
+  participates_in_case:  # participates_in_case（参与案件）
+    from: LegalSubject
+    to: CourtCase
+    cardinality: many_to_many  # cardinality（基数）
+    description: "主体作为案件参与方进入特定案件上下文"  # description（描述）
+
+  relates_to_fact:  # relates_to_fact（关联事实）
+    from: LegalSubject
+    to: Fact
+    cardinality: many_to_many  # cardinality（基数）
+    description: "主体参与、经历或关联某一案件事实"  # description（描述）
+
+  concerns_focus:  # concerns_focus（关联争点）
+    from: LegalSubject
+    to: DisputeFocus
+    cardinality: many_to_many  # cardinality（基数）
+    description: "主体与某一争议焦点存在直接对应、主张或被评价关系"  # description（描述）
+
+  receives_judgment:  # receives_judgment（对应裁判）
+    from: LegalSubject
+    to: JudgmentResult
+    cardinality: many_to_many  # cardinality（基数）
+    description: "主体对应某一裁判结果、处理结果或责任结果"  # description（描述）
+
+  matches_element:  # matches_element（匹配法条要件）
+    from: Fact
+    to: LegalProvisionElement
+    cardinality: many_to_many  # cardinality（基数）
+    attributes: [match_score, match_reasoning]  # attributes（属性）
+    description: "案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配）"  # description（描述）
+
+  resolved_by:  # resolved_by（由法条解决）
+    from: DisputeFocus
+    to: LegalProvision
+    cardinality: many_to_many  # cardinality（基数）
+    description: "争议焦点由法律条文解决（争议焦点→法条映射）"  # description（描述）
+
+  leads_to:  # leads_to（导向裁判）
+    from: [Fact, DisputeFocus]
+    to: JudgmentResult
+    cardinality: many_to_many  # cardinality（基数）
+    description: "事实/争议焦点推导出裁判结果（三段论推理的结论链路）"  # description（描述）
 
 constraints:  # constraints（约束）
   # 1. 官方案号正则
@@ -442,9 +486,9 @@ constraints:  # constraints（约束）
 
   # 8. 最高院管辖约束
   - type: CourtCase  # type（类型）
-    rule: "Court.id == court_id AND Court.court_level == 'supreme' IMPLIES trial_level != 'second_instance'"  # rule（规则）; id（唯一标识）; court_id（法院标识）; court_level（法院级别）; supreme（最高）; trial_level（审级）; second_instance（二审）
-    enforcement: block  # enforcement（强制程度）; block（强制阻止）
-    description: "最高院判决不得上诉"  # description（描述）
+    rule: "Court.id == court_id AND Court.court_level == 'supreme' AND trial_level != 'first_instance' IMPLIES trial_level != 'second_instance'"  # rule（规则）; id（唯一标识）; court_id（法院标识）; court_level（法院级别）; supreme（最高）; trial_level（审级）; first_instance（一审）; second_instance（二审）
+    enforcement: soft  # enforcement（强制程度）; soft（软约束（警告））
+    description: "最高院判决不得上诉（最高院一审案件可上诉，二审/再审判决不可再次上诉）"  # description（描述）
 
   # 9. 量刑标准区间约束
   - type: SentencingStandard  # type（类型）
@@ -475,7 +519,7 @@ engineering:  # engineering（工程配置）
     Court: "name + district.code"  # name（名称）; district（区级）; code（编码）
     Person: "name + case_id（每个案件内独立）"  # name（名称）
     Organization: "credit_code（全局唯一，跨案件关联）"  # credit_code（统一社会信用代码）
-  data_version: "2026.04.v2"  # data_version（数据版本）
+  data_version: "2026.05.v2.2"  # data_version（数据版本）
   incremental_update: true  # incremental_update（增量更新）
   graph_storage:  # graph_storage（图存储）
     node_prefix: "LEGAL_"  # node_prefix（节点前缀）

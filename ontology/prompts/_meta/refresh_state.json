@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-17T16:04:51+00:00",
+  "generated_at": "2026-05-22T07:46:37+00:00",
   "ontology_path": "ontology/schemas/legal_ontology_v2.yaml",
   "ontology_summary": {
     "entities": {
@@ -2034,6 +2034,12 @@
           "similarity_score"
         ]
       },
+      "concerns_focus": {
+        "from_type": "LegalSubject",
+        "to_type": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
       "employs": {
         "from_type": "Procuratorate",
         "to_type": "Prosecutor",
@@ -2126,6 +2132,12 @@
           "match_score"
         ]
       },
+      "participates_in_case": {
+        "from_type": "LegalSubject",
+        "to_type": "CourtCase",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
       "plays_role": {
         "from_type": "LegalSubject",
         "to_type": "LegalRole",
@@ -2146,6 +2158,18 @@
       "proves_fact": {
         "from_type": "Evidence",
         "to_type": "Fact, DisputeFocus",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "receives_judgment": {
+        "from_type": "LegalSubject",
+        "to_type": "JudgmentResult",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "relates_to_fact": {
+        "from_type": "LegalSubject",
+        "to_type": "Fact",
         "cardinality": "many_to_many",
         "attributes": []
       },
@@ -2216,13 +2240,13 @@
       }
     },
     "entity_count": 32,
-    "relation_count": 32,
-    "sha1": "bfb1a6e56bf618331d757e85934bdbe3651dd9b5"
+    "relation_count": 36,
+    "sha1": "87caa8bf8f1a8dc47474e2449de4bde341e252b7"
   },
   "categories": {
     "civil": {
       "prompt_file": "ontology/prompts/auto_v5_civil.txt",
-      "prompt_sha1": "0a822e67939c026e94c552e79185c971e9d7d828",
+      "prompt_sha1": "b16fd733fa9ceb5ca0be9016e8edd904af1b0a41",
       "few_shot": {
         "row_id": "2478",
         "score": 95.0,
@@ -2270,14 +2294,17 @@
           "covered_entities": [],
           "missing_entities": [],
           "covered_relations": [],
-          "missing_relations": [],
+          "missing_relations": [
+            "concerns_focus",
+            "participates_in_case"
+          ],
           "field_status": {}
         }
       }
     },
     "criminal": {
       "prompt_file": "ontology/prompts/auto_v5_criminal.txt",
-      "prompt_sha1": "a01e2d29495814e0613542e72814fa651244bd85",
+      "prompt_sha1": "fe5fca6da4a6565cf8c0605410f4dfed7dbf00ce",
       "few_shot": {
         "row_id": "23127",
         "score": 90.0,
@@ -2326,14 +2353,17 @@
           "covered_entities": [],
           "missing_entities": [],
           "covered_relations": [],
-          "missing_relations": [],
+          "missing_relations": [
+            "concerns_focus",
+            "participates_in_case"
+          ],
           "field_status": {}
         }
       }
     },
     "administrative": {
       "prompt_file": "ontology/prompts/auto_v5_admin.txt",
-      "prompt_sha1": "06c02276cb98bb5005f84525a72af493498af2ea",
+      "prompt_sha1": "4bbd293dc1277f778de5517e5a404e4f7de82c63",
       "few_shot": {
         "row_id": "2847",
         "score": 95.0,
@@ -2384,7 +2414,10 @@
           "covered_entities": [],
           "missing_entities": [],
           "covered_relations": [],
-          "missing_relations": [],
+          "missing_relations": [
+            "concerns_focus",
+            "participates_in_case"
+          ],
           "field_status": {}
         }
       }
@@ -2392,8 +2425,8 @@
   },
   "evaluation_prompt": {
     "prompt_file": "ontology/prompts/auto_ontology_evaluation.txt",
-    "prompt_sha1": "fbe2fe2aad369b98c26fc7abee04ae9d1ab7a192",
-    "ontology_sha1": "bfb1a6e56bf618331d757e85934bdbe3651dd9b5",
-    "generated_at": "2026-05-17T16:04:50+00:00"
+    "prompt_sha1": "8fbf3636397f16c9cf24509a44f6538e4b6997be",
+    "ontology_sha1": "87caa8bf8f1a8dc47474e2449de4bde341e252b7",
+    "generated_at": "2026-05-22T07:46:36+00:00"
   }
 }

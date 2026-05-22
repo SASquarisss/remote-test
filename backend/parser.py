@@ -560,6 +560,7 @@ def _fingerprint_payload(value: Any) -> str:
 
 def _build_stable_entity_id(entity_type: str, item: Dict[str, Any]) -> str:
     prefix_map = {
+        "legal_subjects": "subj_sig",
         "facts": "fact_sig",
         "dispute_focuses": "focus_sig",
         "evidence": "evid_sig",
@@ -580,6 +581,18 @@ def _dedupe_preserve_order(values: List[Any]) -> List[Any]:
         seen.add(marker)
         result.append(value)
     return result
+
+
+def _iter_entity_id_candidates(item: Dict[str, Any]) -> List[str]:
+    if not isinstance(item, dict):
+        return []
+    candidates = []
+    for key in ("id", "stable_id", "node_id", "evidence_id", "fact_id", "focus_id", "result_id", "provision_id", "element_id", "subject_id"):
+        value = item.get(key)
+        text = _normalize_relation_ref(str(value or "").strip())
+        if text:
+            candidates.append(text)
+    return _dedupe_preserve_order(candidates)
 
 
 def _entity_signature_payload(entity_type: str, item: Dict[str, Any]) -> Dict[str, Any]:
@@ -623,9 +636,26 @@ def _entity_signature_payload(entity_type: str, item: Dict[str, Any]) -> Dict[st
             "article": _normalize_scalar_text(data.get("article") or data.get("title")),
             "paragraph": _normalize_scalar_text(data.get("paragraph")),
             "item": _normalize_scalar_text(data.get("item")),
-            "content": _normalize_scalar_text(data.get("content")),
-            "citation_position": _normalize_scalar_text(data.get("citation_position")),
-            "citation_purpose": _normalize_scalar_text(data.get("citation_purpose")),
+        },
+        "legal_subjects": lambda data: {
+            "name": _normalize_scalar_text(data.get("name")),
+            "subject_type": _normalize_scalar_text(data.get("subject_type")),
+            "roles": sorted(
+                [
+                    {
+                        "role_code": _normalize_scalar_text(role.get("role_code")),
+                        "role_name": _normalize_scalar_text(role.get("role_name")),
+                        "case_number": _normalize_scalar_text(role.get("case_number")),
+                    }
+                    for role in (data.get("roles") or [])
+                    if isinstance(role, dict)
+                ],
+                key=lambda item: (
+                    item.get("case_number") or "",
+                    item.get("role_code") or "",
+                    item.get("role_name") or "",
+                ),
+            ),
         },
         "legal_provision_elements": lambda data: {
             "provision_index": data.get("provision_index"),
@@ -689,16 +719,45 @@ def _normalize_legal_provision_item(provision: Dict[str, Any], index: int) -> Di
         "paragraph": provision.get("paragraph") or "",
         "item": provision.get("item") or "",
         "content": provision.get("content") or "",
+        "case_number": provision.get("case_number") or provision.get("related_case_number") or "",
         "citation_position": provision.get("citation_position") or "",
         "citation_purpose": provision.get("citation_purpose") or "",
     }
-    normalized["stable_id"] = provision.get("stable_id") or _build_stable_entity_id("legal_provisions", normalized)
+    stable_id = _build_stable_entity_id("legal_provisions", normalized)
+    normalized["stable_id"] = stable_id
+    normalized["provision_id"] = stable_id
+    normalized["id"] = stable_id
     return normalized
 
 
-def _normalize_entity_collection_for_payload(entity_type: str, items: Any) -> List[Dict[str, Any]]:
+def _normalize_legal_subject_item(subject: Dict[str, Any], index: int) -> Dict[str, Any]:
+    normalized_roles = []
+    for role in (subject.get("roles") or []):
+        if not isinstance(role, dict):
+            continue
+        normalized_roles.append({
+            **role,
+            "role_code": role.get("role_code") or "",
+            "role_name": role.get("role_name") or "",
+            "case_number": role.get("case_number") or "",
+        })
+    normalized = {
+        **subject,
+        "id": _normalize_relation_ref(subject.get("id") or subject.get("subject_id") or subject.get("node_id") or f"subj_{index}"),
+        "name": subject.get("name") or f"当事人_{index}",
+        "subject_type": subject.get("subject_type") or "",
+        "roles": normalized_roles,
+    }
+    stable_id = subject.get("stable_id") or _build_stable_entity_id("legal_subjects", normalized)
+    normalized["stable_id"] = stable_id
+    normalized["subject_id"] = subject.get("subject_id") or stable_id
+    normalized["id"] = stable_id
+    return normalized
+
+
+def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, return_aliases: bool = False) -> List[Dict[str, Any]] | tuple[List[Dict[str, Any]], Dict[str, str]]:
     if not isinstance(items, list):
-        return []
+        return ([], {}) if return_aliases else []
 
     normalizers = {
         "facts": lambda item, idx: {
@@ -722,6 +781,7 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any) -> Li
         "evidence": _normalize_evidence_item,
         "judgment_results": _normalize_judgment_result_item,
         "legal_provisions": _normalize_legal_provision_item,
+        "legal_subjects": _normalize_legal_subject_item,
         "legal_provision_elements": lambda item, idx: {
             **item,
             "id": _normalize_relation_ref(item.get("id") or item.get("element_id") or item.get("node_id") or f"prov_elem_{idx}"),
@@ -738,13 +798,29 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any) -> Li
         return [item for item in items if isinstance(item, dict)]
 
     normalized_items = []
+    alias_map: Dict[str, str] = {}
+    canonical_id_by_identity: Dict[str, str] = {}
     for idx, item in enumerate(items):
         if not isinstance(item, dict):
             continue
         normalized = normalizer(item, idx)
         normalized["stable_id"] = normalized.get("stable_id") or _build_stable_entity_id(entity_type, normalized)
+        identity = _entity_identity(entity_type, normalized)
+        canonical_id = canonical_id_by_identity.get(identity) or str(normalized.get("id") or normalized.get("stable_id") or "")
+        if canonical_id:
+            canonical_id_by_identity[identity] = canonical_id
+        if entity_type == "legal_provisions" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["provision_id"] = canonical_id
+        if entity_type == "legal_subjects" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["subject_id"] = canonical_id
+        for alias in [*_iter_entity_id_candidates(item), *_iter_entity_id_candidates(normalized)]:
+            alias_map[alias] = canonical_id or alias
         normalized_items.append(normalized)
-    return normalized_items
+    if entity_type in {"legal_provisions", "legal_provision_elements", "legal_subjects"}:
+        normalized_items = _merge_entity_list(entity_type, [], normalized_items)
+    return (normalized_items, alias_map) if return_aliases else normalized_items
 
 
 def _merge_entity_list(entity_type: str, old_items: List[Dict[str, Any]], new_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -857,47 +933,35 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(output, dict):
         return output
 
-    facts = output.get("facts") or []
-    normalized_facts = []
-    for i, fact in enumerate(facts):
-        if not isinstance(fact, dict):
-            continue
-        normalized_facts.append({
-            **fact,
-            "id": fact.get("id") or f"fact_{i}",
-            "content": fact.get("content") or fact.get("description") or "",
-            "case_number": fact.get("case_number") or fact.get("related_case_number") or "",
-            "fact_type": fact.get("fact_type") or "undisputed",
-            "proven_by_evidence_ids": [
-                _normalize_relation_ref(x) for x in (fact.get("proven_by_evidence_ids") or [])
-            ],
-        })
-    output["facts"] = normalized_facts
+    alias_map: Dict[str, str] = {}
 
-    focuses = output.get("dispute_focuses") or []
-    normalized_focuses = []
-    for i, focus in enumerate(focuses):
-        if not isinstance(focus, dict):
-            continue
-        normalized_focuses.append({
-            **focus,
-            "id": focus.get("id") or f"focus_{i}",
-            "content": focus.get("content") or focus.get("focus_issue") or "",
-            "case_number": focus.get("case_number") or focus.get("related_case_number") or "",
-        })
-    output["dispute_focuses"] = normalized_focuses
+    facts, fact_aliases = _normalize_entity_collection_for_payload("facts", output.get("facts") or [], return_aliases=True)
+    output["facts"] = facts
+    alias_map.update(fact_aliases)
 
-    evidence = output.get("evidence") or []
-    output["evidence"] = _normalize_entity_collection_for_payload("evidence", evidence)
+    focuses, focus_aliases = _normalize_entity_collection_for_payload("dispute_focuses", output.get("dispute_focuses") or [], return_aliases=True)
+    output["dispute_focuses"] = focuses
+    alias_map.update(focus_aliases)
 
-    judgment_results = output.get("judgment_results") or []
-    output["judgment_results"] = _normalize_entity_collection_for_payload("judgment_results", judgment_results)
+    evidence, evidence_aliases = _normalize_entity_collection_for_payload("evidence", output.get("evidence") or [], return_aliases=True)
+    output["evidence"] = evidence
+    alias_map.update(evidence_aliases)
 
-    legal_provisions = output.get("legal_provisions") or []
-    output["legal_provisions"] = _normalize_entity_collection_for_payload("legal_provisions", legal_provisions)
+    judgment_results, judgment_aliases = _normalize_entity_collection_for_payload("judgment_results", output.get("judgment_results") or [], return_aliases=True)
+    output["judgment_results"] = judgment_results
+    alias_map.update(judgment_aliases)
 
-    elements = output.get("legal_provision_elements") or []
-    output["legal_provision_elements"] = _normalize_entity_collection_for_payload("legal_provision_elements", elements)
+    legal_subjects, subject_aliases = _normalize_entity_collection_for_payload("legal_subjects", output.get("legal_subjects") or output.get("parties") or [], return_aliases=True)
+    output["legal_subjects"] = legal_subjects
+    alias_map.update(subject_aliases)
+
+    legal_provisions, provision_aliases = _normalize_entity_collection_for_payload("legal_provisions", output.get("legal_provisions") or [], return_aliases=True)
+    output["legal_provisions"] = legal_provisions
+    alias_map.update(provision_aliases)
+
+    elements, element_aliases = _normalize_entity_collection_for_payload("legal_provision_elements", output.get("legal_provision_elements") or [], return_aliases=True)
+    output["legal_provision_elements"] = elements
+    alias_map.update(element_aliases)
 
     relations = output.get("relations") or []
     normalized_relations = []
@@ -911,6 +975,8 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             continue
         src = _normalize_relation_ref(rel.get("source_id", ""))
         tgt = _normalize_relation_ref(rel.get("target_id", ""))
+        src = alias_map.get(src, src)
+        tgt = alias_map.get(tgt, tgt)
         rtype = (rel.get("relation_type") or "").strip()
         if rtype in derived_relation_types:
             continue
@@ -930,6 +996,8 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             continue
         src = _normalize_relation_ref(rel.get("source_id", ""))
         tgt = _normalize_relation_ref(rel.get("target_id", ""))
+        src = alias_map.get(src, src)
+        tgt = alias_map.get(tgt, tgt)
         rtype = (rel.get("relation_type") or "").strip()
         if not src or not tgt or not rtype:
             continue
@@ -1001,6 +1069,10 @@ def enrich_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             })
         output["dispute_focuses"] = focuses
 
+    subjects = output.get("legal_subjects") or []
+    judgments = output.get("judgment_results") or []
+    provisions = output.get("legal_provisions") or []
+    provision_elements = output.get("legal_provision_elements") or []
     relations = output.get("relations") or []
     derived_relations = output.get("derived_relations") or []
     existing = {
@@ -1024,7 +1096,7 @@ def enrich_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             "label": rtype,
         })
 
-    def add_derived_relation(src: str, tgt: str, rtype: str, label: str, rule_name: str):
+    def add_derived_relation(src: str, tgt: str, rtype: str, label: str, rule_name: str, extra: Dict[str, Any] | None = None):
         key = (src, tgt, rtype)
         if not src or not tgt or key in existing or key in derived_existing:
             return
@@ -1036,8 +1108,82 @@ def enrich_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             "label": label,
             "is_derived": True,
             "derived_rule": rule_name,
+            **(extra or {}),
         })
 
+    def _case_set(value: Any) -> set[str]:
+        if isinstance(value, str):
+            text = value.strip()
+            return {text} if text else set()
+        if isinstance(value, list):
+            result = set()
+            for item in value:
+                result.update(_case_set(item))
+            return result
+        return set()
+
+    def _entity_case_set(item: Dict[str, Any] | None) -> set[str]:
+        if not isinstance(item, dict):
+            return set()
+        return _case_set(item.get("case_number") or item.get("related_case_number") or "")
+
+    def _subject_case_set(subject: Dict[str, Any] | None) -> set[str]:
+        values = set()
+        for role in (subject or {}).get("roles") or []:
+            case_number = str(role.get("case_number") or "").strip()
+            if case_number:
+                values.add(case_number)
+        return values
+
+    def _cases_compatible(left: set[str], right: set[str]) -> bool:
+        if not left or not right:
+            return True
+        return bool(left & right)
+
+    def _subject_id(subject: Dict[str, Any], index: int) -> str:
+        return str(subject.get("id") or subject.get("stable_id") or f"subj_{index}")
+
+    def _clean_text(text: Any) -> str:
+        return re.sub(r"\s+", "", str(text or "")).strip().lower()
+
+    def _text_mentions_subject(text: Any, subject: Dict[str, Any]) -> bool:
+        source = _clean_text(text)
+        name = _clean_text(subject.get("name"))
+        return bool(source and name and name in source)
+
+    def _keyword_set(text: Any) -> set[str]:
+        source = str(text or "")
+        parts = re.findall(r"[\u4e00-\u9fa5]{2,}|[A-Za-z0-9]{3,}", source)
+        stopwords = {"案件", "法院", "法条", "裁判", "争点", "事实", "当事人", "相关", "认为", "审理", "结果", "支持", "依据", "普通货物", "中华人民共和国"}
+        return {item.strip().lower() for item in parts if item.strip() and item.strip() not in stopwords}
+
+    policies = {str(item.get("name") or ""): item for item in (load_relation_policies().get("derived_relations") or []) if isinstance(item, dict)}
+
+    def _policy_meta(name: str, fallback_rtype: str, fallback_label: str) -> tuple[str, str]:
+        rule = policies.get(name) or {}
+        return str(rule.get("relation_type") or fallback_rtype), str(rule.get("label") or fallback_label)
+
+    def _has_relation(src: str, tgt: str, relation_types: set[str]) -> bool:
+        if not src or not tgt:
+            return False
+        return any(
+            str(rel.get("source_id") or "") == src
+            and str(rel.get("target_id") or "") == tgt
+            and str(rel.get("relation_type") or "") in relation_types
+            for rel in [*relations, *derived_relations]
+            if isinstance(rel, dict)
+        )
+
+    def _relation_sources_for_target(tgt: str, relation_types: set[str]) -> set[str]:
+        return {
+            str(rel.get("source_id") or "")
+            for rel in [*relations, *derived_relations]
+            if isinstance(rel, dict)
+            and str(rel.get("target_id") or "") == tgt
+            and str(rel.get("relation_type") or "") in relation_types
+        }
+
+    evids = output.get("evidence") or []
     evids = output.get("evidence") or []
     for i, fact in enumerate(output.get("facts") or []):
         fact_id = fact.get("id") or f"fact_{i}"
@@ -1058,24 +1204,154 @@ def enrich_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             target_fact = (output["facts"][i % len(output["facts"])].get("id")) or f"fact_{i % len(output['facts'])}"
             add_relation(evid_id, target_fact, "proves_fact")
 
-    jrs = output.get("judgment_results") or []
-    if jrs:
-        jr_id = "jr_0"
-        for i, focus in enumerate(output.get("dispute_focuses") or []):
-            focus_id = focus.get("id") or f"focus_{i}"
-            add_relation(focus_id, jr_id, "leads_to")
-        for i, _ in enumerate(output.get("legal_provisions") or []):
-            add_relation(jr_id, f"prov_{i}", "judgment_cites")
+    participates_type, participates_label = _policy_meta("subject_case_participation", "participates_in_case", "参与案件")
+    subject_fact_type, subject_fact_label = _policy_meta("subject_fact_text_alignment", "relates_to_fact", "关联事实")
+    subject_focus_type, subject_focus_label = _policy_meta("subject_focus_alignment", "concerns_focus", "关联争点")
+    subject_judgment_type, subject_judgment_label = _policy_meta("subject_judgment_alignment", "receives_judgment", "对应裁判")
+    fact_focus_type, fact_focus_label = _policy_meta("fact_focus_semantic_bridge", "relates_to_focus", "形成争点")
+    focus_judgment_type, focus_judgment_label = _policy_meta("focus_judgment_bridge", "leads_to", "推导裁判")
+    judgment_provision_type, judgment_provision_label = _policy_meta("judgment_provision_bridge", "judgment_cites", "裁判依据法条")
+    focus_resolved_type, focus_resolved_label = _policy_meta("focus_resolved_by_judgment", "resolved_by", "焦点由法条解决")
 
-    policies = load_relation_policies()
-    for rule in policies.get("derived_relations") or []:
+    for s_idx, subject in enumerate(subjects):
+        subject_id = _subject_id(subject, s_idx)
+        subject_cases = _subject_case_set(subject)
+        case_candidates = sorted(subject_cases or ({primary_case_number} if primary_case_number else set()))
+        for case_number in case_candidates:
+            add_derived_relation(subject_id, case_number, participates_type, participates_label, "subject_case_participation", {"confidence": "high"})
+
+        for fact in facts:
+            fact_id = str(fact.get("id") or "")
+            if not fact_id or not _cases_compatible(subject_cases, _entity_case_set(fact)):
+                continue
+            if _text_mentions_subject(fact.get("content"), subject):
+                add_derived_relation(subject_id, fact_id, subject_fact_type, subject_fact_label, "subject_fact_text_alignment", {"confidence": "high"})
+
+        for focus in focuses:
+            focus_id = str(focus.get("id") or "")
+            if not focus_id or not _cases_compatible(subject_cases, _entity_case_set(focus)):
+                continue
+            if _text_mentions_subject(focus.get("content"), subject):
+                add_derived_relation(subject_id, focus_id, subject_focus_type, subject_focus_label, "subject_focus_alignment", {"confidence": "high"})
+
+        for judgment in judgments:
+            judgment_id = str(judgment.get("id") or "")
+            if not judgment_id or not _cases_compatible(subject_cases, _entity_case_set(judgment)):
+                continue
+            searchable = " ".join([str(judgment.get("specific_judgment") or ""), str(judgment.get("reasoning") or "")])
+            if _text_mentions_subject(searchable, subject):
+                add_derived_relation(subject_id, judgment_id, subject_judgment_type, subject_judgment_label, "subject_judgment_alignment", {"confidence": "high"})
+
+    for fact in facts:
+        fact_id = str(fact.get("id") or "")
+        if not fact_id:
+            continue
+        fact_cases = _entity_case_set(fact)
+        fact_keywords = _keyword_set(fact.get("content"))
+        fact_subjects = _relation_sources_for_target(fact_id, {"relates_to_fact"})
+        for focus in focuses:
+            focus_id = str(focus.get("id") or "")
+            if not focus_id or _has_relation(fact_id, focus_id, {"has_dispute_focus", "relates_to_focus"}):
+                continue
+            if not _cases_compatible(fact_cases, _entity_case_set(focus)):
+                continue
+            focus_keywords = _keyword_set(focus.get("content"))
+            shared_subjects = fact_subjects & _relation_sources_for_target(focus_id, {"concerns_focus"})
+            shared_keywords = fact_keywords & focus_keywords
+            if shared_subjects or len(shared_keywords) >= 2:
+                add_derived_relation(fact_id, focus_id, fact_focus_type, fact_focus_label, "fact_focus_semantic_bridge", {"confidence": "medium"})
+
+    for s_idx, subject in enumerate(subjects):
+        subject_id = _subject_id(subject, s_idx)
+        if not subject_id:
+            continue
+        anchored_fact_ids = [
+            str(fact.get("id") or "")
+            for fact in facts
+            if _has_relation(subject_id, str(fact.get("id") or ""), {"relates_to_fact"})
+        ]
+        for fact_id in anchored_fact_ids:
+            for focus in focuses:
+                focus_id = str(focus.get("id") or "")
+                if focus_id and _has_relation(fact_id, focus_id, {"relates_to_focus", "has_dispute_focus"}):
+                    add_derived_relation(subject_id, focus_id, subject_focus_type, subject_focus_label, "subject_focus_alignment", {"confidence": "medium"})
+
+    for focus in focuses:
+        focus_id = str(focus.get("id") or "")
+        if not focus_id:
+            continue
+        focus_cases = _entity_case_set(focus)
+        focus_keywords = _keyword_set(focus.get("content"))
+        focus_subjects = _relation_sources_for_target(focus_id, {"concerns_focus"})
+        same_case_judgments = [judgment for judgment in judgments if _cases_compatible(focus_cases, _entity_case_set(judgment))]
+        for judgment in same_case_judgments:
+            judgment_id = str(judgment.get("id") or "")
+            if not judgment_id or _has_relation(focus_id, judgment_id, {"leads_to", "resolved_by"}):
+                continue
+            searchable = " ".join([str(judgment.get("specific_judgment") or ""), str(judgment.get("reasoning") or "")])
+            shared_subjects = focus_subjects & _relation_sources_for_target(judgment_id, {"receives_judgment"})
+            shared_keywords = focus_keywords & _keyword_set(searchable)
+            if shared_subjects or len(shared_keywords) >= 2 or len(same_case_judgments) == 1:
+                add_derived_relation(focus_id, judgment_id, focus_judgment_type, focus_judgment_label, "focus_judgment_bridge", {"confidence": "medium"})
+
+    for judgment in judgments:
+        judgment_id = str(judgment.get("id") or "")
+        if not judgment_id:
+            continue
+        judgment_cases = _entity_case_set(judgment)
+        searchable = " ".join([str(judgment.get("specific_judgment") or ""), str(judgment.get("reasoning") or "")])
+        same_case_provisions = [provision for provision in provisions if _cases_compatible(judgment_cases, _entity_case_set(provision))]
+        for provision in same_case_provisions:
+            provision_id = str(provision.get("id") or "")
+            if not provision_id or _has_relation(judgment_id, provision_id, {"judgment_cites"}):
+                continue
+            statute = str(provision.get("statute") or provision.get("law_name") or "").strip()
+            article = str(provision.get("article") or "").strip()
+            matched = bool(
+                (statute and statute in searchable)
+                or (article and f"第{article}条" in searchable)
+                or (article and article in searchable and len(same_case_provisions) == 1)
+            )
+            if matched or len(same_case_provisions) == 1:
+                add_derived_relation(judgment_id, provision_id, judgment_provision_type, judgment_provision_label, "judgment_provision_bridge", {"confidence": "medium"})
+
+    for s_idx, subject in enumerate(subjects):
+        subject_id = _subject_id(subject, s_idx)
+        if not subject_id:
+            continue
+        anchored_focus_ids = [
+            str(focus.get("id") or "")
+            for focus in focuses
+            if _has_relation(subject_id, str(focus.get("id") or ""), {"concerns_focus"})
+        ]
+        for focus_id in anchored_focus_ids:
+            for judgment in judgments:
+                judgment_id = str(judgment.get("id") or "")
+                if judgment_id and _has_relation(focus_id, judgment_id, {"leads_to", "resolved_by"}):
+                    add_derived_relation(subject_id, judgment_id, subject_judgment_type, subject_judgment_label, "subject_judgment_alignment", {"confidence": "medium"})
+
+    for focus in focuses:
+        focus_id = str(focus.get("id") or "")
+        if not focus_id:
+            continue
+        linked_judgments = [
+            str(judgment.get("id") or "")
+            for judgment in judgments
+            if _has_relation(focus_id, str(judgment.get("id") or ""), {"leads_to", "resolved_by"})
+        ]
+        for judgment_id in linked_judgments:
+            for provision in provisions:
+                provision_id = str(provision.get("id") or "")
+                if provision_id and _has_relation(judgment_id, provision_id, {"judgment_cites"}):
+                    add_derived_relation(focus_id, provision_id, focus_resolved_type, focus_resolved_label, "focus_resolved_by_judgment", {"confidence": "medium"})
+
+    for rule in policies.values():
         if rule.get("derivation_kind") != "provision_index":
             continue
         relation_type = rule.get("relation_type") or ""
         label = rule.get("label") or relation_type
         rule_name = rule.get("name") or relation_type
         source_key = rule.get("source_collection") or "legal_provision_elements"
-        target_prefix = rule.get("target_node_prefix") or "prov_"
         target_items = output.get(rule.get("target_collection") or "legal_provisions") or []
         for i, element in enumerate(output.get(source_key) or []):
             if not isinstance(element, dict):
@@ -1086,7 +1362,9 @@ def enrich_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             if provision_index < 0 or provision_index >= len(target_items):
                 continue
             element_id = element.get("id") or f"prov_elem_{i}"
-            add_derived_relation(element_id, f"{target_prefix}{provision_index}", relation_type, label, rule_name)
+            provision_target_id = str((target_items[provision_index] or {}).get("id") or "")
+            if provision_target_id:
+                add_derived_relation(element_id, provision_target_id, relation_type, label, rule_name, {"confidence": "high"})
 
     output["relations"] = relations
     output["derived_relations"] = derived_relations
@@ -1297,12 +1575,15 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     # First pass: create all subject nodes
     for i, subj in enumerate(subjects):
         name = subj.get("name", f"当事人_{i}")
-        nid = f"subj_{i}"
-        add_node(nid, name[:40], "LegalSubject", "LegalSubject", 0)
+        nid = subj.get("id") or subj.get("subject_id") or subj.get("stable_id") or f"subj_{i}"
+        add_node(nid, name[:40], "LegalSubject", "LegalSubject", 0, extra={
+            "entitySourceId": subj.get("id") or subj.get("subject_id") or nid,
+            "entityStableId": subj.get("stable_id") or "",
+        })
 
     # Second pass: create edges per role with correct cc
     for i, subj in enumerate(subjects):
-        nid = f"subj_{i}"
+        nid = subj.get("id") or subj.get("subject_id") or subj.get("stable_id") or f"subj_{i}"
         roles = subj.get("roles") or []
         if roles:
             for role in roles:
@@ -1353,7 +1634,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         statute = p.get("statute", "法规")
         article = p.get("article", f"{i}")
         label = f"{statute}第{article}条"
-        nid = f"prov_{i}"
+        nid = p.get("id") or p.get("provision_id") or p.get("stable_id") or f"prov_{i}"
         add_node(nid, label[:60], "LegalProvision", "LegalNorm", 1,
                  p.get("content", ""),
                  extra={

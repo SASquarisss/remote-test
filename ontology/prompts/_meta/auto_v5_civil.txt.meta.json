@@ -1,6 +1,6 @@
 {
   "prompt_file": "ontology/prompts/auto_v5_civil.txt",
-  "prompt_sha1": "0a822e67939c026e94c552e79185c971e9d7d828",
+  "prompt_sha1": "b16fd733fa9ceb5ca0be9016e8edd904af1b0a41",
   "few_shot": {
     "row_id": "2478",
     "score": 95.0,
@@ -48,7 +48,10 @@
       "covered_entities": [],
       "missing_entities": [],
       "covered_relations": [],
-      "missing_relations": [],
+      "missing_relations": [
+        "concerns_focus",
+        "participates_in_case"
+      ],
       "field_status": {}
     }
   }

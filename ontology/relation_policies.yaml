@@ -12,3 +12,109 @@ derived_relations:
     render_in_graph: true
     emit_to_relations: false
     description: 通过 legal_provision_elements[].provision_index 自动补图，不要求模型在 relations 中显式输出。
+
+  - name: subject_fact_text_alignment
+    relation_type: relates_to_fact
+    label: 关联事实
+    from_type: LegalSubject
+    to_type: Fact
+    derivation_kind: text_alignment
+    source_collection: legal_subjects
+    target_collection: facts
+    deterministic: false
+    render_in_graph: true
+    emit_to_relations: false
+    description: 当主体名称在事实描述中命中，且案号上下文一致时，自动补主体到事实关系。
+
+  - name: subject_case_participation
+    relation_type: participates_in_case
+    label: 参与案件
+    from_type: LegalSubject
+    to_type: CourtCase
+    derivation_kind: case_membership
+    source_collection: legal_subjects
+    target_collection: court_cases
+    deterministic: true
+    render_in_graph: true
+    emit_to_relations: false
+    description: 当主体 roles 中存在案号信息时，自动补主体到案件的参与关系。
+
+  - name: subject_focus_alignment
+    relation_type: concerns_focus
+    label: 关联争点
+    from_type: LegalSubject
+    to_type: DisputeFocus
+    derivation_kind: layered_bridge
+    source_collection: legal_subjects
+    target_collection: dispute_focuses
+    deterministic: false
+    render_in_graph: true
+    emit_to_relations: false
+    description: 先使用主体直连争点命中，若缺失则仅允许基于主体已锚定的事实桥接到争点。
+
+  - name: subject_judgment_alignment
+    relation_type: receives_judgment
+    label: 对应裁判
+    from_type: LegalSubject
+    to_type: JudgmentResult
+    derivation_kind: judgment_alignment
+    source_collection: legal_subjects
+    target_collection: judgment_results
+    deterministic: false
+    render_in_graph: true
+    emit_to_relations: false
+    description: 当主体名称在裁判主文或说理中被明确指向时，自动补主体到裁判结果关系。
+
+  - name: fact_focus_semantic_bridge
+    relation_type: relates_to_focus
+    label: 形成争点
+    from_type: Fact
+    to_type: DisputeFocus
+    derivation_kind: semantic_bridge
+    source_collection: facts
+    target_collection: dispute_focuses
+    deterministic: false
+    render_in_graph: true
+    emit_to_relations: false
+    description: 当事实与争点共享主体锚点或核心语义关键词时，自动补事实到争点关系。
+
+  - name: focus_judgment_bridge
+    relation_type: leads_to
+    label: 推导裁判
+    from_type: DisputeFocus
+    to_type: JudgmentResult
+    derivation_kind: case_link_bridge
+    source_collection: dispute_focuses
+    target_collection: judgment_results
+    deterministic: false
+    render_in_graph: true
+    emit_to_relations: false
+    description: 当争点与裁判结果属于同一案号且缺少显式边时，自动补争点到裁判结果关系。
+
+  - name: judgment_provision_bridge
+    relation_type: judgment_cites
+    label: 裁判依据法条
+    from_type: JudgmentResult
+    to_type: LegalProvision
+    derivation_kind: case_link_bridge
+    source_collection: judgment_results
+    target_collection: legal_provisions
+    deterministic: false
+    render_in_graph: true
+    emit_to_relations: false
+    description: 当裁判结果与法条属于同一案号且缺少显式边时，自动补裁判结果到法条关系。
+
+  - name: focus_resolved_by_judgment
+    relation_type: resolved_by
+    label: 焦点由法条解决
+    from_type: DisputeFocus
+    to_type: LegalProvision
+    derivation_kind: compose_chain
+    via_relation_types: [leads_to, judgment_cites]
+    source_collection: dispute_focuses
+    middle_collection: judgment_results
+    target_collection: legal_provisions
+    deterministic: false
+    render_in_graph: true
+    emit_to_relations: false
+    description: 当争点已连接裁判结果，且裁判结果已连接法条时，自动补争点到法条的解决关系。

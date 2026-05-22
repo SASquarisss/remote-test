@@ -398,6 +398,30 @@ relations:
     cardinality: one_to_many
     description: "案件具有事实"
 
+  participates_in_case:
+    from: LegalSubject
+    to: CourtCase
+    cardinality: many_to_many
+    description: "主体作为案件参与方进入特定案件上下文"
+
+  relates_to_fact:
+    from: LegalSubject
+    to: Fact
+    cardinality: many_to_many
+    description: "主体参与、经历或关联某一案件事实"
+
+  concerns_focus:
+    from: LegalSubject
+    to: DisputeFocus
+    cardinality: many_to_many
+    description: "主体与某一争议焦点存在直接对应、主张或被评价关系"
+
+  receives_judgment:
+    from: LegalSubject
+    to: JudgmentResult
+    cardinality: many_to_many
+    description: "主体对应某一裁判结果、处理结果或责任结果"
+
   matches_element:
     from: Fact
     to: LegalProvisionElement

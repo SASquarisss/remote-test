@@ -1275,7 +1275,7 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
     provision_elements = normalized_output.get("legal_provision_elements") or []
     subjects = normalized_output.get("legal_subjects") or []
     evidence_items = normalized_output.get("evidence") or []
-    relations = normalized_output.get("relations") or []
+    relations = [*(normalized_output.get("relations") or []), *(normalized_output.get("derived_relations") or [])]
 
     facts_by_id = {str((item.get("id") or f"fact_{idx}")): item for idx, item in enumerate(facts)}
     focuses_by_id = {str((item.get("id") or f"focus_{idx}")): item for idx, item in enumerate(focuses)}
@@ -1301,22 +1301,18 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
             return rel
         return None
 
-    def first_fact_for_subject(subject_name: str):
-        for fact in facts:
-            content = str(fact.get("content") or "")
-            if subject_name and subject_name in content:
-                return fact
-        return facts[0] if facts else None
-
-    def first_judgment_for_subject(subject_name: str):
-        for judgment in judgments:
-            searchable = " ".join([
-                str(judgment.get("specific_judgment") or ""),
-                str(judgment.get("reasoning") or ""),
-            ])
-            if subject_name and subject_name in searchable:
-                return judgment
-        return judgments[0] if judgments else None
+    def relation_matches_all(*, source_id=None, target_id=None, relation_types=None):
+        relation_type_set = set(relation_types or [])
+        matched = []
+        for rel in relations:
+            if source_id is not None and relation_src(rel) != str(source_id):
+                continue
+            if target_id is not None and relation_tgt(rel) != str(target_id):
+                continue
+            if relation_type_set and rel.get("relation_type") not in relation_type_set:
+                continue
+            matched.append(rel)
+        return matched
 
     def subject_in_judgment(subject_name: str, judgment: dict | None) -> bool:
         searchable = " ".join([
@@ -1324,6 +1320,68 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
             str((judgment or {}).get("reasoning") or ""),
         ])
         return bool(subject_name and searchable and subject_name in searchable)
+
+    def _case_set(value):
+        if isinstance(value, str):
+            text = value.strip()
+            return {text} if text else set()
+        if isinstance(value, list):
+            result = set()
+            for item in value:
+                result.update(_case_set(item))
+            return result
+        return set()
+
+    def _entity_case_set(item: dict | None):
+        return _case_set((item or {}).get("case_number") or (item or {}).get("related_case_number") or "")
+
+    def _subject_case_set(subject: dict | None):
+        values = set()
+        for role in (subject or {}).get("roles") or []:
+            case_number = str(role.get("case_number") or "").strip()
+            if case_number:
+                values.add(case_number)
+        return values
+
+    def _cases_compatible(left, right):
+        left = set(left or [])
+        right = set(right or [])
+        if not left or not right:
+            return True
+        return bool(left & right)
+
+    def _first_focus_for_fact(fact: dict | None):
+        if not fact:
+            return None, None
+        fact_id = str((fact or {}).get("id") or "")
+        fact_cases = _entity_case_set(fact)
+        rel = next((rel for rel in relations if relation_src(rel) == fact_id and relation_tgt(rel) in focuses_by_id and rel.get("relation_type") in {"has_dispute_focus", "relates_to_focus", "leads_to"}), None)
+        if rel:
+            return focuses_by_id.get(relation_tgt(rel)), rel
+        candidate = next((focus for focus in focuses if _cases_compatible(fact_cases, _entity_case_set(focus))), None)
+        return candidate, None
+
+    def _first_judgment_for_focus(focus: dict | None):
+        if not focus:
+            return None, None
+        focus_id = str((focus or {}).get("id") or "")
+        focus_cases = _entity_case_set(focus)
+        rel = next((rel for rel in relations if relation_src(rel) == focus_id and relation_tgt(rel) in judgments_by_id and rel.get("relation_type") in {"leads_to", "resolved_by"}), None)
+        if rel:
+            return judgments_by_id.get(relation_tgt(rel)), rel
+        candidate = next((judgment for judgment in judgments if _cases_compatible(focus_cases, _entity_case_set(judgment))), None)
+        return candidate, None
+
+    def _first_provision_for_judgment(judgment: dict | None):
+        if not judgment:
+            return None, None
+        judgment_id = str((judgment or {}).get("id") or "")
+        judgment_cases = _entity_case_set(judgment)
+        rel = next((rel for rel in relations if relation_src(rel) == judgment_id and relation_tgt(rel) in provisions_by_id and rel.get("relation_type") == "judgment_cites"), None)
+        if rel:
+            return provisions_by_id.get(relation_tgt(rel)), rel
+        candidate = next((provision for provision in provisions if _cases_compatible(judgment_cases, _entity_case_set(provision))), None)
+        return candidate, None
 
     case_taxonomy = _retrieval_case_taxonomy(normalized_output, case_meta)
     fact_summaries = [_retrieval_short_text(item.get("content"), 40) for item in facts[:4] if item.get("content")]
@@ -1387,11 +1445,9 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
             continue
         fact_id = str(fact.get("id") or f"fact_{idx}")
         evidence_rel = relation_matches(target_id=fact_id, relation_types={"proves_fact"})
-        focus_rel = relation_matches(source_id=fact_id, relation_types={"has_dispute_focus", "relates_to_focus", "leads_to"})
-        judgment_rel = relation_matches(source_id=(focuses_by_id.get(relation_tgt(focus_rel)) or {}).get("id"), relation_types={"leads_to", "resolved_by"}) if focus_rel else None
+        focus_item, focus_rel = _first_focus_for_fact(fact)
+        judgment_item, judgment_rel = _first_judgment_for_focus(focus_item)
         evidence_item = evidence_by_id.get(relation_src(evidence_rel)) if evidence_rel else (evidence_items[0] if evidence_items else None)
-        focus_item = focuses_by_id.get(relation_tgt(focus_rel)) if focus_rel else (focuses[0] if focuses else None)
-        judgment_item = judgments_by_id.get(relation_tgt(judgment_rel)) if judgment_rel else None
         view_label = "事实链视角"
         meta_header = _retrieval_meta_header(normalized_output, case_meta, "fact_chain_unit", view_label)
         chain_nodes = []
@@ -1441,11 +1497,9 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
             continue
         focus_id = str(focus.get("id") or f"focus_{idx}")
         fact_rel = next((rel for rel in relations if relation_tgt(rel) == focus_id and relation_src(rel) in facts_by_id), None)
-        judgment_rel = relation_matches(source_id=focus_id, relation_types={"leads_to", "resolved_by"})
-        fact_item = facts_by_id.get(relation_src(fact_rel)) if fact_rel else (facts[0] if facts else None)
-        judgment_item = judgments_by_id.get(relation_tgt(judgment_rel)) if judgment_rel else (judgments[0] if judgments else None)
-        provision_rel = relation_matches(source_id=(judgment_item or {}).get("id"), relation_types={"judgment_cites"}) if judgment_item else None
-        provision_item = provisions_by_id.get(relation_tgt(provision_rel)) if provision_rel else (provisions[0] if provisions else None)
+        judgment_item, judgment_rel = _first_judgment_for_focus(focus)
+        fact_item = facts_by_id.get(relation_src(fact_rel)) if fact_rel else (next((item for item in facts if _cases_compatible(_entity_case_set(item), _entity_case_set(focus))), None) if facts else None)
+        provision_item, provision_rel = _first_provision_for_judgment(judgment_item)
         view_label = "争点视角"
         meta_header = _retrieval_meta_header(normalized_output, case_meta, "focus_unit", view_label)
         chain_nodes = [
@@ -1494,9 +1548,8 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
         reasoning = str(judgment.get("reasoning") or "").strip()
         judgment_id = str(judgment.get("id") or f"jr_{idx}")
         focus_rel = next((rel for rel in relations if relation_tgt(rel) == judgment_id and relation_src(rel) in focuses_by_id), None)
-        provision_rel = relation_matches(source_id=judgment_id, relation_types={"judgment_cites"})
-        focus_item = focuses_by_id.get(relation_src(focus_rel)) if focus_rel else (focuses[0] if focuses else None)
-        provision_item = provisions_by_id.get(relation_tgt(provision_rel)) if provision_rel else (provisions[0] if provisions else None)
+        focus_item = focuses_by_id.get(relation_src(focus_rel)) if focus_rel else (next((item for item in focuses if _cases_compatible(_entity_case_set(item), _entity_case_set(judgment))), None) if focuses else None)
+        provision_item, provision_rel = _first_provision_for_judgment(judgment)
         view_label = "裁判结果视角"
         meta_header = _retrieval_meta_header(normalized_output, case_meta, "judgment_unit", view_label)
         graph_payload = _retrieval_graph_payload(
@@ -1589,8 +1642,7 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
     for idx, judgment in enumerate(judgments[: max(1, len(judgments)) ]):
         result_type_label = _retrieval_result_type_label(judgment.get("result_type"))
         specific_judgment = judgment.get("specific_judgment") or ""
-        provision_rel = relation_matches(source_id=judgment.get("id"), relation_types={"judgment_cites"})
-        provision_item = provisions_by_id.get(relation_tgt(provision_rel)) if provision_rel else (provisions[idx] if idx < len(provisions) else (provisions[0] if provisions else None))
+        provision_item, provision_rel = _first_provision_for_judgment(judgment)
         if not provision_item:
             continue
         provision_index = provision_item.get("index") if isinstance(provision_item, dict) else None
@@ -1649,28 +1701,30 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
         if not _retrieval_is_party_subject(subject):
             continue
         role_text = _retrieval_subject_role_text(subject)
-        fact_item = first_fact_for_subject(subject_name)
         subject_id = _retrieval_subject_identifier(subject, idx)
-        subject_fact_verified = bool(fact_item and subject_name in str((fact_item or {}).get("content") or ""))
-        fact_focus_rel = next((rel for rel in relations if relation_src(rel) == str((fact_item or {}).get("id") or "") and relation_tgt(rel) in focuses_by_id and rel.get("relation_type") in {"has_dispute_focus", "relates_to_focus", "leads_to"}), None) if fact_item else None
-        focus_item = focuses_by_id.get(relation_tgt(fact_focus_rel)) if fact_focus_rel else None
-        judgment_item = first_judgment_for_subject(subject_name)
-        if focus_item and judgment_item:
-            focus_judgment_rel = relation_matches(source_id=(focus_item or {}).get("id"), target_id=(judgment_item or {}).get("id"), relation_types={"leads_to", "resolved_by"})
-        else:
-            focus_judgment_rel = None
-        if not focus_judgment_rel and focus_item:
-            focus_judgment_rel = next((rel for rel in relations if relation_src(rel) == str((focus_item or {}).get("id") or "") and relation_tgt(rel) in judgments_by_id and rel.get("relation_type") in {"leads_to", "resolved_by"}), None)
-            if focus_judgment_rel:
-                judgment_item = judgments_by_id.get(relation_tgt(focus_judgment_rel))
-        subject_judgment_verified = subject_in_judgment(subject_name, judgment_item)
-        if not subject_judgment_verified:
+        subject_fact_rel = next((rel for rel in relation_matches_all(source_id=subject_id, relation_types={"relates_to_fact"}) if relation_tgt(rel) in facts_by_id), None)
+        fact_item = facts_by_id.get(relation_tgt(subject_fact_rel)) if subject_fact_rel else None
+        subject_fact_verified = bool(subject_fact_rel)
+
+        subject_focus_rel = next((rel for rel in relation_matches_all(source_id=subject_id, relation_types={"concerns_focus"}) if relation_tgt(rel) in focuses_by_id), None)
+        fact_focus_rel = next((rel for rel in relation_matches_all(source_id=(fact_item or {}).get("id"), relation_types={"has_dispute_focus", "relates_to_focus"}) if relation_tgt(rel) in focuses_by_id), None) if fact_item else None
+        focus_item = focuses_by_id.get(relation_tgt(subject_focus_rel)) if subject_focus_rel else None
+        if not focus_item and fact_focus_rel:
+            focus_item = focuses_by_id.get(relation_tgt(fact_focus_rel))
+
+        subject_judgment_rel = next((rel for rel in relation_matches_all(source_id=subject_id, relation_types={"receives_judgment"}) if relation_tgt(rel) in judgments_by_id), None)
+        focus_judgment_rel = next((rel for rel in relation_matches_all(source_id=(focus_item or {}).get("id"), relation_types={"leads_to", "resolved_by"}) if relation_tgt(rel) in judgments_by_id), None) if focus_item else None
+        judgment_item = judgments_by_id.get(relation_tgt(subject_judgment_rel)) if subject_judgment_rel else None
+        if not judgment_item and focus_judgment_rel:
+            judgment_item = judgments_by_id.get(relation_tgt(focus_judgment_rel))
+
+        subject_judgment_verified = bool(subject_judgment_rel) or bool(focus_judgment_rel and (subject_focus_rel or subject_fact_rel))
+        if judgment_item and not subject_in_judgment(subject_name, judgment_item) and not subject_judgment_rel:
             judgment_item = None
             focus_judgment_rel = None
-        if judgment_item:
-            judgment_provision_rel = next((rel for rel in relations if relation_src(rel) == str((judgment_item or {}).get("id") or "") and relation_tgt(rel) in provisions_by_id and rel.get("relation_type") == "judgment_cites"), None)
-        else:
-            judgment_provision_rel = None
+            subject_judgment_verified = False
+
+        judgment_provision_rel = next((rel for rel in relation_matches_all(source_id=(judgment_item or {}).get("id"), relation_types={"judgment_cites"}) if relation_tgt(rel) in provisions_by_id), None) if judgment_item else None
         provision_item = provisions_by_id.get(relation_tgt(judgment_provision_rel)) if judgment_provision_rel else None
         view_label = "当事人视角"
         meta_header = _retrieval_meta_header(normalized_output, case_meta, "party_view_unit", view_label)
@@ -1678,13 +1732,19 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
         chain_edges = []
         if fact_item:
             chain_nodes.append(_retrieval_chain_node("Fact", (fact_item or {}).get("content") or "关联事实", (fact_item or {}).get("id") or ""))
-            chain_edges.append(_retrieval_chain_edge("relates_to_fact", "关联事实", verified=subject_fact_verified))
+            chain_edges.append(_retrieval_chain_edge((subject_fact_rel or {}).get("relation_type") or "relates_to_fact", "关联事实", _relation_identity(subject_fact_rel) if subject_fact_rel else "", verified=bool(subject_fact_rel)))
         if focus_item:
             chain_nodes.append(_retrieval_chain_node("DisputeFocus", (focus_item or {}).get("content") or (focus_item or {}).get("focus") or "关联争点", (focus_item or {}).get("id") or ""))
-            chain_edges.append(_retrieval_chain_edge("has_dispute_focus", "触发争点", _relation_identity(fact_focus_rel) if fact_focus_rel else "", verified=bool(fact_focus_rel)))
+            if fact_item:
+                chain_edges.append(_retrieval_chain_edge((fact_focus_rel or {}).get("relation_type") or "relates_to_focus", "触发争点", _relation_identity(fact_focus_rel) if fact_focus_rel else "", verified=bool(fact_focus_rel)))
+            else:
+                chain_edges.append(_retrieval_chain_edge((subject_focus_rel or {}).get("relation_type") or "concerns_focus", "关联争点", _relation_identity(subject_focus_rel) if subject_focus_rel else "", verified=bool(subject_focus_rel)))
         if judgment_item:
             chain_nodes.append(_retrieval_chain_node("JudgmentResult", (judgment_item or {}).get("specific_judgment") or _retrieval_result_type_label((judgment_item or {}).get("result_type")) or "裁判结果", (judgment_item or {}).get("id") or ""))
-            chain_edges.append(_retrieval_chain_edge("receives_judgment", "对应裁判", _relation_identity(focus_judgment_rel) if focus_judgment_rel else "", verified=bool(focus_judgment_rel and subject_judgment_verified)))
+            if focus_item:
+                chain_edges.append(_retrieval_chain_edge((focus_judgment_rel or {}).get("relation_type") or "leads_to", "对应裁判", _relation_identity(focus_judgment_rel) if focus_judgment_rel else "", verified=bool(focus_judgment_rel and subject_judgment_verified)))
+            else:
+                chain_edges.append(_retrieval_chain_edge((subject_judgment_rel or {}).get("relation_type") or "receives_judgment", "对应裁判", _relation_identity(subject_judgment_rel) if subject_judgment_rel else "", verified=bool(subject_judgment_rel)))
         if provision_item:
             chain_nodes.append(_retrieval_chain_node("LegalProvision", _retrieval_provision_ref(provision_item) or "法条", (provision_item or {}).get("id") or ""))
             chain_edges.append(_retrieval_chain_edge("judgment_cites", "对应法条", _relation_identity(judgment_provision_rel) if judgment_provision_rel else "", verified=bool(judgment_provision_rel)))

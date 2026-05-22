@@ -142,9 +142,8 @@ export class TerminalPanel {
           <div id="termWorkspace" class="term-col term-col-right" style="flex: 1; min-width: 0; background: #fff;">
             <div class="term-col-header">
               <div class="term-tab-group">
-                <span class="term-tab active pending" data-target="termVisContainer">
-                  <span class="term-tab-label">📊 图</span>
-                  <span class="term-tab-badge" id="tabGraphBadge">待生成</span>
+                <span class="term-tab active ready" data-target="termVisContainer">
+                  <span class="term-tab-label">📊 图谱应用</span>
                 </span>
                 <span class="term-tab" data-target="termIssuesTabContent">
                   <span class="term-tab-label">⚠ 问题</span>
@@ -924,6 +923,29 @@ export class TerminalPanel {
     this.updateEnhanceButtonState();
   }
 
+  getWorkspaceTab(targetId) {
+    const termBody = document.getElementById('termBody');
+    return termBody ? termBody.querySelector(`.term-tab[data-target="${targetId}"]`) : null;
+  }
+
+  setWorkspaceTabBadge(targetId, badgeText, tone = 'ready') {
+    const tab = this.getWorkspaceTab(targetId);
+    if (!tab) return;
+    tab.classList.remove('pending', 'has-data', 'ready');
+    if (tone) {
+      tab.classList.add(tone);
+    }
+    const badge = tab.querySelector('.term-tab-badge');
+    if (!badge) return;
+    if (!badgeText) {
+      badge.style.display = 'none';
+      badge.textContent = '';
+      return;
+    }
+    badge.style.display = 'inline-flex';
+    badge.textContent = badgeText;
+  }
+
   async handleParse() {
     const text = this.inputArea ? this.inputArea.value.trim() : '';
     if (!text) {
@@ -957,6 +979,7 @@ export class TerminalPanel {
       this.resetRetrievalState();
       
       this.renderJson(result.json_result);
+      this.setWorkspaceTabBadge('termEvalTabContent', '待评估', 'pending');
       
       if (this.evalBtn) this.evalBtn.disabled = false;
       if (this.saveBtn) this.saveBtn.disabled = false;
@@ -1906,6 +1929,7 @@ export class TerminalPanel {
 
   renderEvalResult(result) {
     this.lastEvalResult = result;
+    this.setWorkspaceTabBadge('termEvalTabContent', '已评估', 'has-data');
     const evalTab = document.getElementById('termEvalTabContent') || document.getElementById('termEvalArea');
     if (!evalTab) return;
     
@@ -2028,6 +2052,7 @@ export class TerminalPanel {
     }
     
     this.setStatus('评估中...', '#8e44ad');
+    this.setWorkspaceTabBadge('termEvalTabContent', '评估中', 'pending');
     this.switchTab('termEvalTabContent');
     
     const evalTab = document.getElementById('termEvalTabContent') || document.getElementById('termEvalArea');

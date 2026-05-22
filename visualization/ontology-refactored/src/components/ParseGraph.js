@@ -42,7 +42,7 @@ const AUXILIARY_LANE_X_JITTER = {
   Judge: -90,
   Attorney: 90,
   LegalRole: 0,
-  LegalSubject: 0,
+  LegalSubject: 90,
   Person: 0,
 };
 
@@ -149,6 +149,7 @@ export class ParseGraph {
     this.lastRenderedData = null;
     this.needsLayout = false;
     this.isMainView = false;
+    this.layoutMode = store.getState().parseGraphLayoutMode || 'lane';
     this.semanticZoom = store.getState().parseGraphSemanticZoom || 'mid';
     this.localFocusMode = false;
     this.pathPreset = 'none';
@@ -301,7 +302,7 @@ export class ParseGraph {
 
     // Native zoom and pan will work now that we reparent this.container instead of just the canvas.frame.
     // Ensure we trigger overlay render on drag.
-    this.network.on('dragging', () => this.renderZoneOverlay());
+    this.network.on('dragging', () => { this.renderZoneOverlay(); });
 
     // Use custom pan to fix dragging on empty space reliably
     bindCustomPan(this.network, this.network.canvas.frame, () => this.renderZoneOverlay());
@@ -328,7 +329,7 @@ export class ParseGraph {
     });
     this.network.on('dragEnd', () => {
       this.container.classList.remove('panning');
-      setTimeout(() => this.renderZoneOverlay(), 0);
+      setTimeout(() => { this.renderZoneOverlay(); }, 0);
     });
 
     this.bindControls();
@@ -448,7 +449,7 @@ export class ParseGraph {
         <div class="graph-tools-header">📊 高级图谱分析与操作台</div>
         <div class="graph-tools-grid">
           <button id="btnSubgraph" class="tool-btn"><span class="icon">🎯</span> 核心子图透视</button>
-          <button id="btnSmartLayout" class="tool-btn"><span class="icon">✨</span> 智能语义排版</button>
+          <button id="btnSmartLayout" class="tool-btn"><span class="icon">✨</span> 车道布局</button>
           <button id="btnLocalFocus" class="tool-btn"><span class="icon">🧭</span> 局部展开</button>
           <button id="btnEvidenceChain" class="tool-btn"><span class="icon">🧾</span> 证据链</button>
           <button id="btnJudgmentBasis" class="tool-btn"><span class="icon">⚖</span> 裁判依据链</button>
@@ -464,6 +465,7 @@ export class ParseGraph {
       
       this.toolDescEl = toolbar.querySelector('#graphToolDesc');
       this.ensureAnalysisModeElements();
+      this.renderLayoutModeButton();
       this.renderToolDescription();
       this.syncToolButtonStates();
 
@@ -472,8 +474,8 @@ export class ParseGraph {
         this.setToolDescription(this.subgraphMode ? '已开启核心子图透视：隐藏边缘节点，仅显示 证据 -> 事实 -> 焦点 -> 法条 的骨架链路。' : '已恢复全量图谱显示。');
       });
       toolbar.querySelector('#btnSmartLayout').addEventListener('click', () => {
-        this.applySmartLayout();
-        this.setToolDescription('已应用智能语义排版：事实纵向排列，焦点沉底，当事人分布四周。');
+        const next = this.toggleLayoutMode();
+        this.setToolDescription(next === 'focus_orbit' ? '已切到焦点环布局：围绕争点核心组织法条半环与裁判半环。' : '已切回车道布局：恢复按区带展开的主图结构。');
       });
       toolbar.querySelector('#btnLocalFocus').addEventListener('click', () => {
         const changed = this.toggleLocalFocusMode();
@@ -522,6 +524,7 @@ export class ParseGraph {
         this.pathPreset = 'none';
         this.traceDirection = 'none';
         this.traceSummaryText = '';
+        store.setState({ parseGraphLayoutMode: 'lane' });
         if (this.playbackInterval) {
           clearInterval(this.playbackInterval);
           this.playbackInterval = null;
@@ -660,6 +663,8 @@ export class ParseGraph {
   }
 
   syncToolButtonStates() {
+    this.renderLayoutModeButton();
+    this.setToolButtonState('btnSmartLayout', this.getLayoutMode() === 'focus_orbit', '#7c3aed');
     this.setToolButtonState('btnLocalFocus', this.localFocusMode, '#0ea5e9');
     this.setToolButtonState('btnEvidenceChain', this.pathPreset === 'evidence_chain', '#7c3aed');
     this.setToolButtonState('btnJudgmentBasis', this.pathPreset === 'judgment_basis', '#dc2626');
@@ -729,24 +734,36 @@ export class ParseGraph {
     this.syncToolButtonStates();
   }
 
-  applySmartLayout() {
-    const nodes = this.nodesDs.get();
-    const edges = this.edgesDs.get();
-    this.nodesDs.update(this.buildVerticalLanePositions(nodes));
-    this.network.fit({ animation: { duration: 800, easingFunction: 'easeInOutQuad' } });
-    
-    // Highlight CourtCase diff edges if multiple courts
-    const courts = nodes.filter(n => this.getNodeType(n) === 'CourtCase');
-    if (courts.length > 1) {
-      const courtIds = courts.map(c => c.id);
-      const edgeUpdates = edges.map(e => {
-        if (courtIds.includes(e.from) || courtIds.includes(e.to)) {
-          return { id: e.id, color: { color: '#10b981', highlight: '#059669' }, width: 3, dashes: true };
-        }
-        return { id: e.id };
-      });
-      this.edgesDs.update(edgeUpdates);
+  getLayoutMode(state = store.getState()) {
+    return state.parseGraphLayoutMode || this.layoutMode || 'lane';
+  }
+
+  renderLayoutModeButton() {
+    const btn = document.getElementById('btnSmartLayout');
+    if (!btn) return;
+    const mode = this.getLayoutMode();
+    btn.innerHTML = mode === 'focus_orbit'
+      ? '<span class="icon">✨</span> 切换为车道布局'
+      : '<span class="icon">🌀</span> 切换为焦点环布局';
+  }
+
+  toggleLayoutMode() {
+    const next = this.getLayoutMode() === 'focus_orbit' ? 'lane' : 'focus_orbit';
+    store.setState({ parseGraphLayoutMode: next });
+    if (this.lastRenderedData && this.network) {
+      this.layoutMode = next;
+      this.syncToolButtonStates();
+      this.syncRenderedGraph();
+      this.apply2DLayout();
+    } else {
+      this.layoutMode = next;
+      this.syncToolButtonStates();
     }
+    return next;
+  }
+
+  applySmartLayout() {
+    this.toggleLayoutMode();
   }
 
   togglePlayback() {
@@ -1443,19 +1460,67 @@ export class ParseGraph {
     return raw.replace(/^中华人民共和国/, '').trim();
   }
 
+  escapeSvgText(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  getLegalProvisionGlyphText(node) {
+    const article = this.getLegalProvisionArticleMarker(node);
+    return String(article || '').replace(/^第/, '').replace(/条$/, '').trim() || '法';
+  }
+
+  buildLegalProvisionNodeImage({ text, statuteLabel = '', background, border, fontColor, borderWidth = 2, borderDashes = false }) {
+    const glyph = this.escapeSvgText(text);
+    const fontSize = glyph.length >= 4 ? 26 : glyph.length === 3 ? 32 : glyph.length === 2 ? 38 : 44;
+    const dashArray = Array.isArray(borderDashes) ? borderDashes.join(' ') : (borderDashes ? '7 5' : 'none');
+    const safeStatute = this.escapeSvgText(this.truncateLabel(statuteLabel || '', 14));
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 154">
+        <polygon
+          points="70,8 118,34 118,90 70,116 22,90 22,34"
+          fill="${background}"
+          stroke="${border}"
+          stroke-width="${borderWidth}"
+          stroke-dasharray="${dashArray}"
+          stroke-linejoin="round"
+        />
+        <text
+          x="70"
+          y="63"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-family="Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif"
+          font-size="${fontSize}"
+          font-weight="700"
+          fill="${fontColor}"
+        >${glyph}</text>
+        <text
+          x="70"
+          y="138"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-family="Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif"
+          font-size="14"
+          font-weight="600"
+          fill="${fontColor}"
+        >${safeStatute}</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  }
+
   getNodeDisplayLabel(node, state, type) {
     const semanticZoom = state.parseGraphSemanticZoom || this.semanticZoom || 'mid';
     const fullLabel = node.fullLabel || node.label || node.title || node.id || '';
 
     if (type === 'LegalProvision') {
       const articleMarker = this.getLegalProvisionArticleMarker(node);
-      const statuteShort = this.getLegalProvisionStatuteShort(node);
-      if (semanticZoom === 'far' && articleMarker) {
-        return articleMarker;
-      }
-      if (semanticZoom === 'mid' && articleMarker) {
-        return statuteShort ? `${articleMarker}\n${this.truncateLabel(statuteShort, 6)}` : articleMarker;
-      }
+      return articleMarker || '法条';
     }
 
     if (type === 'AggregateGroup') {
@@ -1736,7 +1801,9 @@ export class ParseGraph {
       const labelMarker = type === 'AggregateGroup'
         ? ''
         : this.getNodeChangeMarker(n.id, highlight, state.parseGraphSemanticZoom || this.semanticZoom || 'mid');
-      const label = labelMarker ? `${labelMarker}${baseLabel}` : baseLabel;
+      const label = type === 'LegalProvision' ? '' : (labelMarker ? `${labelMarker}${baseLabel}` : baseLabel);
+      const legalProvisionGlyph = type === 'LegalProvision' ? this.getLegalProvisionGlyphText({ ...n, fullLabel }) : '';
+      const legalProvisionStatute = type === 'LegalProvision' ? this.getLegalProvisionStatuteShort({ ...n, fullLabel }) : '';
       const isBoxLike = ['box', 'square', 'hexagon'].includes(style.shape);
       const baseSize = type === 'AggregateGroup'
         ? 24
@@ -1773,16 +1840,30 @@ export class ParseGraph {
               borderDashes: [7, 5]
             }
           : null;
+      const fillColor = traceColors?.background || (aggregateExpanded ? '#e0f2fe' : style.color);
+      const borderColor = mergeColors?.border || traceColors?.border || (aggregateExpanded ? '#0284c7' : style.border);
+      const fontColor = traceColors?.font || (aggregateExpanded ? '#0f172a' : (style.fontColor || '#333'));
       
       return {
         ...n,
         fullLabel,
         label,
         nodeType: type,
-        shape: style.shape,
+        shape: type === 'LegalProvision' ? 'image' : style.shape,
+        image: type === 'LegalProvision'
+          ? this.buildLegalProvisionNodeImage({
+              text: legalProvisionGlyph,
+              statuteLabel: legalProvisionStatute,
+              background: fillColor,
+              border: borderColor,
+              fontColor,
+              borderWidth: mergeColors?.borderWidth || (n.isTraceFocus ? 3 : (n.isTraceNode ? 2.5 : 2)),
+              borderDashes: mergeColors?.borderDashes || false,
+            })
+          : undefined,
         color: {
-          background: traceColors?.background || (aggregateExpanded ? '#e0f2fe' : style.color),
-          border: mergeColors?.border || traceColors?.border || (aggregateExpanded ? '#0284c7' : style.border),
+          background: fillColor,
+          border: borderColor,
         },
         borderWidth: mergeColors?.borderWidth || (n.isTraceFocus ? 3 : (type === 'AggregateGroup' ? 1.5 : (n.isTraceNode ? 2.5 : 2))),
         shapeProperties: {
@@ -1795,21 +1876,26 @@ export class ParseGraph {
             ? { top: 8, right: 12, bottom: 8, left: 12 }
             : undefined,
         size: state.parseGraphSemanticZoom === 'far' && type !== 'CourtCase'
-          ? Math.max(baseSize, 22)
-          : baseSize,
-        widthConstraint: isBoxLike ? { minimum: type === 'AggregateGroup' ? 74 : 78 } : undefined,
-        heightConstraint: isBoxLike ? { minimum: type === 'AggregateGroup' ? 34 : 38 } : undefined,
+          ? Math.max(baseSize, type === 'LegalProvision' ? 30 : 22)
+          : (type === 'LegalProvision' ? Math.max(baseSize, 30) : baseSize),
+        widthConstraint: isBoxLike
+          ? { minimum: type === 'AggregateGroup' ? 78 : 84 }
+          : undefined,
+        heightConstraint: isBoxLike
+          ? { minimum: type === 'AggregateGroup' ? 38 : 42 }
+          : undefined,
         shadow: n.isTraceNode
           ? { enabled: true, color: n.isTraceFocus ? 'rgba(217,119,6,0.35)' : 'rgba(37,99,235,0.18)', size: n.isTraceFocus ? 18 : 10 }
           : { enabled: true, color: mergeColors?.shadow || 'rgba(15,23,42,0.12)', size: mergeColors ? (isPreview ? 18 : 11) : 8, x: 0, y: 2 },
         font: {
           size: type === 'AggregateGroup'
-            ? (state.parseGraphSemanticZoom === 'far' ? 10 : 11)
-            : (state.parseGraphSemanticZoom === 'near' ? 13 : 12),
-          color: traceColors?.font || (aggregateExpanded ? '#0f172a' : (style.fontColor || '#333')),
+            ? (state.parseGraphSemanticZoom === 'far' ? 11 : 12)
+            : (state.parseGraphSemanticZoom === 'near' ? 14 : 13),
+          color: fontColor,
           face: 'Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif',
           strokeWidth: 3,
           strokeColor: '#ffffff',
+          vadjust: 0,
         }
       };
     });
@@ -1934,9 +2020,9 @@ export class ParseGraph {
       DisputeFocus: 1,
       JudgmentResult: 2,
       Judge: 0,
-      Attorney: 1,
-      LegalRole: 2,
-      LegalSubject: 3,
+      LegalSubject: 1,
+      Attorney: 2,
+      LegalRole: 3,
       Person: 4,
     };
 
@@ -1954,6 +2040,33 @@ export class ParseGraph {
       const yBase = MAIN_LANE_Y[laneKey];
       const spacing = MAIN_LANE_SPACING[laneKey];
 
+      if (laneKey === 'subjectLane') {
+        const grouped = {
+          Judge: bucket.filter((node) => this.getNodeType(node) === 'Judge'),
+          LegalSubject: bucket.filter((node) => this.getNodeType(node) === 'LegalSubject'),
+          Attorney: bucket.filter((node) => this.getNodeType(node) === 'Attorney'),
+          LegalRole: bucket.filter((node) => this.getNodeType(node) === 'LegalRole'),
+          Person: bucket.filter((node) => this.getNodeType(node) === 'Person'),
+        };
+        const subjectColumns = [
+          { type: 'Judge', x: xBase - 110, startY: yBase - 48, spacing },
+          { type: 'LegalSubject', x: xBase + 110, startY: yBase - 48, spacing },
+          { type: 'Attorney', x: xBase + 250, startY: yBase + 6, spacing },
+          { type: 'LegalRole', x: xBase, startY: yBase + 24, spacing },
+          { type: 'Person', x: xBase + 380, startY: yBase + 6, spacing },
+        ];
+        subjectColumns.forEach(({ type, x, startY, spacing: columnSpacing }) => {
+          (grouped[type] || []).forEach((node, index) => {
+            updates.push({
+              id: node.id,
+              x,
+              y: startY + index * columnSpacing,
+            });
+          });
+        });
+        return;
+      }
+
       bucket.forEach((node, index) => {
         const type = this.getNodeType(node);
         let targetX = xBase;
@@ -1970,10 +2083,84 @@ export class ParseGraph {
     return updates;
   }
 
+  buildFocusOrbitPositions(nodes, edges = []) {
+    const baseUpdates = this.buildVerticalLanePositions(nodes, edges);
+    const updatesById = new Map(baseUpdates.map((item) => [item.id, { ...item }]));
+    const visibleNodes = (nodes || []).filter((node) => !node.hidden);
+    const byType = (types) => visibleNodes.filter((node) => types.includes(this.getNodeType(node)));
+    const focusNodes = byType(['DisputeFocus']);
+    const elementNodes = byType(['LegalProvisionElement']);
+    const lawNodes = byType(['LegalProvision', 'Law', 'LegalNorm']);
+    const judgmentNodes = byType(['JudgmentResult']);
+    const summaryNodes = byType(['CaseSummary']);
+    const centerX = Math.round((MAIN_LANE_X.lawLane + MAIN_LANE_X.resultLane) / 2);
+    const centerY = 520;
+
+    const placeArc = (items, { radius, startDeg, endDeg, xOffset = 0, yOffset = 0 }) => {
+      if (!items.length) return;
+      items.forEach((node, index) => {
+        const ratio = items.length === 1 ? 0.5 : index / Math.max(1, items.length - 1);
+        const angle = (startDeg + (endDeg - startDeg) * ratio) * (Math.PI / 180);
+        updatesById.set(node.id, {
+          id: node.id,
+          x: Math.round(centerX + Math.cos(angle) * radius + xOffset),
+          y: Math.round(centerY + Math.sin(angle) * radius + yOffset),
+        });
+      });
+    };
+
+    const adaptiveRadius = (count, baseRadius, minGap, arcSpanDeg) => {
+      if (count <= 1) return baseRadius;
+      const spanRad = (arcSpanDeg * Math.PI) / 180;
+      return Math.max(baseRadius, Math.round(((count - 1) * minGap) / Math.max(spanRad, 0.8)));
+    };
+
+    const placeColumn = (items, { x, spacing, startY = centerY }) => {
+      if (!items.length) return;
+      const topY = startY - ((items.length - 1) * spacing) / 2;
+      items.forEach((node, index) => {
+        updatesById.set(node.id, {
+          id: node.id,
+          x,
+          y: Math.round(topY + index * spacing),
+        });
+      });
+    };
+
+    const lawArcSpan = 140;
+    const resultArcSpan = 140;
+    const summaryArcSpan = 110;
+    const lawRadius = adaptiveRadius(lawNodes.length, 360, 92, lawArcSpan);
+    const judgmentRadius = adaptiveRadius(judgmentNodes.length, 360, 92, resultArcSpan);
+    const summaryRadius = adaptiveRadius(summaryNodes.length, 445, 104, summaryArcSpan);
+
+    // Keep provision elements in their original lane so the "法条元素区" remains stable.
+    placeColumn(
+      elementNodes,
+      {
+        x: MAIN_LANE_X.elementLane,
+        spacing: 148,
+        startY: centerY - 170,
+      }
+    );
+    placeColumn(focusNodes, { x: centerX, spacing: 132, startY: centerY });
+    placeArc(lawNodes, { radius: lawRadius, startDeg: 110, endDeg: 250 });
+    placeArc(judgmentNodes, { radius: judgmentRadius, startDeg: -70, endDeg: 70 });
+    placeArc(summaryNodes, { radius: summaryRadius, startDeg: -55, endDeg: 55, yOffset: -12 });
+
+    return Array.from(updatesById.values());
+  }
+
+  buildLayoutPositions(nodes, edges = [], state = store.getState()) {
+    return (state.parseGraphLayoutMode || this.layoutMode || 'lane') === 'focus_orbit'
+      ? this.buildFocusOrbitPositions(nodes, edges)
+      : this.buildVerticalLanePositions(nodes, edges);
+  }
+
   apply2DLayout() {
     const nodes = this.nodesDs.get();
     const edges = this.edgesDs.get();
-    this.nodesDs.update(this.buildVerticalLanePositions(nodes, edges));
+    this.nodesDs.update(this.buildLayoutPositions(nodes, edges, store.getState()));
 
     this.applyClustering();
 
@@ -1993,34 +2180,43 @@ export class ParseGraph {
     if (!host) return;
     
     let overlay = host.querySelector('.term-zone-overlay');
-    const zoneDefs = [
-      { key: 'caseLane', title: '案件区', desc: 'CourtCase 主轴', x: MAIN_LANE_X.caseLane, y: 24 },
-      { key: 'subjectLane', title: '主体区', desc: '案件当事人', x: MAIN_LANE_X.subjectLane, y: 28 },
-      { key: 'evidenceLane', title: '证据区', desc: '证据材料', x: MAIN_LANE_X.evidenceLane, y: 28 },
-      { key: 'factLane', title: '事实区', desc: '案件事实', x: MAIN_LANE_X.factLane, y: 28 },
-      { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, y: 28 },
-      { key: 'lawLane', title: '法条区', desc: '法条依据', x: MAIN_LANE_X.lawLane, y: 28 },
-      { key: 'resultLane', title: '裁判区', desc: '焦点与结果', x: MAIN_LANE_X.resultLane, y: 28 },
-    ];
+    const zoneDefs = this.getLayoutMode() === 'focus_orbit'
+      ? [
+          { key: 'factLane', title: '事实区', desc: '证据与事实上游', x: MAIN_LANE_X.factLane - 40, screenTop: 8 },
+          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 18 },
+          { key: 'focusCore', title: '争点核心', desc: 'DisputeFocus 中心', x: Math.round((MAIN_LANE_X.lawLane + MAIN_LANE_X.resultLane) / 2), screenTop: 18 },
+          { key: 'lawLane', title: '法条半环', desc: '法条与依据', x: MAIN_LANE_X.lawLane - 40, screenTop: 18 },
+          { key: 'resultLane', title: '裁判半环', desc: '裁判与结果', x: MAIN_LANE_X.resultLane, screenTop: 18 },
+        ]
+      : [
+          { key: 'caseLane', title: '案件区', desc: 'CourtCase 主轴', x: MAIN_LANE_X.caseLane, screenTop: 18 },
+          { key: 'subjectLane', title: '主体区', desc: '案件当事人', x: MAIN_LANE_X.subjectLane, screenTop: 18 },
+          { key: 'evidenceLane', title: '证据区', desc: '证据材料', x: MAIN_LANE_X.evidenceLane, screenTop: 18 },
+          { key: 'factLane', title: '事实区', desc: '案件事实', x: MAIN_LANE_X.factLane, screenTop: 18 },
+          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 18 },
+          { key: 'lawLane', title: '法条区', desc: '法条依据', x: MAIN_LANE_X.lawLane, screenTop: 18 },
+          { key: 'resultLane', title: '裁判区', desc: '焦点与结果', x: MAIN_LANE_X.resultLane, screenTop: 18 },
+        ];
 
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'term-zone-overlay';
-      overlay.innerHTML = zoneDefs.map(zone => 
-        `<div class="term-zone-badge" data-zone="${zone.key}"><span class="term-zone-title">${zone.title}</span><span class="term-zone-desc">${zone.desc}</span></div>`
-      ).join('');
       host.appendChild(overlay);
     }
+    overlay.innerHTML = zoneDefs.map(zone => 
+      `<div class="term-zone-badge" data-zone="${zone.key}"><span class="term-zone-title">${zone.title}</span><span class="term-zone-desc">${zone.desc}</span></div>`
+    ).join('');
     
     zoneDefs.forEach(zone => {
       const badge = overlay.querySelector(`[data-zone="${zone.key}"]`);
       if (!badge) return;
-      const domPos = this.network.canvasToDOM({ x: zone.x, y: zone.y });
-      const within = domPos && domPos.x >= 32 && domPos.x <= (host.clientWidth - 32) && domPos.y >= 28 && domPos.y <= (host.clientHeight - 28);
+      const domPos = this.network.canvasToDOM({ x: zone.x, y: 0 });
+      const top = zone.screenTop ?? 10;
+      const within = domPos && domPos.x >= 32 && domPos.x <= (host.clientWidth - 32) && top >= 0 && top <= (host.clientHeight - 28);
       badge.classList.toggle('zone-hidden', !within);
       if (within) {
         badge.style.left = domPos.x + 'px';
-        badge.style.top = domPos.y + 'px';
+        badge.style.top = `${top}px`;
       }
     });
   }
@@ -2095,6 +2291,18 @@ export class ParseGraph {
   }
 
   render(state) {
+    const nextLayoutMode = state.parseGraphLayoutMode || 'lane';
+    const layoutChanged = nextLayoutMode !== this.layoutMode;
+    if (layoutChanged) {
+      this.layoutMode = nextLayoutMode;
+      this.syncToolButtonStates();
+      if (state.parseGraphData) {
+        this.syncRenderedGraph();
+        this.apply2DLayout();
+      }
+      return;
+    }
+
     if (state.parseGraphData && state.parseGraphData !== this.lastRenderedData) {
       this.lastRenderedData = state.parseGraphData;
       

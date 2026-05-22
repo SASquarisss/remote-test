@@ -673,13 +673,14 @@ body.detail-panel-docked.detail-panel-open #parseTerminal {
   position: absolute; inset: 0; pointer-events: none; z-index: 3;
 }
 .term-zone-badge {
-  position: absolute; transform: translate(-50%, -50%);
+  position: absolute; transform: translateX(-50%);
   display: inline-flex; flex-direction: column; gap: 2px;
   padding: 6px 10px; border-radius: 10px;
   background: rgba(255,255,255,0.84); border: 1px solid rgba(148,163,184,0.32);
   box-shadow: 0 10px 24px rgba(15,23,42,0.08); backdrop-filter: blur(2px);
   max-width: 140px; transition: opacity 0.18s ease, transform 0.18s ease;
   pointer-events: none;
+  z-index: 6;
 }
 .term-zone-badge.zone-hidden {
   opacity: 0;

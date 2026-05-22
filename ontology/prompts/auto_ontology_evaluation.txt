@@ -89,6 +89,7 @@
 - `applies_standard`: `CourtCase` -> `SentencingStandard` | cardinality=`many_to_many`
 - `belongs_to`: `LegalProvision` -> `Law` | cardinality=`many_to_one`
 - `cites_guiding_case`: `CourtCase` -> `GuidingCase` | cardinality=`many_to_many`
+- `concerns_focus`: `LegalSubject` -> `DisputeFocus` | cardinality=`many_to_many`
 - `employs`: `Procuratorate` -> `Prosecutor` | cardinality=`one_to_many`
 - `employs_attorney`: `LawFirm` -> `Attorney` | cardinality=`one_to_many`
 - `guides_case_type`: `GuidingCase` -> `CaseType` | cardinality=`one_to_many`
@@ -100,8 +101,11 @@
 - `includes_clerk`: `TrialOrganization` -> `Clerk` | cardinality=`one_to_one`
 - `leads_to`: `['Fact', 'DisputeFocus']` -> `JudgmentResult` | cardinality=`many_to_many`
 - `matches_element`: `Fact` -> `LegalProvisionElement` | cardinality=`many_to_many`
+- `participates_in_case`: `LegalSubject` -> `CourtCase` | cardinality=`many_to_many`
 - `plays_role`: `LegalSubject` -> `LegalRole` | cardinality=`many_to_many`
 - `prosecutes`: `Procuratorate` -> `CourtCase` | cardinality=`one_to_many`
+- `receives_judgment`: `LegalSubject` -> `JudgmentResult` | cardinality=`many_to_many`
+- `relates_to_fact`: `LegalSubject` -> `Fact` | cardinality=`many_to_many`
 - `represents`: `Attorney` -> `LegalSubject` | cardinality=`many_to_many`
 - `retries_from`: `CourtCase` -> `CourtCase` | cardinality=`one_to_one`
 - `signed_by`: `LegalDocument` -> `Judge` | cardinality=`many_to_one`
@@ -110,13 +114,26 @@
 - `typically_applies`: `CaseType` -> `LegalProvision` | cardinality=`many_to_many`
 - `undertakes`: `Judge` -> `CourtCase` | cardinality=`one_to_many`
 
+## 自动补图关系
+
+- `element_of_provision`: `LegalProvisionElement` -> `LegalProvision` | derivation=`provision_index` | 通过 legal_provision_elements[].provision_index 自动补图，不要求模型在 relations 中显式输出。
+- `relates_to_fact`: `LegalSubject` -> `Fact` | derivation=`text_alignment` | 当主体名称在事实描述中命中，且案号上下文一致时，自动补主体到事实关系。
+- `participates_in_case`: `LegalSubject` -> `CourtCase` | derivation=`case_membership` | 当主体 roles 中存在案号信息时，自动补主体到案件的参与关系。
+- `concerns_focus`: `LegalSubject` -> `DisputeFocus` | derivation=`layered_bridge` | 先使用主体直连争点命中，若缺失则仅允许基于主体已锚定的事实桥接到争点。
+- `receives_judgment`: `LegalSubject` -> `JudgmentResult` | derivation=`judgment_alignment` | 当主体名称在裁判主文或说理中被明确指向时，自动补主体到裁判结果关系。
+- `relates_to_focus`: `Fact` -> `DisputeFocus` | derivation=`semantic_bridge` | 当事实与争点共享主体锚点或核心语义关键词时，自动补事实到争点关系。
+- `leads_to`: `DisputeFocus` -> `JudgmentResult` | derivation=`case_link_bridge` | 当争点与裁判结果属于同一案号且缺少显式边时，自动补争点到裁判结果关系。
+- `judgment_cites`: `JudgmentResult` -> `LegalProvision` | derivation=`case_link_bridge` | 当裁判结果与法条属于同一案号且缺少显式边时，自动补裁判结果到法条关系。
+- `resolved_by`: `DisputeFocus` -> `LegalProvision` | derivation=`compose_chain` | 当争点已连接裁判结果，且裁判结果已连接法条时，自动补争点到法条的解决关系。
+
 ## 图谱关键检查项
 
 - `facts`、`dispute_focuses`、`relations` 是当前抽取链的核心评估对象，不可仅按旧式摘要字段替代。
 - 若存在 `facts`，优先检查是否有 `has_fact`、`proves_fact` 等关系将事实挂到案件与证据上。
-- 若存在 `dispute_focuses`，优先检查是否有 `has_dispute_focus`、`resolved_by` 等关系形成“案件 -> 争议焦点 -> 裁判/法条”主链。
+- 若存在 `dispute_focuses`，优先检查是否有 `has_dispute_focus`、`leads_to`、`resolved_by` 等关系形成“案件 -> 争议焦点 -> 裁判结果/法条”主链。
 - 若存在 `evidence`，需检查是否通过 `submitted_for` 指向案件，并通过 `proves_fact` 指向 `Fact` 或 `DisputeFocus`。
-- 若存在 `judgment_results` 与 `legal_provisions`，需检查是否形成 `based_on` / `judgment_cites` 等裁判依据链。
+- 若存在 `judgment_results` 与 `legal_provisions`，需检查是否形成 `judgment_cites` 等裁判依据链。
+- 自动补图关系用于结构补全，不应替代 schema 原生关系；评估时要区分“模型未显式抽取”与“后处理可自动派生”。
 - 关系合法性需要检查 `source_id`、`target_id` 是否真实引用到输出中的节点，而不是悬空引用。
 
 ## 第一部分：解析结果评估 parsing_evaluation

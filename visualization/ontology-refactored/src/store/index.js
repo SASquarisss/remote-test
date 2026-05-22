@@ -33,6 +33,7 @@ export const store = new Store({
   terminalCollapsed: false,
   terminalHeightPx: null,
   parseGraphDisplayMode: 'skeleton',
+  parseGraphLayoutMode: 'lane',
   parseGraphExpandedGroups: {},
   parseGraphSemanticZoom: 'mid',
   parseVersions: [],

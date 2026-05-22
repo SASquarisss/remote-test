@@ -798,8 +798,8 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 - **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
 - **事实节点（facts）必须显式输出**：至少提取 1-3 条可以独立成立的关键事实，每条事实应保持客观表述，并填写 `content`、`fact_type`、`case_number`；不要只把事实塞进 `case_summary.key_facts`。
 - **争议焦点节点（dispute_focuses）必须显式输出**：至少提取 1 条焦点，填写 `content`、`case_number`；不要只把焦点塞进 `case_summary.disputed_issues`。
-- **关系边（relations）不得空置**：若已抽到证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`judgment_cites`、`submitted_for`。
-- **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
+- **关系边（relations）不得空置**：若已抽到主体、证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `relates_to_fact`、`receives_judgment`、`proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`judgment_cites`、`submitted_for`。
+- **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某主体参与某事实”“某主体对应某裁判结果”“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
 - **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 """
 

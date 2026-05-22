@@ -27,8 +27,8 @@
 - **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
 - **事实节点（facts）必须显式输出**：至少提取 1-3 条可以独立成立的关键事实，每条事实应保持客观表述，并填写 `content`、`fact_type`、`case_number`；不要只把事实塞进 `case_summary.key_facts`。
 - **争议焦点节点（dispute_focuses）必须显式输出**：至少提取 1 条焦点，填写 `content`、`case_number`；不要只把焦点塞进 `case_summary.disputed_issues`。
-- **关系边（relations）不得空置**：若已抽到证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`based_on`、`submitted_for`。
-- **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
+- **关系边（relations）不得空置**：若已抽到主体、证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `relates_to_fact`、`receives_judgment`、`proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`judgment_cites`、`submitted_for`。
+- **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某主体参与某事实”“某主体对应某裁判结果”“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
 - **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 
 ## 枚举值约束（自动生成 - 必须严格遵守）
@@ -232,6 +232,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
 | `belongs_to` | `LegalProvision` | `Law` | `many_to_one` | 法律条文归属法律 |
 | `cites` | `CourtCase` | `LegalProvision` | `many_to_many` | 案件引用法律条文 |
 | `cites_guiding_case` | `CourtCase` | `GuidingCase` | `many_to_many` | 案件引用指导性案例 |
+| `concerns_focus` | `LegalSubject` | `DisputeFocus` | `many_to_many` | 主体与某一争议焦点存在直接对应、主张或被评价关系 |
 | `employs` | `Procuratorate` | `Prosecutor` | `one_to_many` | 检察院雇佣检察官 |
 | `employs_attorney` | `LawFirm` | `Attorney` | `one_to_many` | 律所雇佣律师 |
 | `guides_case_type` | `GuidingCase` | `CaseType` | `one_to_many` | 指导性案例指导案由适用 |
@@ -246,9 +247,12 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
 | `judgment_cites` | `JudgmentResult` | `LegalProvision` | `many_to_many` | 裁判结果依据法律条文 |
 | `leads_to` | `['Fact', 'DisputeFocus']` | `JudgmentResult` | `many_to_many` | 事实/争议焦点推导出裁判结果（三段论推理的结论链路） |
 | `matches_element` | `Fact` | `LegalProvisionElement` | `many_to_many` | 案件事实匹配法条构成要件要素（三段论推理的小前提→大前提匹配） |
+| `participates_in_case` | `LegalSubject` | `CourtCase` | `many_to_many` | 主体作为案件参与方进入特定案件上下文 |
 | `plays_role` | `LegalSubject` | `LegalRole` | `many_to_many` | 主体在案件中担任角色 |
 | `prosecutes` | `Procuratorate` | `CourtCase` | `one_to_many` | 检察院公诉案件 |
 | `proves_fact` | `Evidence` | `Fact, DisputeFocus` | `many_to_many` | 证据证明案件事实/争议焦点 |
+| `receives_judgment` | `LegalSubject` | `JudgmentResult` | `many_to_many` | 主体对应某一裁判结果、处理结果或责任结果 |
+| `relates_to_fact` | `LegalSubject` | `Fact` | `many_to_many` | 主体参与、经历或关联某一案件事实 |
 | `represents` | `Attorney` | `LegalSubject` | `many_to_many` | 律师代理当事人 |
 | `resolved_by` | `DisputeFocus` | `LegalProvision` | `many_to_many` | 争议焦点由法律条文解决（争议焦点→法条映射） |
 | `retries_from` | `CourtCase` | `CourtCase` | `one_to_one` | 再审案件源自原审案件 |
@@ -266,9 +270,19 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
 - 如果某关系仅在字段层出现但未形成实体间连接，不要强行写入 relations。
 
 ### 自动补图关系（不进入 relations）
-- `legal_provision_elements` 通过 `provision_index` 回连 `legal_provisions` 的对应法条，这类结构性连接由后处理自动补图。
-- 不要在 `relations` 中重复输出 `LegalProvisionElement -> LegalProvision` 这类纯结构派生边。
-- `matches_element` 这类需要语义判断的关系仍然必须显式输出到 `relations`。
+- 下表关系由结构字段稳定推导，仅用于图谱补全；不要在 `relations` 中重复输出这些边。
+
+| 关系名 | 起点类型 | 终点类型 | 生成方式 | 说明 |
+|---|---|---|---|---|
+| `element_of_provision` | `LegalProvisionElement` | `LegalProvision` | `provision_index` | 通过 legal_provision_elements[].provision_index 自动补图，不要求模型在 relations 中显式输出。 |
+| `relates_to_fact` | `LegalSubject` | `Fact` | `text_alignment` | 当主体名称在事实描述中命中，且案号上下文一致时，自动补主体到事实关系。 |
+| `participates_in_case` | `LegalSubject` | `CourtCase` | `case_membership` | 当主体 roles 中存在案号信息时，自动补主体到案件的参与关系。 |
+| `concerns_focus` | `LegalSubject` | `DisputeFocus` | `layered_bridge` | 先使用主体直连争点命中，若缺失则仅允许基于主体已锚定的事实桥接到争点。 |
+| `receives_judgment` | `LegalSubject` | `JudgmentResult` | `judgment_alignment` | 当主体名称在裁判主文或说理中被明确指向时，自动补主体到裁判结果关系。 |
+| `relates_to_focus` | `Fact` | `DisputeFocus` | `semantic_bridge` | 当事实与争点共享主体锚点或核心语义关键词时，自动补事实到争点关系。 |
+| `leads_to` | `DisputeFocus` | `JudgmentResult` | `case_link_bridge` | 当争点与裁判结果属于同一案号且缺少显式边时，自动补争点到裁判结果关系。 |
+| `judgment_cites` | `JudgmentResult` | `LegalProvision` | `case_link_bridge` | 当裁判结果与法条属于同一案号且缺少显式边时，自动补裁判结果到法条关系。 |
+| `resolved_by` | `DisputeFocus` | `LegalProvision` | `compose_chain` | 当争点已连接裁判结果，且裁判结果已连接法条时，自动补争点到法条的解决关系。 |
 
 
 ## 输出 JSON Schema（自动生成 — 严格遵循此结构）
@@ -427,7 +441,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
     {
       "source_id": "",
       "target_id": "",
-      "relation_type": "appeals_to|applies_standard|based_on|belongs_to|cites|cites_guiding_case|employs|employs_attorney|guides_case_type|has_case_type|has_dispute_focus|has_fact|has_jurisdiction_over|has_summary|has_version|includes|includes_clerk|judgment_cites|leads_to|matches_element|plays_role|prosecutes|proves_fact|represents|resolved_by|retries_from|signed_by|submitted_for|superseded_by|tried_by|typically_applies|undertakes",
+      "relation_type": "appeals_to|applies_standard|based_on|belongs_to|cites|cites_guiding_case|concerns_focus|employs|employs_attorney|guides_case_type|has_case_type|has_dispute_focus|has_fact|has_jurisdiction_over|has_summary|has_version|includes|includes_clerk|judgment_cites|leads_to|matches_element|participates_in_case|plays_role|prosecutes|proves_fact|receives_judgment|relates_to_fact|represents|resolved_by|retries_from|signed_by|submitted_for|superseded_by|tried_by|typically_applies|undertakes",
       "description": "引用文本依据简述"
     }
   ]
@@ -707,12 +721,6 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
     },
     {
       "source_id": "fact_1",
-      "target_id": "prov_elem_0",
-      "relation_type": "matches_element",
-      "description": "主播在公开直播中指向性评价并引导网民辱骂，匹配名誉权侵害构成中的行为要件。"
-    },
-    {
-      "source_id": "fact_1",
       "target_id": "dispute_focus_0",
       "relation_type": "has_dispute_focus",
       "description": ""
@@ -726,7 +734,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
     {
       "source_id": "dispute_focus_0",
       "target_id": "judgment_result_1",
-      "relation_type": "leads_to",
+      "relation_type": "resolved_by",
       "description": ""
     }
   ]
