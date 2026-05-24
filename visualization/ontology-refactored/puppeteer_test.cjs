@@ -9,7 +9,7 @@ const puppeteer = require('puppeteer');
   page.on('requestfailed', request => console.log('REQUEST FAILED:', request.url(), request.failure().errorText));
 
   try {
-    await page.goto('http://localhost:5174/', { waitUntil: 'networkidle0' });
+    await page.goto('http://124.222.18.99:5174/', { waitUntil: 'networkidle0' });
     console.log('Page loaded');
   } catch (e) {
     console.log('Error loading page:', e);

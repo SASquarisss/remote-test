@@ -172,24 +172,41 @@ async function loadCaseIndexes({ silent = false } = {}) {
   }
 }
 
-async function hydrateSelectedCase(caseKey) {
-  const state = store.getState();
-  if (!caseKey) return;
-  if (state.data.caseDetailMap[caseKey]) return;
+async function hydrateSelectedCases(state) {
+  const selectedKeys = state.selection.selectedCaseKeys || [];
+  const activeKey = state.selection.activeCaseKey;
+  
+  const keysToLoad = new Set();
+  if (activeKey) keysToLoad.add(activeKey);
+  selectedKeys.forEach(k => keysToLoad.add(k));
 
-  const entry = getActiveCaseEntry(state);
-  if (!entry) return;
+  if (keysToLoad.size === 0) return;
+
+  const currentMap = state.data.caseDetailMap;
+  const missingKeys = Array.from(keysToLoad).filter(k => !currentMap[k]);
+
+  if (missingKeys.length === 0) return;
 
   store.update('ui', { loading: true });
   try {
-    const detail = entry.recordSource === 'static'
-      ? await fetchAdminStaticCase(entry.row_id, entry.version)
-      : await fetchSavedCase(entry.row_id);
-    const nextMap = { ...store.getState().data.caseDetailMap, [caseKey]: detail };
+    const nextMap = { ...currentMap };
+    
+    // 并行请求所有缺失的数据
+    const promises = missingKeys.map(async (caseKey) => {
+      const entry = state.data.casesIndex.find(e => e.caseKey === caseKey);
+      if (!entry) return;
+      const detail = entry.recordSource === 'static'
+        ? await fetchAdminStaticCase(entry.row_id, entry.version)
+        : await fetchSavedCase(entry.row_id);
+      nextMap[caseKey] = detail;
+    });
+
+    await Promise.all(promises);
+    
     store.update('data', { caseDetailMap: nextMap });
-    updateStatus(`已加载案例详情：${entry.case_name}`);
+    updateStatus(`已加载 ${missingKeys.length} 个案例详情`);
   } catch (error) {
-    updateStatus(`加载案例详情失败：${error.message}`, error.message);
+    updateStatus(`批量加载案例详情失败：${error.message}`, error.message);
   } finally {
     store.update('ui', { loading: false });
   }
@@ -257,21 +274,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     app.style.setProperty('--db-schema-top', `${topHeight + 16}px`);
   };
 
-  let lastCaseKey = null;
+  let lastSelectedSignature = '';
   store.subscribe(state => {
     applyDatabaseLayout(state);
     const actionButton = topNavBar.container?.querySelector('[data-action-key="toggle-schema"]');
     if (actionButton) {
       actionButton.textContent = state.panels.schemaOpen ? '收起本体导航' : '打开本体导航';
     }
-    const currentCaseKey = state.selection.activeCaseKey;
-    if (!currentCaseKey) {
-      lastCaseKey = null;
-      return;
-    }
-    if (currentCaseKey !== lastCaseKey) {
-      lastCaseKey = currentCaseKey;
-      hydrateSelectedCase(currentCaseKey);
+    
+    // 监听多选或单选变化，触发批量加载
+    const selectedKeys = state.selection.selectedCaseKeys || [];
+    const activeKey = state.selection.activeCaseKey;
+    const signature = [activeKey, ...selectedKeys].filter(Boolean).sort().join('|');
+    
+    if (signature && signature !== lastSelectedSignature) {
+      lastSelectedSignature = signature;
+      hydrateSelectedCases(state);
+    } else if (!signature) {
+      lastSelectedSignature = '';
     }
   });
 

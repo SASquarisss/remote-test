@@ -1,7 +1,6 @@
 import { Network } from 'vis-network';
 import { store } from '../store/index.js';
-import { TYPE_NAMES, ZH_LABELS } from '../data/schema.js';
-import { getOntologyRelationEdges } from '../data/relationModel.js';
+import { TYPE_NAMES, RELATION_EDGES, ZH_LABELS } from '../data/schema.js';
 import { bindCustomPan } from '../utils/pan.js';
 
 export class OntologyGraph {
@@ -9,15 +8,6 @@ export class OntologyGraph {
     this.container = document.getElementById(containerId);
     this.host = document.getElementById('ontologyNetworkHost') || this.container;
     this.network = null;
-    this.relayoutTimer = null;
-    this.resizeObserver = null;
-    this.miniFrameDefaults = {
-      top: '54px',
-      left: '20px',
-      width: '460px',
-      height: '520px'
-    };
-    this.initializeFrameVars();
     const header = document.getElementById('ontologyHeader');
       if (header) {
         header.addEventListener('click', (e) => {
@@ -33,53 +23,14 @@ export class OntologyGraph {
             tab.style.color = '#fff';
             
             const targetId = tab.getAttribute('data-target');
-            const targetEl = targetId ? document.getElementById(targetId) : null;
             document.querySelectorAll('.onto-tab-content').forEach(c => c.style.display = 'none');
-            if (targetEl) {
-              targetEl.style.display = 'block';
-            }
-            this.scheduleRelayout({ fit: false, delay: 40 });
+            document.getElementById(targetId).style.display = 'block';
           }
         });
       }
       
       this.init();
     this.bindFloatingEvents();
-    this.bindResizeObserver();
-  }
-
-  initializeFrameVars() {
-    if (!this.container) return;
-    this.container.style.setProperty('--workspace-terminal-height', '0px');
-    this.container.style.setProperty('--ontology-mini-top', this.miniFrameDefaults.top);
-    this.container.style.setProperty('--ontology-mini-left', this.miniFrameDefaults.left);
-    this.container.style.setProperty('--ontology-mini-width', this.miniFrameDefaults.width);
-    this.container.style.setProperty('--ontology-mini-height', this.miniFrameDefaults.height);
-  }
-
-  scheduleRelayout({ fit = false, delay = 80 } = {}) {
-    if (!this.network) return;
-    window.clearTimeout(this.relayoutTimer);
-    this.relayoutTimer = window.setTimeout(() => {
-      if (!this.network || this.container.style.display === 'none') return;
-      this.network.setSize('100%', '100%');
-      this.network.redraw();
-      if (fit) {
-        this.network.fit({ animation: true });
-      }
-    }, delay);
-  }
-
-  bindResizeObserver() {
-    if (!this.container || typeof ResizeObserver === 'undefined') return;
-    this.resizeObserver = new ResizeObserver(() => {
-      if (!this.container.classList.contains('mini-mode')) return;
-      const rect = this.container.getBoundingClientRect();
-      this.container.style.setProperty('--ontology-mini-width', `${Math.round(rect.width)}px`);
-      this.container.style.setProperty('--ontology-mini-height', `${Math.round(rect.height)}px`);
-      this.scheduleRelayout({ fit: false, delay: 30 });
-    });
-    this.resizeObserver.observe(this.container);
   }
 
   init() {
@@ -108,25 +59,13 @@ export class OntologyGraph {
       };
     });
     
-    const edges = getOntologyRelationEdges().map(edge => ({
-      id: edge.id,
-      from: edge.fromType,
-      to: edge.toType,
-      label: edge.label,
-      relationType: edge.relationType,
-      edgeSource: edge.source,
-      description: edge.description,
-      derivationKind: edge.derivationKind || '',
+    const edges = RELATION_EDGES.map((e, idx) => ({ 
+      id: `edge_${idx}`,
+      from: e[1], 
+      to: e[2], 
+      label: e[0],
       arrows: 'to',
-      dashes: edge.source === 'derived' ? [6, 4] : false,
-      color: edge.source === 'derived' ? { color: '#6366f1' } : { color: '#94a3b8' },
-      font: {
-        size: 11,
-        color: edge.source === 'derived' ? '#4338ca' : '#64748b',
-        align: 'horizontal',
-        strokeWidth: 2,
-        strokeColor: '#ffffff'
-      }
+      color: { color: '#94a3b8' }
     }));
     
     const data = { nodes, edges };
@@ -139,8 +78,7 @@ export class OntologyGraph {
       edges: {
         width: 1,
         color: { color: '#b3b3b3', highlight: '#3498db' },
-        smooth: { type: 'continuous' },
-        font: { size: 11, color: '#64748b', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' }
+        smooth: { type: 'continuous' }
       },
       physics: {
         solver: 'barnesHut',
@@ -171,7 +109,6 @@ export class OntologyGraph {
     };
     
     this.network = new Network(this.host, data, options);
-    this.ensureRelationLegend();
 
     // Support wheel zoom in mini-mode explicitly
     this.host.addEventListener('wheel', (e) => {
@@ -187,26 +124,21 @@ export class OntologyGraph {
       // 稳定后关闭物理引擎，防止持续浮动
       this.network.setOptions({ physics: { enabled: false } });
     });
-    this.scheduleRelayout({ fit: true, delay: 40 });
+
+    this.network.on('dragStart', () => {
+      this.network.setOptions({ physics: { enabled: false } });
+    });
 
     bindCustomPan(this.network, this.container);
     
     this.network.on('click', (params) => {
       if (params.nodes.length > 0) {
         const nodeId = params.nodes[0];
-        
-        // Ensure state is updated, including triggering the locateTarget for the JSON view
         store.setState({
           selectedNodeId: nodeId,
           selectedEdgeId: null,
           selectedGraph: 'ontology',
-          isPanelOpen: true,
-          // Fire locateTarget to trigger TerminalPanel JSON highlight logic
-          locateTarget: {
-            sourceGraph: 'parse', // use 'parse' so TerminalPanel treats it as a JSON focus request
-            typeKey: nodeId,
-            timestamp: Date.now()
-          }
+          isPanelOpen: true
         });
         
         // Auto-focus on clicked node
@@ -216,15 +148,14 @@ export class OntologyGraph {
         });
       } else if (params.edges.length > 0) {
         const edgeId = params.edges[0];
-        const edge = this.network.body.data.edges.get(edgeId);
         store.setState({
           selectedNodeId: null,
           selectedEdgeId: edgeId,
-          ontologyEdgeData: edge || null,
           selectedGraph: 'ontology',
           isPanelOpen: true
         });
-
+        
+        const edge = this.network.body.data.edges.get(edgeId);
         if (edge) {
           const fromNode = this.network.body.nodes[edge.from];
           const toNode = this.network.body.nodes[edge.to];
@@ -253,6 +184,7 @@ export class OntologyGraph {
       store.setState({ hoverOntologyType: null });
     });
 
+    let lastLocateTarget = null;
     // Subscribe to store changes to reflect selections from ParseGraph or Issues
     store.subscribe((state) => {
       // Update node counts based on parseGraphData
@@ -297,17 +229,6 @@ export class OntologyGraph {
     });
   }
 
-  ensureRelationLegend() {
-    if (!this.container || this.container.querySelector('.ontology-relation-legend')) return;
-    const legend = document.createElement('div');
-    legend.className = 'ontology-relation-legend';
-    legend.innerHTML = `
-      <span class="legend-item"><span class="legend-line solid"></span><span>本体原生关系</span></span>
-      <span class="legend-item"><span class="legend-line dashed"></span><span>自动补图关系</span></span>
-    `;
-    this.container.appendChild(legend);
-  }
-
   bindFloatingEvents() {
     const ohClose = document.getElementById('ohClose');
     if (ohClose) {
@@ -322,26 +243,10 @@ export class OntologyGraph {
       ohToggleFull.addEventListener('click', () => {
         const isMini = this.container.classList.contains('mini-mode');
         if (isMini) {
-          store.setState({
-            workspaceLayoutMode: 'ontology_primary',
-            isOntologyVisible: true
-          });
+          this.setMainMode();
         } else {
-          store.setState({
-            workspaceLayoutMode: store.getState().isParseResultAvailable ? 'parse_primary' : 'ontology_primary',
-            isOntologyVisible: true
-          });
+          this.setMiniMode();
         }
-      });
-    }
-
-    const restoreFloatBtn = document.getElementById('ontologyRestoreFloat');
-    if (restoreFloatBtn) {
-      restoreFloatBtn.addEventListener('click', () => {
-        store.setState({
-          workspaceLayoutMode: store.getState().isParseResultAvailable ? 'parse_primary' : 'ontology_primary',
-          isOntologyVisible: true
-        });
       });
     }
 
@@ -351,8 +256,7 @@ export class OntologyGraph {
       let startX, startY, initialLeft, initialTop;
 
       header.addEventListener('mousedown', (e) => {
-        if (!this.container.classList.contains('mini-mode')) return;
-        if (e.target.closest('button') || e.target.closest('.onto-tab')) return;
+        if (e.target.closest('button')) return;
         isDragging = true;
         startX = e.clientX;
         startY = e.clientY;
@@ -362,9 +266,8 @@ export class OntologyGraph {
 
         const onMouseMove = (moveEvent) => {
           if (!isDragging) return;
-          this.container.style.setProperty('--ontology-mini-left', `${initialLeft + moveEvent.clientX - startX}px`);
-          this.container.style.setProperty('--ontology-mini-top', `${initialTop + moveEvent.clientY - startY}px`);
-          this.scheduleRelayout({ fit: false, delay: 16 });
+          this.container.style.left = `${initialLeft + moveEvent.clientX - startX}px`;
+          this.container.style.top = `${initialTop + moveEvent.clientY - startY}px`;
         };
 
         const onMouseUp = () => {
@@ -380,31 +283,45 @@ export class OntologyGraph {
   }
 
   setMiniMode() {
-    this.container.style.display = 'block';
     this.container.classList.add('mini-mode');
-    this.container.classList.remove('main-mode');
+    this.container.style.width = '460px';
+    this.container.style.height = '520px';
+    this.container.style.top = '54px';
+    this.container.style.left = '20px';
+    this.container.style.zIndex = '998';
+    this.container.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+    this.container.style.borderRadius = '8px';
+    this.container.style.border = '1px solid #334155';
+    this.container.style.overflow = 'hidden';
+    this.container.style.backgroundColor = '#ffffff'; // remove transparent gaps
     
     const header = document.getElementById('ontologyHeader');
     if (header) {
       header.style.display = 'flex';
     }
     
-    this.scheduleRelayout({ fit: true, delay: 120 });
+    this.host.style.height = 'calc(100% - 35px)'; // Adjust for header
+    setTimeout(() => this.network.fit({ animation: true }), 350); // Wait for CSS transition
   }
 
   setMainMode() {
-    const state = store.getState();
-    const terminalHeight = state.terminalCollapsed ? 40 : (state.terminalHeightPx || 0);
-    this.container.style.display = 'block';
     this.container.classList.remove('mini-mode');
-    this.container.classList.add('main-mode');
-    this.container.style.setProperty('--workspace-terminal-height', `${terminalHeight}px`);
+    this.container.style.width = '100%';
+    this.container.style.height = '100vh';
+    this.container.style.top = '0';
+    this.container.style.left = '0';
+    this.container.style.zIndex = '2';
+    this.container.style.boxShadow = 'none';
+    this.container.style.borderRadius = '0';
+    this.container.style.border = 'none';
+    this.container.style.backgroundColor = 'transparent';
     
     const header = document.getElementById('ontologyHeader');
     if (header) {
       header.style.display = 'none';
     }
     
-    this.scheduleRelayout({ fit: true, delay: 120 });
+    this.host.style.height = '100%';
+    setTimeout(() => this.network.fit({ animation: true }), 350);
   }
 }

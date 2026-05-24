@@ -57,6 +57,21 @@ export async function fetchSavedCase(rowId) {
   return fetchJson(`/api/saved-case/${encodeURIComponent(rowId)}`);
 }
 
+export async function deleteSavedCase(rowId) {
+  return fetchJson(`/api/saved-case/${encodeURIComponent(rowId)}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function fetchSemanticLinks(nodes, threshold = 0.5) {
+  const response = await fetch(`${API_BASE}/api/graph/semantic_link`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nodes, threshold })
+  });
+  return response.json();
+}
+
 export async function fetchAdminStaticCases() {
   return fetchJson('/api/admin-static-cases');
 }

@@ -258,9 +258,9 @@ export function buildOverviewGraphData(cases = []) {
         label: sourceLabel,
         nodeType: 'SourceRoot',
         shape: 'hexagon',
-        size: 34,
+        size: 68,
         color: { background: '#1d4ed8', border: '#1e3a8a' },
-        font: { color: '#ffffff', size: 13 },
+        font: { color: '#ffffff', size: 52 },
         title: `${sourceLabel} 来源案例`
       });
     }
@@ -279,7 +279,7 @@ export function buildOverviewGraphData(cases = []) {
       version: item.version,
       meta: item.meta,
       shape: 'box',
-      size: 22,
+      size: 44,
       color: { background: '#f8fafc', border: '#94a3b8' },
       font: { color: '#0f172a', size: 12 },
       title: `${item.case_name || item.row_id}\n${typeLabel}`
@@ -296,7 +296,7 @@ export function buildOverviewGraphData(cases = []) {
       caseName: item.case_name,
       arrows: 'to',
       color: { color: '#94a3b8', opacity: 0.75 },
-      font: { size: 10, color: '#64748b', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' },
+      font: { size: 16, color: '#64748b', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' },
       smooth: { type: 'continuous' }
     });
   });
@@ -313,44 +313,6 @@ export function buildOverviewGraphData(cases = []) {
   return { mode: 'overview', nodes, edges };
 }
 
-const ROOT_COLORS = {
-  LegalNorm: { bg: '#2980b9', border: '#1a5276' },
-  JudicialEntity: { bg: '#d35400', border: '#a04000' },
-  LegalSubject: { bg: '#27ae60', border: '#1e8449' },
-  Person: { bg: '#16a085', border: '#0e6655' }
-};
-
-const ADMIN_TYPE_ROOT = {
-  GuidingCase: 'LegalNorm',
-  LegalProvision: 'LegalNorm',
-  LegalProvisionElement: 'LegalNorm',
-  CaseType: 'JudicialEntity',
-  CourtCase: 'JudicialEntity',
-  CaseSummary: 'JudicialEntity',
-  Evidence: 'JudicialEntity',
-  JudgmentResult: 'JudicialEntity',
-  Fact: 'JudicialEntity',
-  DisputeFocus: 'JudicialEntity',
-  LegalSubject: 'LegalSubject',
-  Judge: 'Person',
-  Attorney: 'Person'
-};
-
-const ADMIN_SHAPES = {
-  GuidingCase: 'hexagon',
-  CourtCase: 'box',
-  CaseType: 'diamond',
-  LegalProvision: 'hexagon',
-  LegalProvisionElement: 'square',
-  LegalSubject: 'ellipse',
-  Evidence: 'database',
-  Judge: 'ellipse',
-  Attorney: 'ellipse',
-  JudgmentResult: 'box',
-  CaseSummary: 'box',
-  Fact: 'ellipse',
-  DisputeFocus: 'star'
-};
 
 const REL_LABEL_MAP = {
   based_on: '依据',
@@ -365,35 +327,44 @@ const REL_LABEL_MAP = {
   cites: '引用'
 };
 
-function getAdminColor(typeName) {
-  return ROOT_COLORS[ADMIN_TYPE_ROOT[typeName]] || { bg: '#7f8c8d', border: '#5d6d7e' };
-}
 
-function lightenColor(hex, percent) {
-  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return '#dbeafe';
-  const num = parseInt(hex.slice(1), 16);
-  const amt = Math.round(2.55 * percent);
-  const r = Math.min(255, (num >> 16) + amt);
-  const g = Math.min(255, ((num >> 8) & 255) + amt);
-  const b = Math.min(255, (num & 255) + amt);
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-}
 
 function makeGraphPrefix(key) {
   return `g_${String(key).replace(/[^a-zA-Z0-9_]/g, '_')}_`;
 }
 
+const WORKSPACE_STYLES = {
+  CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A', fontColor: '#000000' },
+  CaseType:   { shape: 'box', color: '#fff7ed', border: '#fb923c', fontColor: '#9a3412' },
+  Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B' },
+  Judge:      { shape: 'box', color: '#dbeafe', border: '#60a5fa', fontColor: '#1d4ed8' },
+  Attorney:   { shape: 'box', color: '#ede9fe', border: '#8b5cf6', fontColor: '#6d28d9' },
+  LegalProvision: { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
+  LegalProvisionElement: { shape: 'box', color: '#eef2ff', border: '#7c8cff', fontColor: '#243b8f' },
+  Law:        { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
+  Evidence:   { shape: 'box', color: '#f7e2bf', border: '#c9852b', fontColor: '#6b3f08' },
+  Fact:       { shape: 'box', color: '#e0f2fe', border: '#0284c7', fontColor: '#0f172a' },
+  DisputeFocus: { shape: 'diamond', color: '#fef3c7', border: '#d97706', fontColor: '#92400e' },
+  JudgmentResult: { shape: 'box', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
+  LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400' },
+  CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428' },
+  LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
+  LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
+  GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C' },
+  AggregateGroup: { shape: 'box', color: '#f8fafc', border: '#94a3b8', fontColor: '#475569' }
+};
+
 function createNodeStyle(nodeType) {
-  const color = getAdminColor(nodeType);
+  const ws = WORKSPACE_STYLES[nodeType] || { shape: 'ellipse', color: '#f8fafc', border: '#94a3b8', fontColor: '#0f172a' };
   return {
-    shape: ADMIN_SHAPES[nodeType] || 'ellipse',
+    shape: ws.shape,
     color: {
-      background: lightenColor(color.bg, 38),
-      border: color.border,
-      highlight: { background: color.bg, border: color.border }
+      background: ws.color,
+      border: ws.border,
+      highlight: { background: ws.color, border: ws.border }
     },
     borderWidth: 2,
-    font: { color: '#0f172a', size: 12, strokeWidth: 2, strokeColor: '#ffffff' }
+    font: { color: ws.fontColor || '#0f172a', size: 24, strokeWidth: 2, strokeColor: '#ffffff' }
   };
 }
 
@@ -462,7 +433,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       arrows: 'to',
       color: { color: '#94a3b8', opacity: 0.8 },
       width: 1.5,
-      font: { size: 10, color: '#64748b', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' },
+      font: { size: 16, color: '#64748b', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' },
       smooth: { type: 'continuous' },
       ...(extra || {})
     });
@@ -480,7 +451,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       cc.trial_level ? `审级: ${cc.trial_level}` : '',
       cc.trial_procedure ? `程序: ${cc.trial_procedure}` : '',
       cc.judgment_date ? `裁判日期: ${cc.judgment_date}` : ''
-    ]), { courtCaseNumber: caseNumber, size: 28 });
+    ]), { courtCaseNumber: caseNumber, size: 56 });
     caseNumberToNode.set(caseNumber, ccId);
   });
 
@@ -493,7 +464,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       gc.case_level ? `层级: ${gc.case_level}` : '',
       gc.publication_date ? `发布日期: ${gc.publication_date}` : '',
       gc.guiding_points ? `裁判要旨: ${shortText(gc.guiding_points, 180)}` : ''
-    ]), { size: 26 });
+    ]), { size: 52 });
     if (firstCourtLocalId) addEdge(firstCourtLocalId, 'gc', '关联');
   }
 
@@ -504,7 +475,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       ct.category ? `类别: ${toCaseCategoryLabel(ct.category) || ct.category}` : '',
       ct.level1 ? `一级: ${ct.level1}` : '',
       ct.level2 ? `二级: ${ct.level2}` : ''
-    ]), { size: 24 });
+    ]), { size: 48 });
     if (ct.level1) addNode('ct_level1', ct.level1, 'CaseType', 1, `<b>一级案由</b><br>${ct.level1}`);
     if (ct.level2) addNode('ct_level2', ct.level2, 'CaseType', 1, `<b>二级案由</b><br>${ct.level2}`);
     if (ct.level1) addEdge('ct', 'ct_level1', '一级案由');
@@ -580,7 +551,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       element.article ? `条号: ${element.article}` : '',
       element.content ? `内容: ${shortText(element.content, 160)}` : '',
       element.applicable_fact_pattern ? `适用事实: ${shortText(element.applicable_fact_pattern, 160)}` : ''
-    ]), { size: 18 });
+    ]), { size: 36 });
   });
 
   (output.evidence || []).forEach((evid, index) => {
@@ -608,7 +579,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       jr.specific_judgment ? `具体裁判: ${shortText(jr.specific_judgment, 180)}` : '',
       jr.reasoning ? `理由: ${shortText(jr.reasoning, 180)}` : '',
       jr.case_number ? `案号: ${jr.case_number}` : ''
-    ]), { size: 24 });
+    ]), { size: 48 });
     addEdge(jr.case_number || firstCourtLocalId, jrLocal, '裁判');
   });
 
@@ -632,7 +603,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       focus.focus_type ? `类型: ${focus.focus_type}` : '',
       focus.case_number ? `案号: ${focus.case_number}` : '',
       focus.content ? `内容: ${shortText(focus.content, 180)}` : ''
-    ]), { size: 24 });
+    ]), { size: 48 });
     addEdge(focus.case_number || firstCourtLocalId, focusLocal, '争议焦点');
   });
 
@@ -644,7 +615,7 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       summary.key_facts ? `关键事实: ${shortText(summary.key_facts, 120)}` : '',
       issuesText ? `争议问题: ${shortText(issuesText, 180)}` : '',
       summary.conclusion ? `结论: ${shortText(summary.conclusion, 120)}` : ''
-    ]), { size: 22 });
+    ]), { size: 44 });
     if (firstCourtLocalId) addEdge(firstCourtLocalId, 'summary', '审理');
   }
 
@@ -669,14 +640,318 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
       isDerived: true,
       dashes: [6, 4],
       color: { color: '#6366f1', opacity: 0.86 },
-      font: { size: 10, color: '#4338ca', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' }
+      font: { size: 16, color: '#4338ca', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' }
     });
   });
 
   return { mode: 'detail', nodes, edges };
 }
 
+export function buildMultiCaseGraph(state) {
+  const selectedCaseKeys = state.selection.selectedCaseKeys || [];
+  if (selectedCaseKeys.length <= 1) {
+    return buildDatabaseGraphData(state);
+  }
+
+  const nodes = [];
+  const edges = [];
+  const nodeIds = new Set();
+  const edgeKeys = new Set();
+
+  const caseOutputs = [];
+  selectedCaseKeys.forEach((caseKey, index) => {
+    const entry = state.data.casesIndex.find(c => c.caseKey === caseKey);
+    const detail = state.data.caseDetailMap[caseKey];
+    if (entry && detail && detail.json_result) {
+      caseOutputs.push({
+        caseKey,
+        rowId: entry.row_id,
+        caseName: entry.case_name,
+        index,
+        output: detail.json_result
+      });
+    }
+  });
+
+  const totalCases = caseOutputs.length;
+  if (totalCases === 0) return { mode: 'detail', nodes: [], edges: [] };
+
+  function addNode(id, label, nodeType, fullLabel, extra = {}) {
+    if (nodeIds.has(id)) return id;
+    nodeIds.add(id);
+    const style = createNodeStyle(nodeType);
+    nodes.push({
+      id,
+      label: shortText(label, 24),
+      fullLabel: fullLabel || label,
+      nodeType,
+      title: extra.title || label,
+      shape: style.shape,
+      color: style.color,
+      borderWidth: style.borderWidth,
+      font: style.font,
+      ...extra
+    });
+    return id;
+  }
+
+  function addEdge(fromId, toId, label, extra = {}) {
+    if (!fromId || !toId) return;
+    const edgeId = `${fromId}_${label}_${toId}`;
+    if (edgeKeys.has(edgeId)) return;
+    edgeKeys.add(edgeId);
+    edges.push({
+      id: edgeId,
+      from: fromId,
+      to: toId,
+      label: label || '',
+      arrows: 'to',
+      color: { color: '#94a3b8', opacity: 0.75 },
+      font: { size: 16, color: '#64748b', align: 'horizontal', strokeWidth: 2, strokeColor: '#ffffff' },
+      smooth: { type: 'continuous' },
+      ...extra
+    });
+  }
+
+  function calculateXSpacing(index, total) {
+    const spacing = 1200;
+    const offset = (total - 1) * spacing / 2;
+    return (index * spacing) - offset;
+  }
+
+  function generateSharedId(type, content) {
+    if (!content) return null;
+    const normalized = content.replace(/\s+/g, '').toLowerCase();
+    return `shared_${type}_${normalized}`;
+  }
+
+  const SHARED_TYPES = new Set(['LegalProvision', 'CaseType', 'GuidingCase', 'Law']);
+
+  caseOutputs.forEach((caseData) => {
+    const { caseKey, index, output } = caseData;
+    const localToGlobal = new Map();
+    const caseNumberToNode = new Map();
+    let firstCourtLocalId = null;
+
+    // 强制锁定当前案件的 X 轴基础坐标
+    const baseX = calculateXSpacing(index, totalCases);
+
+    function globalId(localId) {
+      if (!localId) return null;
+      return `${caseKey}_${localId}`;
+    }
+
+    function resolveRef(ref) {
+      if (ref == null || ref === '') return '';
+      const key = String(ref);
+      if (localToGlobal.has(key)) return localToGlobal.get(key);
+      if (caseNumberToNode.has(key)) return caseNumberToNode.get(key);
+      return globalId(key);
+    }
+
+    // 1. 案件主体 (CourtCase) - T1 锚点
+    (output.court_cases || []).forEach((cc, i) => {
+      cc = cc || {};
+      const localId = `cc_${i}`;
+      if (!firstCourtLocalId) firstCourtLocalId = localId;
+      const caseNumber = cc.case_number || caseData.caseName || `case_${i}`;
+      const ccId = globalId(localId);
+      localToGlobal.set(localId, ccId);
+      caseNumberToNode.set(caseNumber, ccId);
+
+      addNode(ccId, caseNumber, 'CourtCase', caseNumber, {
+        caseKey,
+        fixed: { y: true },
+        y: 0,
+        x: baseX, // 将各个案件的主锚点水平排开
+        size: 68,
+        font: { color: '#ffffff', size: 26 },
+        title: `<b>法院案件</b>\n案号: ${caseNumber}\n法院: ${cc.court?.name || ''}`
+      });
+    });
+
+    // 如果没有 CourtCase，创建一个虚拟锚点保证布局不散架
+    if (!firstCourtLocalId) {
+      firstCourtLocalId = `virtual_anchor`;
+      const ccId = globalId(firstCourtLocalId);
+      localToGlobal.set(firstCourtLocalId, ccId);
+      addNode(ccId, caseData.caseName || '未知案件', 'CourtCase', caseData.caseName, {
+        caseKey, fixed: { y: true }, y: 0, x: baseX, size: 68, font: { color: '#ffffff', size: 26 }
+      });
+    }
+
+    // 2. 解析其他实体 (与 buildStructuredGraphFromOutput 对齐)
+    const entities = [
+      { key: 'case_summary', prefix: 'summary', type: 'CaseSummary' },
+      { key: 'case_type', prefix: 'ct', type: 'CaseType' },
+      { key: 'legal_subjects', prefix: 'subj', type: 'LegalSubject' },
+      { key: 'evidence', prefix: 'evid', type: 'Evidence' },
+      { key: 'legal_provisions', prefix: 'prov', type: 'LegalProvision' },
+      { key: 'legal_provision_elements', prefix: 'prov_elem', type: 'LegalProvisionElement' },
+      { key: 'facts', prefix: 'fact', type: 'Fact' },
+      { key: 'dispute_focuses', prefix: 'focus', type: 'DisputeFocus' },
+      { key: 'judgment_results', prefix: 'jr', type: 'JudgmentResult' },
+      { key: 'guiding_case', prefix: 'gc', type: 'GuidingCase' },
+      { key: 'judges', prefix: 'judge', type: 'Judge' },
+      { key: 'attorneys', prefix: 'atty', type: 'Attorney' }
+    ];
+
+    entities.forEach(({ key, prefix, type }) => {
+      const data = output[key] || (key === 'legal_subjects' ? output.parties : null); // fallback for legal_subjects
+      if (!data) return;
+      const arr = Array.isArray(data) ? data : [data];
+
+      arr.forEach((item, i) => {
+        if (!item) return;
+        const localId = item.id || `${prefix}_${i}`;
+        let gId;
+        let extra = { caseKey };
+        let label = '未知';
+
+        // 提取 Label
+        if (type === 'CaseSummary') label = '案件摘要';
+        if (type === 'CaseType') label = item.level2 || item.level1 || item.category || '案由';
+        if (type === 'LegalSubject') label = item.name || '当事人';
+        if (type === 'Evidence') label = item.name || item.content || '证据';
+        if (type === 'LegalProvision') label = `${item.statute || '法规'}${item.article ? `第${item.article}条` : ''}`;
+        if (type === 'LegalProvisionElement') label = item.element_name || item.element || '构成要件';
+        if (type === 'Fact') label = item.content || '事实';
+        if (type === 'DisputeFocus') label = item.focus || item.content || '争议焦点';
+        if (type === 'JudgmentResult') label = item.specific_judgment || item.reasoning || '裁判结果';
+        if (type === 'GuidingCase') label = item.guiding_case_name || item.case_number || '指导案例';
+
+        // 判定 T0 共享实体 vs T2 专属实体
+        if (SHARED_TYPES.has(type)) {
+          gId = generateSharedId(type, label);
+          if (gId) {
+            extra = { 
+              isShared: true, 
+              fixed: { y: true }, 
+              y: type === 'CaseType' ? -350 : -650, // 法条在最上面，案由在中间
+              size: 60,
+              title: `<b>${type} (跨案共享)</b>\n${label}`
+            };
+          } else {
+            gId = globalId(localId); // 降级为专属
+          }
+        } else {
+          gId = globalId(localId);
+          extra.title = `<b>${type}</b>\n${shortText(label, 180)}`;
+          // 适度放大专属节点
+          if (type === 'Evidence' || type === 'Fact') extra.size = 36;
+          if (type === 'JudgmentResult' || type === 'DisputeFocus') extra.size = 48;
+        }
+
+        localToGlobal.set(localId, gId);
+        addNode(gId, label, type, label, extra);
+
+        // 如果是孤立的共享节点，给它一个兜底连线指向案子，防止飘走
+        if (extra.isShared) {
+          addEdge(resolveRef(firstCourtLocalId), gId, '关联');
+        }
+      });
+    });
+
+    // 3. 处理关系连线 (严格遵守大模型的 relations，不乱造边)
+    (output.relations || []).forEach(rel => {
+      rel = rel || {};
+      if (!rel.source_id || !rel.target_id) return;
+      const gSource = resolveRef(rel.source_id);
+      const gTarget = resolveRef(rel.target_id);
+      if (gSource && gTarget) {
+        const label = rel.label || REL_LABEL_MAP[rel.relation_type] || rel.relation_type || '关联';
+        addEdge(gSource, gTarget, label);
+      }
+    });
+
+    // 对于 Evidence, JudgmentResult, Fact，如果它们在 relations 中没有被作为 target 也没有作为 source，为了防止它们彻底孤立，兜底连接到案件锚点
+    // 但因为 relations 是主体，我们先相信 relations。如果有极少数孤立的，BarnesHut 也能处理。
+  });
+
+  return applyGraphPipeline({ mode: 'detail', nodes, edges }, state.graphConfig || {});
+}
+
+function applyGraphPipeline(graphData, config) {
+  const { nodes, edges } = graphData;
+  const finalNodes = [];
+  const finalEdges = [];
+  const edgeRedirectionMap = {}; 
+  
+  const evidenceThreshold = config.aggregation?.evidenceThreshold || 3;
+  const factThreshold = config.aggregation?.factThreshold || 3;
+  const expandedNodes = config.expandedNodes || new Set();
+
+  const groupMap = {};
+  
+  // 1. 过滤 & 分组
+  nodes.forEach(node => {
+    // 隐藏逻辑（未来可通过 config.visibleTypes 扩展）
+    if (node.nodeType === 'Judge' || node.nodeType === 'Attorney') {
+      return; 
+    }
+
+    if (!node.caseKey) {
+      finalNodes.push(node); // 共享节点不折叠
+      return;
+    }
+
+    const type = node.nodeType;
+    if (type === 'Evidence' || type === 'Fact') {
+      const groupKey = `agg_${node.caseKey}_${type}`;
+      if (!groupMap[groupKey]) groupMap[groupKey] = [];
+      groupMap[groupKey].push(node);
+    } else {
+      finalNodes.push(node);
+    }
+  });
+
+  // 2. 生成聚合节点
+  Object.entries(groupMap).forEach(([groupKey, groupNodes]) => {
+    const type = groupNodes[0].nodeType;
+    const threshold = type === 'Evidence' ? evidenceThreshold : factThreshold;
+    const typeLabel = type === 'Evidence' ? '证据组' : '事实组';
+
+    if (groupNodes.length >= threshold && !expandedNodes.has(groupKey)) {
+      finalNodes.push({
+        id: groupKey,
+        label: `📦 [${typeLabel}: ${groupNodes.length}项]`,
+        nodeType: 'AggregateGroup',
+        shape: 'box',
+        color: { background: '#f8fafc', border: '#94a3b8' },
+        font: { color: '#475569' },
+        isAggregate: true,
+        caseKey: groupNodes[0].caseKey,
+        representedNodes: groupNodes.map(n => n.id)
+      });
+      groupNodes.forEach(n => { edgeRedirectionMap[n.id] = groupKey; });
+    } else {
+      finalNodes.push(...groupNodes);
+    }
+  });
+
+  // 3. 安全重定向边
+  const finalEdgeIds = new Set();
+  edges.forEach(edge => {
+    const newFrom = edgeRedirectionMap[edge.from] || edge.from;
+    const newTo = edgeRedirectionMap[edge.to] || edge.to;
+    
+    if (newFrom !== newTo) {
+      const edgeId = `${newFrom}_${edge.label}_${newTo}`;
+      if (!finalEdgeIds.has(edgeId)) {
+        finalEdgeIds.add(edgeId);
+        finalEdges.push({ ...edge, id: edgeId, from: newFrom, to: newTo });
+      }
+    }
+  });
+
+  return { mode: graphData.mode, nodes: finalNodes, edges: finalEdges };
+}
+
 export function buildDatabaseGraphData(state) {
+  if (state.selection.multiSelectMode && state.selection.selectedCaseKeys?.length > 1) {
+    return buildMultiCaseGraph(state);
+  }
+
   const filteredCases = getFilteredCases(state.data.casesIndex, state.filters);
   const visibleCases = getVisibleCases(filteredCases, state.graph.browseMode);
   const activeEntry = getActiveCaseEntry(state);

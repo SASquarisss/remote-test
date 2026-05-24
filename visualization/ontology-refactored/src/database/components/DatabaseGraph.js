@@ -28,6 +28,7 @@ export class DatabaseGraph {
     this.currentGraphNodes = [];
     this.currentGraphEdges = [];
     this.lastAppliedOntologyType = null;
+    this.hoveredNodeId = null;
     this.fitTimer = null;
     this.manualNodePositions = new Map();
     this.init();
@@ -40,17 +41,30 @@ export class DatabaseGraph {
       layout: { improvedLayout: true, randomSeed: 42 },
       physics: {
         enabled: true,
-        solver: 'forceAtlas2Based',
-        forceAtlas2Based: {
-          gravitationalConstant: -60,
-          centralGravity: 0.015,
-          springLength: 160,
-          springConstant: 0.08,
-          damping: 0.5
+        solver: 'barnesHut',
+        barnesHut: {
+          gravitationalConstant: -12000,
+          centralGravity: 0.05,
+          springLength: 350,
+          springConstant: 0.04,
+          damping: 0.2,
+          avoidOverlap: 1
         },
-        stabilization: { iterations: 120, fit: true }
+        stabilization: {
+          enabled: true,
+          iterations: 150,
+          updateInterval: 25
+        }
       },
-      interaction: { hover: true, tooltipDelay: 100, navigationButtons: true, keyboard: true },
+      interaction: {
+        hover: true,
+        tooltipDelay: 200,
+        hideEdgesOnDrag: true,
+        zoomView: true,
+        dragView: true,
+        navigationButtons: true,
+        keyboard: false
+      },
       nodes: {
         shadow: { enabled: true, size: 4, x: 0, y: 2 },
         font: { face: 'Microsoft YaHei, PingFang SC, sans-serif' }
@@ -64,7 +78,29 @@ export class DatabaseGraph {
     this.network.on('stabilizationIterationsDone', () => {
       if (!this.network) return;
       this.network.setOptions({ physics: { enabled: false } });
-      this.network.fit({ animation: true });
+      if (this.shouldFitOnStabilize) {
+        this.network.fit({ animation: true });
+        this.shouldFitOnStabilize = false;
+      }
+    });
+    
+    // 增加对 stabilze 结束事件的兜底监听
+    this.network.on('stabilized', () => {
+      if (!this.network) return;
+      this.network.setOptions({ physics: { enabled: false } });
+      if (this.shouldFitOnStabilize) {
+        this.network.fit({ animation: true });
+        this.shouldFitOnStabilize = false;
+      }
+    });
+
+    this.network.on('dragStart', params => {
+      if (!this.network || !params.nodes.length) return;
+      const updates = params.nodes.map(nodeId => ({
+        id: nodeId,
+        fixed: { x: false, y: false }
+      }));
+      this.nodes.update(updates);
     });
 
     this.network.on('dragEnd', params => {
@@ -109,6 +145,19 @@ export class DatabaseGraph {
           return;
         }
 
+        if (node.nodeType === 'AggregateGroup' && node.representedNodes) {
+          const state = this.store.getState();
+          const currentExpanded = state.graphConfig?.expandedNodes || new Set();
+          const newExpanded = new Set(currentExpanded);
+          if (newExpanded.has(node.id)) {
+            newExpanded.delete(node.id);
+          } else {
+            newExpanded.add(node.id);
+          }
+          this.store.update('graphConfig', { expandedNodes: newExpanded });
+          return;
+        }
+
         this.store.update('selection', {
           activeNodeId: node.id,
           activeEdgeId: null,
@@ -139,6 +188,35 @@ export class DatabaseGraph {
       });
       this.store.update('panels', { detailOpen: false });
     });
+
+    this.network.on('doubleClick', params => {
+      if (params.nodes.length > 0) {
+        const node = this.nodes.get(params.nodes[0]);
+        if (!node) return;
+        if (node.nodeType === 'AggregateGroup' && node.representedNodes) {
+          const state = this.store.getState();
+          const currentExpanded = state.graphConfig?.expandedNodes || new Set();
+          const newExpanded = new Set(currentExpanded);
+          newExpanded.add(node.id);
+          this.store.update('graphConfig', { expandedNodes: newExpanded });
+        }
+      }
+    });
+
+    this.network.on('hoverNode', params => {
+      this.hoveredNodeId = params.node;
+      this.applySpotlightDimming();
+    });
+
+    this.network.on('blurNode', () => {
+      this.hoveredNodeId = null;
+      this.applySpotlightDimming();
+    });
+
+    this.container.addEventListener('wheel', (e) => {
+      // 允许直接滚轮缩放图谱，同时阻止页面级滚动，防止图谱缩放时页面跟着乱跑
+      e.preventDefault();
+    }, { passive: false });
   }
 
   buildGraphSignature(graphData) {
@@ -160,14 +238,14 @@ export class DatabaseGraph {
     }
   }
 
-  applyOntologyHighlight(activeOntologyType) {
+  applySpotlightDimming() {
     if (!this.currentGraphNodes.length) return;
 
-    const mode = this.lastMode || 'overview';
     const baseNodes = this.currentGraphNodes;
     const baseEdges = this.currentGraphEdges;
 
-    if (mode !== 'detail' || !activeOntologyType) {
+    if (!this.hoveredNodeId) {
+      // 恢复高亮和暗化
       this.nodes.update(baseNodes.map(node => ({
         id: node.id,
         color: node.color,
@@ -179,45 +257,75 @@ export class DatabaseGraph {
         font: edge.font,
         width: edge.width
       })));
-      this.lastAppliedOntologyType = activeOntologyType || null;
       return;
     }
 
-    const matchedNodeIds = new Set(
-      baseNodes.filter(node => matchesOntologyType(node.nodeType, activeOntologyType)).map(node => node.id)
-    );
+    const hoveredNode = baseNodes.find(n => n.id === this.hoveredNodeId);
+    if (!hoveredNode) return;
+
+    const highlightNodeIds = new Set([this.hoveredNodeId]);
+    const highlightEdgeIds = new Set();
+
+    // 如果悬停在共有节点（T0），高亮与其相连的所有边和节点
+    if (hoveredNode.isShared) {
+      baseEdges.forEach(edge => {
+        if (edge.from === this.hoveredNodeId || edge.to === this.hoveredNodeId) {
+          highlightEdgeIds.add(edge.id);
+          highlightNodeIds.add(edge.from);
+          highlightNodeIds.add(edge.to);
+        }
+      });
+    } 
+    // 如果悬停在专属节点或案件节点（T1/T2），高亮整个案件的子图
+    else if (hoveredNode.caseKey) {
+      const targetCaseKey = hoveredNode.caseKey;
+      baseNodes.forEach(n => {
+        if (n.caseKey === targetCaseKey) {
+          highlightNodeIds.add(n.id);
+        }
+      });
+      baseEdges.forEach(edge => {
+        const fromNode = baseNodes.find(n => n.id === edge.from);
+        const toNode = baseNodes.find(n => n.id === edge.to);
+        // 如果边的两端至少有一端是该案件的专属节点，或者两端都在高亮集合中
+        if ((fromNode?.caseKey === targetCaseKey || toNode?.caseKey === targetCaseKey) || 
+            (highlightNodeIds.has(edge.from) && highlightNodeIds.has(edge.to))) {
+          highlightEdgeIds.add(edge.id);
+          highlightNodeIds.add(edge.from);
+          highlightNodeIds.add(edge.to);
+        }
+      });
+    }
 
     this.nodes.update(baseNodes.map(node => {
-      const matched = matchedNodeIds.has(node.id);
+      const isHighlighted = highlightNodeIds.has(node.id);
       return {
         id: node.id,
-        color: matched
+        color: isHighlighted
           ? node.color
           : {
               ...(node.color || {}),
-              background: 'rgba(226, 232, 240, 0.28)',
-              border: 'rgba(148, 163, 184, 0.55)'
+              background: 'rgba(226, 232, 240, 0.15)',
+              border: 'rgba(148, 163, 184, 0.25)'
             },
         font: {
           ...(node.font || {}),
-          color: matched ? (node.font?.color || '#0f172a') : 'rgba(71, 85, 105, 0.45)'
+          color: isHighlighted ? (node.font?.color || '#0f172a') : 'rgba(71, 85, 105, 0.25)'
         }
       };
     }));
 
     this.edges.update(baseEdges.map(edge => {
-      const matched = matchedNodeIds.has(edge.from) || matchedNodeIds.has(edge.to);
+      const isHighlighted = highlightEdgeIds.has(edge.id);
       return {
         id: edge.id,
-        color: matched ? (edge.color || { color: '#94a3b8' }) : { color: 'rgba(203, 213, 225, 0.28)' },
+        color: isHighlighted ? (edge.color || { color: '#94a3b8' }) : { color: 'rgba(203, 213, 225, 0.15)' },
         font: {
           ...(edge.font || {}),
-          color: matched ? (edge.font?.color || '#64748b') : 'rgba(100, 116, 139, 0.35)'
+          color: isHighlighted ? (edge.font?.color || '#64748b') : 'rgba(100, 116, 139, 0.15)'
         }
       };
     }));
-
-    this.lastAppliedOntologyType = activeOntologyType;
   }
 
   render(state) {
@@ -233,6 +341,9 @@ export class DatabaseGraph {
       this.lastGraphSignature = graphSignature;
       this.lastMode = graphData.mode || 'overview';
       this.currentGraphNodes = graphData.nodes.map(node => {
+        // 多选模式下如果 node 设置了 fixed（如 T0, T1），直接采信预设坐标
+        if (node.fixed) return node;
+
         const position = this.manualNodePositions.get(node.id);
         return position
           ? { ...node, x: position.x, y: position.y, fixed: { x: true, y: true } }
@@ -244,20 +355,31 @@ export class DatabaseGraph {
       this.nodes.add(this.currentGraphNodes);
       this.edges.add(this.currentGraphEdges);
       this.updateRenderedTypeCounts();
+      
+      // 当图谱数据发生改变（如双击折叠/展开、切换案件）时，重新激活物理引擎使其稳定
+      if (this.network) {
+        this.network.setOptions({ physics: { enabled: true } });
+        // 强制触发 stabilize
+        this.network.stabilize(150);
+      }
     }
 
-    if (graphChanged || this.lastAppliedOntologyType !== (activeOntologyType || null)) {
-      this.applyOntologyHighlight(activeOntologyType || null);
+    if (graphChanged) {
+      this.applySpotlightDimming();
     }
+
+    const casesSig = (state.selection.selectedCaseKeys || []).join(',') + '|' + state.selection.activeCaseKey;
+    const casesChanged = this.lastCasesSignature !== casesSig;
+    this.lastCasesSignature = casesSig;
 
     const nextMode = graphData.mode || 'overview';
-    if (this.network && graphChanged && nextMode !== previousMode) {
-      this.network.setOptions({ physics: { enabled: true } });
+    if (this.network && graphChanged && (nextMode !== previousMode || casesChanged)) {
       clearTimeout(this.fitTimer);
       this.fitTimer = setTimeout(() => {
         if (!this.network) return;
         this.network.fit({ animation: true });
-      }, 50);
+      }, 100);
+      this.shouldFitOnStabilize = true;
     }
 
     const stats = {
