@@ -5,3 +5,7 @@ __pycache__/
 .DS_Store
 *.swp
 *.swo
+node_modules
+*.xz
+node-*/
+test_*.py
