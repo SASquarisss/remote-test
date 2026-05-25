@@ -26,11 +26,16 @@
 </head>
 <body>
   <div id="app">
-    <!-- Main View (For Parse Graph) -->
-    <div id="kgMainView" style="position: absolute; top: 0; left: 0; width: 100%; height: 50vh; z-index: 1;"></div>
+    <!-- Main View (For Parse Graph / Ontology Main Layout) -->
+    <div id="kgMainView" style="position: absolute; top: 0; left: 0; width: 100%; height: 50vh; z-index: 1;">
+      <div id="parseGraphLayer" style="position:absolute; inset:0; z-index:1; background:#f8fafc;">
+        <div id="parseGraphCanvasHost" style="width:100%; height:100%;"></div>
+      </div>
+    </div>
 
     <!-- Ontology Graph Container (Floating/Main toggle) -->
-    <div id="ontologyContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 2; transition: all 0.3s ease;">
+    <div id="ontologyContainer">
+      <button id="ontologyRestoreFloat" class="ontology-restore-float" title="返回悬浮窗">返回悬浮窗</button>
       <!-- Floating Header (visible only in mini-mode) -->
       <div class="ontology-header" id="ontologyHeader" style="display: none; padding: 0 12px; background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; cursor: move; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; height: 35px;">
         <div style="display: flex; gap: 16px; align-items: center; height: 100%;">
@@ -87,8 +92,8 @@
       </div>
       <div class="term-resize-handle" id="termDragHandle" title="拖拽调整高度"></div>
       <div class="terminal-body term-body" id="termBody">
-        <div id="termVisContainer" style="flex:1; position:relative; background:#0f172a;">
-          <div id="termVisCanvasHost" style="width:100%; height:100%;"></div>
+        <div id="termVisContainer" style="flex:1; position:relative; background:#fff;">
+          <div id="termGraphInfo" style="padding:12px; flex:1; height:100%; box-sizing:border-box; background:#fff;"></div>
         </div>
       </div>
     </div>
