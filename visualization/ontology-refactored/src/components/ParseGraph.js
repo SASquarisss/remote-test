@@ -1476,13 +1476,13 @@ export class ParseGraph {
 
   buildLegalProvisionNodeImage({ text, statuteLabel = '', background, border, fontColor, borderWidth = 2, borderDashes = false }) {
     const glyph = this.escapeSvgText(text);
-    const fontSize = glyph.length >= 4 ? 26 : glyph.length === 3 ? 32 : glyph.length === 2 ? 38 : 44;
+    const fontSize = glyph.length >= 4 ? 24 : glyph.length === 3 ? 30 : glyph.length === 2 ? 36 : 42;
     const dashArray = Array.isArray(borderDashes) ? borderDashes.join(' ') : (borderDashes ? '7 5' : 'none');
-    const safeStatute = this.escapeSvgText(this.truncateLabel(statuteLabel || '', 14));
+    const safeStatute = this.escapeSvgText(this.truncateLabel(statuteLabel || '', 12));
     const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 154">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 138">
         <polygon
-          points="70,8 118,34 118,90 70,116 22,90 22,34"
+          points="64,6 108,30 108,82 64,106 20,82 20,30"
           fill="${background}"
           stroke="${border}"
           stroke-width="${borderWidth}"
@@ -1490,8 +1490,8 @@ export class ParseGraph {
           stroke-linejoin="round"
         />
         <text
-          x="70"
-          y="63"
+          x="64"
+          y="59"
           text-anchor="middle"
           dominant-baseline="middle"
           font-family="Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif"
@@ -1500,12 +1500,12 @@ export class ParseGraph {
           fill="${fontColor}"
         >${glyph}</text>
         <text
-          x="70"
-          y="138"
+          x="64"
+          y="125"
           text-anchor="middle"
           dominant-baseline="middle"
           font-family="Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif"
-          font-size="14"
+          font-size="12"
           font-weight="600"
           fill="${fontColor}"
         >${safeStatute}</text>
@@ -1879,18 +1879,18 @@ export class ParseGraph {
           ? Math.max(baseSize, type === 'LegalProvision' ? 30 : 22)
           : (type === 'LegalProvision' ? Math.max(baseSize, 30) : baseSize),
         widthConstraint: isBoxLike
-          ? { minimum: type === 'AggregateGroup' ? 78 : 84 }
+          ? { minimum: type === 'AggregateGroup' ? 74 : 78 }
           : undefined,
         heightConstraint: isBoxLike
-          ? { minimum: type === 'AggregateGroup' ? 38 : 42 }
+          ? { minimum: type === 'AggregateGroup' ? 34 : 38 }
           : undefined,
         shadow: n.isTraceNode
           ? { enabled: true, color: n.isTraceFocus ? 'rgba(217,119,6,0.35)' : 'rgba(37,99,235,0.18)', size: n.isTraceFocus ? 18 : 10 }
           : { enabled: true, color: mergeColors?.shadow || 'rgba(15,23,42,0.12)', size: mergeColors ? (isPreview ? 18 : 11) : 8, x: 0, y: 2 },
         font: {
           size: type === 'AggregateGroup'
-            ? (state.parseGraphSemanticZoom === 'far' ? 11 : 12)
-            : (state.parseGraphSemanticZoom === 'near' ? 14 : 13),
+            ? (state.parseGraphSemanticZoom === 'far' ? 10 : 11)
+            : (state.parseGraphSemanticZoom === 'near' ? 13 : 12),
           color: fontColor,
           face: 'Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif',
           strokeWidth: 3,
@@ -2040,33 +2040,6 @@ export class ParseGraph {
       const yBase = MAIN_LANE_Y[laneKey];
       const spacing = MAIN_LANE_SPACING[laneKey];
 
-      if (laneKey === 'subjectLane') {
-        const grouped = {
-          Judge: bucket.filter((node) => this.getNodeType(node) === 'Judge'),
-          LegalSubject: bucket.filter((node) => this.getNodeType(node) === 'LegalSubject'),
-          Attorney: bucket.filter((node) => this.getNodeType(node) === 'Attorney'),
-          LegalRole: bucket.filter((node) => this.getNodeType(node) === 'LegalRole'),
-          Person: bucket.filter((node) => this.getNodeType(node) === 'Person'),
-        };
-        const subjectColumns = [
-          { type: 'Judge', x: xBase - 110, startY: yBase - 48, spacing },
-          { type: 'LegalSubject', x: xBase + 110, startY: yBase - 48, spacing },
-          { type: 'Attorney', x: xBase + 250, startY: yBase + 6, spacing },
-          { type: 'LegalRole', x: xBase, startY: yBase + 24, spacing },
-          { type: 'Person', x: xBase + 380, startY: yBase + 6, spacing },
-        ];
-        subjectColumns.forEach(({ type, x, startY, spacing: columnSpacing }) => {
-          (grouped[type] || []).forEach((node, index) => {
-            updates.push({
-              id: node.id,
-              x,
-              y: startY + index * columnSpacing,
-            });
-          });
-        });
-        return;
-      }
-
       bucket.forEach((node, index) => {
         const type = this.getNodeType(node);
         let targetX = xBase;
@@ -2183,19 +2156,19 @@ export class ParseGraph {
     const zoneDefs = this.getLayoutMode() === 'focus_orbit'
       ? [
           { key: 'factLane', title: '事实区', desc: '证据与事实上游', x: MAIN_LANE_X.factLane - 40, screenTop: 8 },
-          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 18 },
-          { key: 'focusCore', title: '争点核心', desc: 'DisputeFocus 中心', x: Math.round((MAIN_LANE_X.lawLane + MAIN_LANE_X.resultLane) / 2), screenTop: 18 },
-          { key: 'lawLane', title: '法条半环', desc: '法条与依据', x: MAIN_LANE_X.lawLane - 40, screenTop: 18 },
-          { key: 'resultLane', title: '裁判半环', desc: '裁判与结果', x: MAIN_LANE_X.resultLane, screenTop: 18 },
+          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 8 },
+          { key: 'focusCore', title: '争点核心', desc: 'DisputeFocus 中心', x: Math.round((MAIN_LANE_X.lawLane + MAIN_LANE_X.resultLane) / 2), screenTop: 8 },
+          { key: 'lawLane', title: '法条半环', desc: '法条与依据', x: MAIN_LANE_X.lawLane - 40, screenTop: 8 },
+          { key: 'resultLane', title: '裁判半环', desc: '裁判与结果', x: MAIN_LANE_X.resultLane, screenTop: 8 },
         ]
       : [
-          { key: 'caseLane', title: '案件区', desc: 'CourtCase 主轴', x: MAIN_LANE_X.caseLane, screenTop: 18 },
-          { key: 'subjectLane', title: '主体区', desc: '案件当事人', x: MAIN_LANE_X.subjectLane, screenTop: 18 },
-          { key: 'evidenceLane', title: '证据区', desc: '证据材料', x: MAIN_LANE_X.evidenceLane, screenTop: 18 },
-          { key: 'factLane', title: '事实区', desc: '案件事实', x: MAIN_LANE_X.factLane, screenTop: 18 },
-          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 18 },
-          { key: 'lawLane', title: '法条区', desc: '法条依据', x: MAIN_LANE_X.lawLane, screenTop: 18 },
-          { key: 'resultLane', title: '裁判区', desc: '焦点与结果', x: MAIN_LANE_X.resultLane, screenTop: 18 },
+          { key: 'caseLane', title: '案件区', desc: 'CourtCase 主轴', x: MAIN_LANE_X.caseLane, screenTop: 10 },
+          { key: 'subjectLane', title: '主体区', desc: '案件当事人', x: MAIN_LANE_X.subjectLane, screenTop: 10 },
+          { key: 'evidenceLane', title: '证据区', desc: '证据材料', x: MAIN_LANE_X.evidenceLane, screenTop: 10 },
+          { key: 'factLane', title: '事实区', desc: '案件事实', x: MAIN_LANE_X.factLane, screenTop: 10 },
+          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 10 },
+          { key: 'lawLane', title: '法条区', desc: '法条依据', x: MAIN_LANE_X.lawLane, screenTop: 10 },
+          { key: 'resultLane', title: '裁判区', desc: '焦点与结果', x: MAIN_LANE_X.resultLane, screenTop: 10 },
         ];
 
     if (!overlay) {

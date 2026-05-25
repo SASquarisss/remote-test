@@ -1,3 +1,7 @@
+# Flask 解析后端最小运行依赖
+# 用途: 仅启动 /root/remote-test/backend/app.py
+# 如需前后端联调的一站式开发环境，请优先使用仓库根目录 requirements.txt
+
 flask>=3.0
 flask-cors>=4.0
 openai>=1.0

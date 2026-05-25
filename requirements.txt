@@ -1,26 +1,34 @@
-# 图数据库
-neo4j==5.18.0
+# 当前项目统一依赖
+# 建议默认使用这一份:
+# 1. 覆盖 Flask 解析后端
+# 2. 覆盖 FastAPI WebUI 后端
+# 3. 覆盖 prompt / 本体 / 数据脚本常用库
+# 若只想运行某一侧服务，可改用 backend/requirements.txt 或 webui/requirements.txt
 
-# API
+# Flask 后端
+flask==3.0.3
+flask-cors==4.0.1
+gunicorn==21.2.0
+
+# FastAPI / WebUI 后端
 fastapi==0.110.0
 uvicorn[standard]==0.29.0
+python-multipart==0.0.9
 
-# 数据校验
-pydantic==2.6.4
-
-# 工具
+# LLM / 配置
+openai==1.30.1
 python-dotenv==1.0.1
 PyYAML==6.0.1
+
+# 数据模型 / 接口
+pydantic==2.6.4
 requests==2.31.0
+httpx==0.27.0
 
-# NLP (可选，MVP阶段可用LLM代替)
-# jieba==0.42.1
-# hanlp==2.1.0
-
-# 数据处理
+# 数据与图谱脚本
+neo4j==5.18.0
 pandas==2.2.1
 pyarrow==15.0.2
 
 # 测试
 pytest==8.1.1
-httpx==0.27.0
