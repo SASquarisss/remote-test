@@ -1,6 +1,6 @@
 {
   "prompt_file": "ontology/prompts/auto_v5_admin.txt",
-  "prompt_sha1": "4bbd293dc1277f778de5517e5a404e4f7de82c63",
+  "prompt_sha1": "63ceb37f556d14bba283006002aa5e4d7a402143",
   "few_shot": {
     "row_id": "2847",
     "score": 95.0,
@@ -19,6 +19,10 @@
       "facts": 3,
       "focuses": 2,
       "relations": 16,
+      "claims": 0,
+      "opinions": 0,
+      "arguments": 0,
+      "assessments": 0,
       "relation_types": 7,
       "graph_ready": true,
       "rich_graph": true
@@ -49,11 +53,28 @@
     },
     "change_coverage": {
       "covered_entities": [],
-      "missing_entities": [],
+      "missing_entities": [
+        "ArgumentPoint",
+        "JudicialAssessment",
+        "LitigationClaim",
+        "ProceduralOpinion"
+      ],
       "covered_relations": [],
       "missing_relations": [
-        "concerns_focus",
-        "participates_in_case"
+        "assesses_focus",
+        "based_on_fact",
+        "based_on_provision",
+        "claims_focus",
+        "evaluates_argument",
+        "expresses_opinion",
+        "opines_on_focus",
+        "raises_claim",
+        "responds_to_claim",
+        "responds_to_opinion",
+        "supports_claim",
+        "supports_opinion",
+        "supports_result",
+        "targets_subject"
       ],
       "field_status": {}
     }

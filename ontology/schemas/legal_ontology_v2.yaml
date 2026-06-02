@@ -213,6 +213,36 @@ types:
     fact_type_enum: [undisputed, disputed, to_be_proven]
     description: "案件事实"
 
+  LitigationClaim:
+    is_a: JudicialEntity
+    required: [case_id, claim_text]
+    optional: [case_number, subject_id, subject_name, role_code, claim_type, requested_outcome, amount, target_subject_id, target_subject_name, legal_basis_summary]
+    claim_type_enum: [appeal_claim, defense_claim, prosecution_claim, civil_claim, counterclaim, procedural_request, sentencing_request, compensation_request, other]
+    description: "各方明确提出的诉求/请求（如上诉请求、辩护请求、赔偿请求、程序性申请）"
+
+  ProceduralOpinion:
+    is_a: JudicialEntity
+    required: [case_id, content]
+    optional: [case_number, subject_id, subject_name, role_code, opinion_type, stance, related_claim_ids]
+    opinion_type_enum: [appeal_opinion, defense_opinion, agent_opinion, prosecution_opinion, objection_opinion, procedural_opinion, other]
+    stance_enum: [support, oppose, partial_support, neutral, unknown]
+    description: "围绕诉求提出的意见表达（如上诉意见、辩护意见、代理意见、答辩意见）"
+
+  ArgumentPoint:
+    is_a: JudicialEntity
+    required: [case_id, argument_text]
+    optional: [case_number, subject_id, subject_name, role_code, argument_basis_type, supports_claim_id, supports_opinion_id, related_fact_ids, related_provision_ids]
+    argument_basis_type_enum: [fact_based, evidence_based, legal_based, procedural_based, policy_based, sentencing_based, mixed, other]
+    description: "支撑诉求/意见的理由点（事实理由、证据理由、法律理由、程序理由等）"
+
+  JudicialAssessment:
+    is_a: JudicialEntity
+    required: [case_id, assessment_text]
+    optional: [case_number, issue_type, assessment_outcome, responds_to_claim_ids, responds_to_opinion_ids, responds_to_argument_ids, based_on_fact_ids, based_on_provision_ids, supports_judgment_result_ids]
+    issue_type_enum: [claim, opinion, argument, fact, evidence, provision, sentencing, procedure, mixed]
+    assessment_outcome_enum: [adopted, rejected, partially_adopted, not_addressed, unclear]
+    description: "法院对诉求、意见、理由的回应与综合评判"
+
   CaseParticipant:
     is_a: JudicialEntity
     required: [case_id, role_code]
@@ -410,6 +440,90 @@ relations:
     cardinality: many_to_many
     description: "主体参与、经历或关联某一案件事实"
 
+  raises_claim:
+    from: LegalSubject
+    to: LitigationClaim
+    cardinality: many_to_many
+    description: "主体提出某项诉求/请求"
+
+  expresses_opinion:
+    from: LegalSubject
+    to: ProceduralOpinion
+    cardinality: many_to_many
+    description: "主体发表某项意见（上诉意见、辩护意见、代理意见等）"
+
+  supports_claim:
+    from: ArgumentPoint
+    to: LitigationClaim
+    cardinality: many_to_many
+    description: "理由点支撑某项诉求/请求"
+
+  supports_opinion:
+    from: ArgumentPoint
+    to: ProceduralOpinion
+    cardinality: many_to_many
+    description: "理由点支撑某项意见表达"
+
+  targets_subject:
+    from: LitigationClaim
+    to: LegalSubject
+    cardinality: many_to_many
+    description: "诉求直接针对的主体对象"
+
+  claims_focus:
+    from: LitigationClaim
+    to: DisputeFocus
+    cardinality: many_to_many
+    description: "诉求对应某一争议焦点"
+
+  opines_on_focus:
+    from: ProceduralOpinion
+    to: DisputeFocus
+    cardinality: many_to_many
+    description: "意见围绕某一争议焦点展开"
+
+  assesses_focus:
+    from: JudicialAssessment
+    to: DisputeFocus
+    cardinality: many_to_many
+    description: "法院评判直接回应某一争议焦点"
+
+  responds_to_claim:
+    from: JudicialAssessment
+    to: LitigationClaim
+    cardinality: many_to_many
+    description: "法院评判回应某项诉求/请求"
+
+  responds_to_opinion:
+    from: JudicialAssessment
+    to: ProceduralOpinion
+    cardinality: many_to_many
+    description: "法院评判回应某项意见"
+
+  evaluates_argument:
+    from: JudicialAssessment
+    to: ArgumentPoint
+    cardinality: many_to_many
+    description: "法院评判评价某个理由点"
+
+  based_on_fact:
+    from: [LitigationClaim, ProceduralOpinion, ArgumentPoint, JudicialAssessment]
+    to: Fact
+    cardinality: many_to_many
+    description: "诉求/意见/理由/评判以案件事实为基础"
+
+  based_on_provision:
+    from: [LitigationClaim, ArgumentPoint, JudicialAssessment]
+    to: LegalProvision
+    cardinality: many_to_many
+    description: "诉求/理由/法院评判援引或依托法律条文"
+
+  supports_result:
+    from: JudicialAssessment
+    to: JudgmentResult
+    cardinality: many_to_many
+    description: "法院评判支撑最终裁判结果"
+
   concerns_focus:
     from: LegalSubject
     to: DisputeFocus
@@ -519,7 +633,7 @@ engineering:
     Court: "name + district.code"
     Person: "name + case_id（每个案件内独立）"
     Organization: "credit_code（全局唯一，跨案件关联）"
-  data_version: "2026.05.v2.2"
+  data_version: "2026.06.v2.3"
   incremental_update: true
   graph_storage:
     node_prefix: "LEGAL_"

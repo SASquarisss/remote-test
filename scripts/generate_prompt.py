@@ -171,7 +171,12 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
                     focuses = graph_cov["focuses"]
                     rels = graph_cov["relations"]
                     rel_type_count = len(graph_cov["relation_types"])
+                    claim_count = len(out.get("litigation_claims") or [])
+                    opinion_count = len(out.get("procedural_opinions") or [])
+                    argument_count = len(out.get("argument_points") or [])
+                    assessment_count = len(out.get("judicial_assessments") or [])
                     quality += facts * 2 + focuses * 3 + rels * 4 + rel_type_count * 5
+                    quality += claim_count * 3 + opinion_count * 3 + argument_count * 2 + assessment_count * 4
                     if graph_cov["graph_ready"]:
                         quality += 18
                     if graph_cov["rich_graph"]:
@@ -188,6 +193,8 @@ def load_best_few_shots(data_lake_dir: str = None) -> dict:
                                     "subjects": subjects, "evidence": evidence, "results": results,
                                     "key_facts": has_kf, "disputed": has_di, "conclusion": has_con,
                                     "facts": facts, "focuses": focuses, "relations": rels,
+                                    "claims": claim_count, "opinions": opinion_count,
+                                    "arguments": argument_count, "assessments": assessment_count,
                                     "relation_types": rel_type_count,
                                     "graph_ready": graph_cov["graph_ready"],
                                     "rich_graph": graph_cov["rich_graph"]},
@@ -301,6 +308,22 @@ def clean_fewshot_output(output: dict) -> dict:
             {k: df.get(k, "") for k in ["id", "content", "focus_type", "case_number"]}
             for df in (output.get("dispute_focuses") or [])[:3]
         ],
+        "litigation_claims": [
+            {k: claim.get(k, "") for k in ["id", "claim_text", "claim_type", "subject_name", "role_code", "requested_outcome", "amount", "case_number"]}
+            for claim in (output.get("litigation_claims") or [])[:4]
+        ],
+        "procedural_opinions": [
+            {k: opinion.get(k, "") for k in ["id", "content", "opinion_type", "stance", "subject_name", "role_code", "related_claim_ids", "case_number"]}
+            for opinion in (output.get("procedural_opinions") or [])[:4]
+        ],
+        "argument_points": [
+            {k: point.get(k, "") for k in ["id", "argument_text", "argument_basis_type", "subject_name", "role_code", "supports_claim_id", "supports_opinion_id", "related_fact_ids", "related_provision_ids", "case_number"]}
+            for point in (output.get("argument_points") or [])[:6]
+        ],
+        "judicial_assessments": [
+            {k: item.get(k, "") for k in ["id", "assessment_text", "issue_type", "assessment_outcome", "responds_to_claim_ids", "responds_to_opinion_ids", "responds_to_argument_ids", "based_on_fact_ids", "based_on_provision_ids", "supports_judgment_result_ids", "case_number"]}
+            for item in (output.get("judicial_assessments") or [])[:4]
+        ],
         "relations": [
             {k: r.get(k, "") for k in ["source_id", "target_id", "relation_type", "description"]}
             for r in (output.get("relations") or [])[:6]
@@ -400,7 +423,9 @@ def validate_generated_prompt(prompt: str) -> tuple[bool, str]:
     required_top_keys = {
         "guiding_case", "case_type", "court_cases", "legal_subjects",
         "legal_provisions", "evidence", "judgment_results", "case_summary",
-        "legal_provision_elements", "facts", "dispute_focuses", "relations",
+        "legal_provision_elements", "facts", "dispute_focuses",
+        "litigation_claims", "procedural_opinions", "argument_points",
+        "judicial_assessments", "relations",
     }
     missing = sorted(required_top_keys - set(parsed.keys()))
     if missing:

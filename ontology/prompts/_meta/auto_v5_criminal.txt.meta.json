@@ -1,6 +1,6 @@
 {
   "prompt_file": "ontology/prompts/auto_v5_criminal.txt",
-  "prompt_sha1": "fe5fca6da4a6565cf8c0605410f4dfed7dbf00ce",
+  "prompt_sha1": "6fc7bae84a0c5c8d44df3118bc1f085eb381a883",
   "few_shot": {
     "row_id": "23127",
     "score": 90.0,
@@ -19,6 +19,10 @@
       "facts": 3,
       "focuses": 2,
       "relations": 7,
+      "claims": 0,
+      "opinions": 0,
+      "arguments": 0,
+      "assessments": 0,
       "relation_types": 4,
       "graph_ready": true,
       "rich_graph": true
@@ -47,11 +51,28 @@
     },
     "change_coverage": {
       "covered_entities": [],
-      "missing_entities": [],
+      "missing_entities": [
+        "ArgumentPoint",
+        "JudicialAssessment",
+        "LitigationClaim",
+        "ProceduralOpinion"
+      ],
       "covered_relations": [],
       "missing_relations": [
-        "concerns_focus",
-        "participates_in_case"
+        "assesses_focus",
+        "based_on_fact",
+        "based_on_provision",
+        "claims_focus",
+        "evaluates_argument",
+        "expresses_opinion",
+        "opines_on_focus",
+        "raises_claim",
+        "responds_to_claim",
+        "responds_to_opinion",
+        "supports_claim",
+        "supports_opinion",
+        "supports_result",
+        "targets_subject"
       ],
       "field_status": {}
     }

@@ -188,6 +188,8 @@ def get_entity_for_extraction(ontology: OntologySchema) -> List[Dict[str, Any]]:
         "LegalRole", "LegalProvision", "CaseSummary",
         "Judge", "Attorney", "Prosecutor", "TrialOrganization",
         "Evidence", "JudgmentResult", "DisputeFocus", "Fact",
+        "LitigationClaim", "ProceduralOpinion", "ArgumentPoint",
+        "JudicialAssessment",
         "CaseParticipant", "Court", "Organization",
     ]
     result = []

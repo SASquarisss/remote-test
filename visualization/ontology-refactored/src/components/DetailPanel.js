@@ -15,6 +15,19 @@ function buildBusinessSummaryText(parts) {
   return parts.filter(Boolean).join('，');
 }
 
+function extractNodeContentFromTitleLines(titleLines, preferredKeys = []) {
+  for (const key of preferredKeys) {
+    const matched = (titleLines || []).find(line => line.startsWith(`${key}：`) || line.startsWith(`${key}:`));
+    if (!matched) continue;
+    const colonIdx = matched.indexOf('：') >= 0 ? matched.indexOf('：') : matched.indexOf(':');
+    if (colonIdx >= 0 && colonIdx < matched.length - 1) {
+      const value = matched.substring(colonIdx + 1).trim();
+      if (value) return value;
+    }
+  }
+  return '';
+}
+
 export class DetailPanel {
   constructor() {
     this.panel = safeGetElement('detailPanel');
@@ -356,9 +369,31 @@ export class DetailPanel {
         }
       } else if (state.selectedGraph === 'parse' && state.parseNodeData) {
         const node = state.parseNodeData;
-        const label = node.fullLabel || node.label || node.id;
+        const titleLines = parseNodeTitleLines(node.title || '');
         const nodeType = node.nodeType || node.group || '未知类型';
-        this.title.textContent = `📋 解析节点: ${escapeHtml(label)}`;
+        const rawFact = nodeType === 'Fact'
+          ? (state.parseGraphData?.json_result?.facts || []).find((item) => {
+              const factId = item?.id || item?.fact_id || '';
+              return factId && (factId === node.id || factId === node.entitySourceId || factId === node.entityStableId);
+            })
+          : null;
+        const factContent = nodeType === 'Fact'
+          ? String(
+              node.content
+              || rawFact?.content
+              || extractNodeContentFromTitleLines(titleLines, ['内容', '事实内容'])
+              || node.fullLabel
+              || node.label
+              || node.id
+            )
+          : '';
+        const label = nodeType === 'Fact'
+          ? factContent
+          : (node.fullLabel || node.label || node.id);
+        const panelTitle = nodeType === 'Fact' && factContent
+          ? `${factContent.slice(0, 24)}${factContent.length > 24 ? '...' : ''}`
+          : label;
+        this.title.textContent = `📋 解析节点: ${panelTitle}`;
         this.panelTabs.style.display = 'flex';
         
         this.tabNeighbors.removeAttribute('data-rendered');
@@ -374,7 +409,6 @@ export class DetailPanel {
           '案由': node.case_type || node.caseType || '',
           '总得分': node.score !== undefined ? node.score : undefined,
         };
-        const titleLines = parseNodeTitleLines(node.title || '');
         const extraEntries = Object.keys(extraFields).filter(k => extraFields[k] !== undefined && extraFields[k] !== null && String(extraFields[k]).trim() !== '');
 
         let html = '';
@@ -409,6 +443,10 @@ export class DetailPanel {
           { label: '所属分组', value: node.group || '' },
           { label: '节点 ID', value: node.id }
         ].concat(extraEntries.map(k => ({ label: k, value: extraFields[k] })));
+
+        if (nodeType === 'Fact' && factContent) {
+          kvItems.unshift({ label: '事实全文', value: factContent });
+        }
 
         html += this.buildKeyValueSection('关键字段', kvItems);
 

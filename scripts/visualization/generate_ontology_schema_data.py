@@ -23,6 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ONTOLOGY_EN = REPO_ROOT / "ontology" / "schemas" / "legal_ontology_v2.yaml"
 ONTOLOGY_ZH = REPO_ROOT / "ontology" / "schemas" / "legal_ontology_v2.zh.yaml"
 OUTPUT_JS = REPO_ROOT / "visualization" / "data" / "ontology_schema_data.js"
+REFACTORED_OUTPUT_JS = REPO_ROOT / "visualization" / "ontology-refactored" / "src" / "data" / "schema.js"
 
 ROOT_COLORS = {
     "LegalNorm": {"bg": "#2980b9", "border": "#154360", "group": "LegalNorm系"},
@@ -41,6 +42,10 @@ ENTITY_STYLE_OVERRIDES = {
     "Evidence": {"shape": "database", "color": "#CD853F", "border": "#A06B32", "size": 6, "note": "证据"},
     "Fact": {"shape": "ellipse", "color": "#8E44AD", "border": "#6C3483", "size": 14, "note": "案件事实"},
     "DisputeFocus": {"shape": "star", "color": "#E67E22", "border": "#CA6F1E", "size": 18, "note": "争议焦点"},
+    "LitigationClaim": {"shape": "box", "color": "#2563EB", "border": "#1D4ED8", "size": 18, "note": "各方诉求"},
+    "ProceduralOpinion": {"shape": "box", "color": "#0EA5E9", "border": "#0284C7", "size": 16, "note": "意见表达"},
+    "ArgumentPoint": {"shape": "diamond", "color": "#7C3AED", "border": "#6D28D9", "size": 15, "note": "理由点"},
+    "JudicialAssessment": {"shape": "hexagon", "color": "#DC2626", "border": "#B91C1C", "size": 18, "note": "法院评判"},
     "LegalRole": {"shape": "diamond", "color": "#FFA500", "border": "#CC8400", "size": 16, "note": "诉讼角色"},
     "CaseSummary": {"shape": "star", "color": "#32CD32", "border": "#28A428", "size": 20, "note": "争议焦点"},
     "LegalSubject": {"shape": "triangle", "color": "#B0C4DE", "border": "#7B899B", "size": 16, "note": "辅助主体"},
@@ -85,6 +90,10 @@ EN_DESCRIPTION_OVERRIDES = {
     "Evidence": "Evidence",
     "DisputeFocus": "Dispute focus",
     "Fact": "Case fact",
+    "LitigationClaim": "Litigation claim / request",
+    "ProceduralOpinion": "Procedural opinion / stance",
+    "ArgumentPoint": "Argument point / reasoning unit",
+    "JudicialAssessment": "Judicial assessment / court response",
     "CaseParticipant": "Case participant (with trial-level role changes)",
     "LegalProvisionElement": "Legal provision constitutive element",
 }
@@ -120,6 +129,20 @@ RELATION_LABEL_OVERRIDES = {
     "retries_from": "再审源自",
     "has_dispute_focus": "具有争议焦点",
     "has_fact": "具有事实",
+    "raises_claim": "提出诉求",
+    "expresses_opinion": "表达意见",
+    "supports_claim": "支撑诉求",
+    "supports_opinion": "支撑意见",
+    "targets_subject": "指向主体",
+    "claims_focus": "诉求对应焦点",
+    "opines_on_focus": "意见围绕焦点",
+    "assesses_focus": "评判争议焦点",
+    "responds_to_claim": "回应诉求",
+    "responds_to_opinion": "回应意见",
+    "evaluates_argument": "评价理由",
+    "based_on_fact": "基于事实",
+    "based_on_provision": "基于法条",
+    "supports_result": "支撑裁判",
     "matches_element": "匹配要件",
     "resolved_by": "由法条解决",
     "leads_to_fact": "推导出",
@@ -256,8 +279,92 @@ def build_relations_by_entity(
     return result
 
 
-def js_var(name: str, value: Any) -> str:
-    return f"var {name} = {json.dumps(value, ensure_ascii=False, indent=2)};\n"
+def js_decl(name: str, value: Any, mode: str = "var") -> str:
+    keyword = "var"
+    if mode == "export_const":
+        keyword = "export const"
+    elif mode == "let":
+        keyword = "let"
+    return f"{keyword} {name} = {json.dumps(value, ensure_ascii=False, indent=2)};\n"
+
+
+def build_legacy_bundle(payload: Dict[str, Any]) -> str:
+    return "".join([
+        "// Auto-generated file. Do not edit by hand.\n",
+        f"// Source: {ONTOLOGY_EN.relative_to(REPO_ROOT)} + {ONTOLOGY_ZH.relative_to(REPO_ROOT)}\n",
+        js_decl("ENTITY_DATA", payload["entities"]),
+        js_decl("RELATIONS_BY_ENTITY", payload["relations_by_entity"]),
+        js_decl("RELATION_DETAILS", payload["relation_details"]),
+        js_decl("ROOT_COLORS", ROOT_COLORS),
+        js_decl("DEFAULT_COLOR", DEFAULT_COLOR),
+        js_decl("ENTITY_STYLES", payload["entity_styles"]),
+        "var TERM_SHAPES = {};\n",
+        "var TERM_COLORS = {};\n",
+        "var TERM_SIZES = {};\n",
+        "Object.keys(ENTITY_STYLES).forEach(function(k) {\n"
+        "  TERM_SHAPES[k] = ENTITY_STYLES[k].shape;\n"
+        "  TERM_COLORS[k] = { bg: ENTITY_STYLES[k].color, border: ENTITY_STYLES[k].border };\n"
+        "  TERM_SIZES[k] = ENTITY_STYLES[k].size || 18;\n"
+        "});\n"
+        "window.__TERM_SHAPES = TERM_SHAPES;\n"
+        "window.__TERM_COLORS = TERM_COLORS;\n"
+        "window.__TERM_SIZES = TERM_SIZES;\n",
+        js_decl("INHERITANCE_CHAIN", payload["inheritance_chain"]),
+        "function getRootColor(typeName) {\n"
+        "  var chain = INHERITANCE_CHAIN[typeName];\n"
+        "  if (!chain) return DEFAULT_COLOR;\n"
+        "  for (var i = 0; i < chain.length; i++) {\n"
+        "    if (ROOT_COLORS[chain[i]]) return ROOT_COLORS[chain[i]];\n"
+        "  }\n"
+        "  return DEFAULT_COLOR;\n"
+        "}\n",
+        js_decl("ZH_LABELS", payload["zh_labels"]),
+        js_decl("EN_DESCRIPTIONS", payload["en_descriptions"]),
+        js_decl("ABSTRACT_ROOTS", payload["abstract_roots"]),
+        js_decl("TYPE_NAMES", payload["type_names"]),
+        js_decl("IS_A_EDGES", payload["is_a_edges"]),
+        js_decl("RELATION_EDGES", payload["relation_edges"]),
+        js_decl("RELATION_LABELS", payload["relation_labels"]),
+        js_decl("RELATION_DESC", payload["relation_desc"]),
+    ])
+
+
+def build_refactored_bundle(payload: Dict[str, Any]) -> str:
+    return "".join([
+        "// Auto-generated file. Do not edit by hand.\n",
+        f"// Source: {ONTOLOGY_EN.relative_to(REPO_ROOT)} + {ONTOLOGY_ZH.relative_to(REPO_ROOT)}\n",
+        js_decl("ENTITY_DATA", payload["entities"], "export_const"),
+        js_decl("RELATIONS_BY_ENTITY", payload["relations_by_entity"], "let"),
+        js_decl("RELATION_DETAILS", payload["relation_details"], "let"),
+        js_decl("ROOT_COLORS", ROOT_COLORS, "let"),
+        js_decl("DEFAULT_COLOR", DEFAULT_COLOR, "let"),
+        js_decl("ENTITY_STYLES", payload["entity_styles"], "export_const"),
+        js_decl("TERM_SHAPES", {}, "let"),
+        js_decl("TERM_COLORS", {}, "let"),
+        js_decl("TERM_SIZES", {}, "let"),
+        "Object.keys(ENTITY_STYLES).forEach(function(k) {\n"
+        "  TERM_SHAPES[k] = ENTITY_STYLES[k].shape;\n"
+        "  TERM_COLORS[k] = { bg: ENTITY_STYLES[k].color, border: ENTITY_STYLES[k].border };\n"
+        "  TERM_SIZES[k] = ENTITY_STYLES[k].size || 18;\n"
+        "});\n",
+        js_decl("INHERITANCE_CHAIN", payload["inheritance_chain"], "let"),
+        "function getRootColor(typeName) {\n"
+        "  let chain = INHERITANCE_CHAIN[typeName];\n"
+        "  if (!chain) return DEFAULT_COLOR;\n"
+        "  for (let i = 0; i < chain.length; i++) {\n"
+        "    if (ROOT_COLORS[chain[i]]) return ROOT_COLORS[chain[i]];\n"
+        "  }\n"
+        "  return DEFAULT_COLOR;\n"
+        "}\n",
+        js_decl("ZH_LABELS", payload["zh_labels"], "export_const"),
+        js_decl("EN_DESCRIPTIONS", payload["en_descriptions"], "export_const"),
+        js_decl("ABSTRACT_ROOTS", payload["abstract_roots"], "let"),
+        js_decl("TYPE_NAMES", payload["type_names"], "export_const"),
+        js_decl("IS_A_EDGES", payload["is_a_edges"], "let"),
+        js_decl("RELATION_EDGES", payload["relation_edges"], "export_const"),
+        js_decl("RELATION_LABELS", payload["relation_labels"], "export_const"),
+        js_decl("RELATION_DESC", payload["relation_desc"], "let"),
+    ])
 
 
 def main() -> None:
@@ -305,48 +412,29 @@ def main() -> None:
             for target in targets:
                 relation_edges.append([rel["name"], source, target])
 
-    lines = [
-        "// Auto-generated file. Do not edit by hand.\n",
-        f"// Source: {ONTOLOGY_EN.relative_to(REPO_ROOT)} + {ONTOLOGY_ZH.relative_to(REPO_ROOT)}\n",
-        js_var("ENTITY_DATA", entities),
-        js_var("RELATIONS_BY_ENTITY", relations_by_entity),
-        js_var("RELATION_DETAILS", relation_details),
-        js_var("ROOT_COLORS", ROOT_COLORS),
-        js_var("DEFAULT_COLOR", DEFAULT_COLOR),
-        js_var("ENTITY_STYLES", entity_styles),
-        "var TERM_SHAPES = {};\n",
-        "var TERM_COLORS = {};\n",
-        "var TERM_SIZES = {};\n",
-        "Object.keys(ENTITY_STYLES).forEach(function(k) {\n"
-        "  TERM_SHAPES[k] = ENTITY_STYLES[k].shape;\n"
-        "  TERM_COLORS[k] = { bg: ENTITY_STYLES[k].color, border: ENTITY_STYLES[k].border };\n"
-        "  TERM_SIZES[k] = ENTITY_STYLES[k].size || 18;\n"
-        "});\n"
-        "window.__TERM_SHAPES = TERM_SHAPES;\n"
-        "window.__TERM_COLORS = TERM_COLORS;\n"
-        "window.__TERM_SIZES = TERM_SIZES;\n",
-        js_var("INHERITANCE_CHAIN", inheritance_chain),
-        "function getRootColor(typeName) {\n"
-        "  var chain = INHERITANCE_CHAIN[typeName];\n"
-        "  if (!chain) return DEFAULT_COLOR;\n"
-        "  for (var i = 0; i < chain.length; i++) {\n"
-        "    if (ROOT_COLORS[chain[i]]) return ROOT_COLORS[chain[i]];\n"
-        "  }\n"
-        "  return DEFAULT_COLOR;\n"
-        "}\n",
-        js_var("ZH_LABELS", zh_labels),
-        js_var("EN_DESCRIPTIONS", en_descriptions),
-        js_var("ABSTRACT_ROOTS", abstract_roots),
-        js_var("TYPE_NAMES", type_names),
-        js_var("IS_A_EDGES", is_a_edges),
-        js_var("RELATION_EDGES", relation_edges),
-        js_var("RELATION_LABELS", relation_labels),
-        js_var("RELATION_DESC", relation_desc),
-    ]
-
+    payload = {
+        "entities": entities,
+        "relations_by_entity": relations_by_entity,
+        "relation_details": relation_details,
+        "entity_styles": entity_styles,
+        "inheritance_chain": inheritance_chain,
+        "zh_labels": zh_labels,
+        "en_descriptions": en_descriptions,
+        "abstract_roots": abstract_roots,
+        "type_names": type_names,
+        "is_a_edges": is_a_edges,
+        "relation_edges": relation_edges,
+        "relation_labels": relation_labels,
+        "relation_desc": relation_desc,
+    }
+    legacy_text = build_legacy_bundle(payload)
+    refactored_text = build_refactored_bundle(payload)
     OUTPUT_JS.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_JS.write_text("".join(lines), encoding="utf-8")
+    OUTPUT_JS.write_text(legacy_text, encoding="utf-8")
+    REFACTORED_OUTPUT_JS.parent.mkdir(parents=True, exist_ok=True)
+    REFACTORED_OUTPUT_JS.write_text(refactored_text, encoding="utf-8")
     print(f"Wrote {OUTPUT_JS}")
+    print(f"Wrote {REFACTORED_OUTPUT_JS}")
 
 
 if __name__ == "__main__":

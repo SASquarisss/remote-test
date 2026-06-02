@@ -1448,9 +1448,14 @@ export class ParseGraph {
 
   getLegalProvisionArticleMarker(node) {
     const explicit = String(node?.articleNumber || node?.article || '').trim();
-    if (explicit) return explicit;
+    if (explicit) {
+      const explicitMatch = explicit.match(/第?\s*([0-9A-Za-z一二三四五六七八九十百千万零〇两甲乙丙丁戊己庚辛壬癸]+(?:之[0-9A-Za-z一二三四五六七八九十百千万零〇两甲乙丙丁戊己庚辛壬癸]+)?)\s*条?/);
+      if (explicitMatch?.[1]) return String(explicitMatch[1]).trim();
+      const cleaned = explicit.replace(/^第/, '').replace(/条$/, '').trim();
+      if (cleaned && cleaned !== '条') return cleaned;
+    }
     const fullLabel = String(node?.fullLabel || node?.label || '');
-    const match = fullLabel.match(/第([^条]{1,12})条/);
+    const match = fullLabel.match(/第([0-9A-Za-z一二三四五六七八九十百千万零〇两甲乙丙丁戊己庚辛壬癸]+(?:之[0-9A-Za-z一二三四五六七八九十百千万零〇两甲乙丙丁戊己庚辛壬癸]+)?)条/);
     return match ? String(match[1] || '').trim() : '';
   }
 
@@ -1476,13 +1481,13 @@ export class ParseGraph {
 
   buildLegalProvisionNodeImage({ text, statuteLabel = '', background, border, fontColor, borderWidth = 2, borderDashes = false }) {
     const glyph = this.escapeSvgText(text);
-    const fontSize = glyph.length >= 4 ? 24 : glyph.length === 3 ? 30 : glyph.length === 2 ? 36 : 42;
+    const fontSize = glyph.length >= 4 ? 30 : glyph.length === 3 ? 36 : glyph.length === 2 ? 44 : 52;
     const dashArray = Array.isArray(borderDashes) ? borderDashes.join(' ') : (borderDashes ? '7 5' : 'none');
-    const safeStatute = this.escapeSvgText(this.truncateLabel(statuteLabel || '', 12));
+    const safeStatute = this.escapeSvgText(this.truncateLabel(statuteLabel || '', 16));
     const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 138">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 156">
         <polygon
-          points="64,6 108,30 108,82 64,106 20,82 20,30"
+          points="72,8 122,36 122,94 72,122 22,94 22,36"
           fill="${background}"
           stroke="${border}"
           stroke-width="${borderWidth}"
@@ -1490,8 +1495,8 @@ export class ParseGraph {
           stroke-linejoin="round"
         />
         <text
-          x="64"
-          y="59"
+          x="72"
+          y="67"
           text-anchor="middle"
           dominant-baseline="middle"
           font-family="Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif"
@@ -1500,12 +1505,12 @@ export class ParseGraph {
           fill="${fontColor}"
         >${glyph}</text>
         <text
-          x="64"
-          y="125"
+          x="72"
+          y="141"
           text-anchor="middle"
           dominant-baseline="middle"
           font-family="Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif"
-          font-size="12"
+          font-size="18"
           font-weight="600"
           fill="${fontColor}"
         >${safeStatute}</text>
@@ -1783,6 +1788,10 @@ export class ParseGraph {
       Evidence:   { shape: 'box', color: '#f7e2bf', border: '#c9852b', fontColor: '#6b3f08' },
       Fact:       { shape: 'box', color: '#e0f2fe', border: '#0284c7', fontColor: '#0f172a' },
       DisputeFocus: { shape: 'diamond', color: '#fef3c7', border: '#d97706', fontColor: '#92400e' },
+      LitigationClaim: { shape: 'diamond', color: '#fce7f3', border: '#db2777', fontColor: '#9d174d' },
+      ProceduralOpinion: { shape: 'box', color: '#ede9fe', border: '#7c3aed', fontColor: '#5b21b6' },
+      ArgumentPoint: { shape: 'box', color: '#fff7ed', border: '#ea580c', fontColor: '#9a3412' },
+      JudicialAssessment: { shape: 'star', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
       JudgmentResult: { shape: 'box', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
       LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400' },
       CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428' },
@@ -1876,8 +1885,8 @@ export class ParseGraph {
             ? { top: 8, right: 12, bottom: 8, left: 12 }
             : undefined,
         size: state.parseGraphSemanticZoom === 'far' && type !== 'CourtCase'
-          ? Math.max(baseSize, type === 'LegalProvision' ? 30 : 22)
-          : (type === 'LegalProvision' ? Math.max(baseSize, 30) : baseSize),
+          ? Math.max(baseSize, type === 'LegalProvision' ? 38 : 24)
+          : (type === 'LegalProvision' ? Math.max(baseSize, 38) : baseSize),
         widthConstraint: isBoxLike
           ? { minimum: type === 'AggregateGroup' ? 74 : 78 }
           : undefined,
@@ -1889,8 +1898,8 @@ export class ParseGraph {
           : { enabled: true, color: mergeColors?.shadow || 'rgba(15,23,42,0.12)', size: mergeColors ? (isPreview ? 18 : 11) : 8, x: 0, y: 2 },
         font: {
           size: type === 'AggregateGroup'
-            ? (state.parseGraphSemanticZoom === 'far' ? 10 : 11)
-            : (state.parseGraphSemanticZoom === 'near' ? 13 : 12),
+            ? (state.parseGraphSemanticZoom === 'far' ? 12 : 13)
+            : (state.parseGraphSemanticZoom === 'near' ? 16 : 15),
           color: fontColor,
           face: 'Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif',
           strokeWidth: 3,

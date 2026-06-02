@@ -65,6 +65,10 @@ ENTITY_OUTPUT_KEYS = {
     "LegalProvisionElement": "legal_provision_elements",
     "Fact": "facts",
     "DisputeFocus": "dispute_focuses",
+    "LitigationClaim": "litigation_claims",
+    "ProceduralOpinion": "procedural_opinions",
+    "ArgumentPoint": "argument_points",
+    "JudicialAssessment": "judicial_assessments",
 }
 
 

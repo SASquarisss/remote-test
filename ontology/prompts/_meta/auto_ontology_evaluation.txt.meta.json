@@ -1,6 +1,6 @@
 {
   "prompt_file": "ontology/prompts/auto_ontology_evaluation.txt",
-  "prompt_sha1": "8fbf3636397f16c9cf24509a44f6538e4b6997be",
-  "ontology_sha1": "87caa8bf8f1a8dc47474e2449de4bde341e252b7",
-  "generated_at": "2026-05-22T07:46:36+00:00"
+  "prompt_sha1": "445880dcb25629873d2f655ba6ee11a2e5e29cde",
+  "ontology_sha1": "66f27c9387db643126733c331e64781924934fda",
+  "generated_at": "2026-06-02T03:25:24+00:00"
 }

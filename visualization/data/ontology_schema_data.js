@@ -391,7 +391,7 @@ var ENTITY_DATA = {
     "is_a": "JudicialEntity"
   },
   "LegalRole": {
-    "description": "法律角色",
+    "description": "法律角色（2026.05.v2.2新增insurer——保险人角色，用于标注保险公司在案件中的身份）",
     "required": [
       "name",
       "code"
@@ -435,7 +435,7 @@ var ENTITY_DATA = {
     "is_a": "JudicialEntity"
   },
   "CourtCase": {
-    "description": "法院案件（精简节点，全文存ES）",
+    "description": "法院案件（精简节点，全文存ES。v2.2新增party_count——群体性案件当事人人数，dispute_resolution_type强制标注）",
     "required": [
       "case_type_id",
       "filing_date",
@@ -483,7 +483,7 @@ var ENTITY_DATA = {
     "is_a": "JudicialEntity"
   },
   "CaseSummary": {
-    "description": "案件结构化摘要（用于热层类案相似度计算）",
+    "description": "案件结构化摘要（用于热层类案相似度计算。v2.2新增claim_amount/judgment_amount——诉请金额/判决金额区分）",
     "required": [
       "case_id"
     ],
@@ -524,7 +524,7 @@ var ENTITY_DATA = {
     "is_a": "JudicialEntity"
   },
   "JudgmentResult": {
-    "description": "裁判结果",
+    "description": "裁判结果（v2.2新增cost_allocation——诉讼费/案件受理费分担信息）",
     "required": [
       "case_id",
       "result_type"
@@ -610,7 +610,7 @@ var ENTITY_DATA = {
     "is_a": "JudicialEntity"
   },
   "Evidence": {
-    "description": "证据",
+    "description": "证据（v2.2新增expert_institution/expert_conclusion——鉴定机构名称和鉴定结论摘要）",
     "required": [],
     "optional": [
       "evidence_type",
@@ -653,7 +653,7 @@ var ENTITY_DATA = {
     "is_a": "JudicialEntity"
   },
   "DisputeFocus": {
-    "description": "案件争议焦点",
+    "description": "案件争议焦点（v2.1新增：resolved_by_provision_ids关联法律条文，resolution_logic法院解决逻辑）",
     "required": [],
     "optional": [
       "case_id",
@@ -706,6 +706,148 @@ var ENTITY_DATA = {
         "undisputed",
         "disputed",
         "to_be_proven"
+      ]
+    },
+    "constraints": [],
+    "is_a": "JudicialEntity"
+  },
+  "LitigationClaim": {
+    "description": "各方明确提出的诉求/请求（如上诉请求、辩护请求、赔偿请求、程序性申请）",
+    "required": [
+      "case_id",
+      "claim_text"
+    ],
+    "optional": [
+      "case_number",
+      "subject_id",
+      "subject_name",
+      "role_code",
+      "claim_type",
+      "requested_outcome",
+      "amount",
+      "target_subject_id",
+      "target_subject_name",
+      "legal_basis_summary"
+    ],
+    "enums": {
+      "claim_type": [
+        "appeal_claim",
+        "defense_claim",
+        "prosecution_claim",
+        "civil_claim",
+        "counterclaim",
+        "procedural_request",
+        "sentencing_request",
+        "compensation_request",
+        "other"
+      ]
+    },
+    "constraints": [],
+    "is_a": "JudicialEntity"
+  },
+  "ProceduralOpinion": {
+    "description": "围绕诉求提出的意见表达（如上诉意见、辩护意见、代理意见、答辩意见）",
+    "required": [
+      "case_id",
+      "content"
+    ],
+    "optional": [
+      "case_number",
+      "subject_id",
+      "subject_name",
+      "role_code",
+      "opinion_type",
+      "stance",
+      "related_claim_ids"
+    ],
+    "enums": {
+      "opinion_type": [
+        "appeal_opinion",
+        "defense_opinion",
+        "agent_opinion",
+        "prosecution_opinion",
+        "objection_opinion",
+        "procedural_opinion",
+        "other"
+      ],
+      "stance": [
+        "support",
+        "oppose",
+        "partial_support",
+        "neutral",
+        "unknown"
+      ]
+    },
+    "constraints": [],
+    "is_a": "JudicialEntity"
+  },
+  "ArgumentPoint": {
+    "description": "支撑诉求/意见的理由点（事实理由、证据理由、法律理由、程序理由等）",
+    "required": [
+      "case_id",
+      "argument_text"
+    ],
+    "optional": [
+      "case_number",
+      "subject_id",
+      "subject_name",
+      "role_code",
+      "argument_basis_type",
+      "supports_claim_id",
+      "supports_opinion_id",
+      "related_fact_ids",
+      "related_provision_ids"
+    ],
+    "enums": {
+      "argument_basis_type": [
+        "fact_based",
+        "evidence_based",
+        "legal_based",
+        "procedural_based",
+        "policy_based",
+        "sentencing_based",
+        "mixed",
+        "other"
+      ]
+    },
+    "constraints": [],
+    "is_a": "JudicialEntity"
+  },
+  "JudicialAssessment": {
+    "description": "法院对诉求、意见、理由的回应与综合评判",
+    "required": [
+      "case_id",
+      "assessment_text"
+    ],
+    "optional": [
+      "case_number",
+      "issue_type",
+      "assessment_outcome",
+      "responds_to_claim_ids",
+      "responds_to_opinion_ids",
+      "responds_to_argument_ids",
+      "based_on_fact_ids",
+      "based_on_provision_ids",
+      "supports_judgment_result_ids"
+    ],
+    "enums": {
+      "issue_type": [
+        "claim",
+        "opinion",
+        "argument",
+        "fact",
+        "evidence",
+        "provision",
+        "sentencing",
+        "procedure",
+        "mixed"
+      ],
+      "assessment_outcome": [
+        "adopted",
+        "rejected",
+        "partially_adopted",
+        "not_addressed",
+        "unclear"
       ]
     },
     "constraints": [],
@@ -779,6 +921,48 @@ var RELATIONS_BY_ENTITY = {
           "end_time",
           "role_description"
         ]
+      },
+      {
+        "relation": "participates_in_case",
+        "target": "CourtCase",
+        "cardinality": "many_to_many",
+        "description": "主体作为案件参与方进入特定案件上下文",
+        "attributes": []
+      },
+      {
+        "relation": "relates_to_fact",
+        "target": "Fact",
+        "cardinality": "many_to_many",
+        "description": "主体参与、经历或关联某一案件事实",
+        "attributes": []
+      },
+      {
+        "relation": "raises_claim",
+        "target": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "description": "主体提出某项诉求/请求",
+        "attributes": []
+      },
+      {
+        "relation": "expresses_opinion",
+        "target": "ProceduralOpinion",
+        "cardinality": "many_to_many",
+        "description": "主体发表某项意见（上诉意见、辩护意见、代理意见等）",
+        "attributes": []
+      },
+      {
+        "relation": "concerns_focus",
+        "target": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "description": "主体与某一争议焦点存在直接对应、主张或被评价关系",
+        "attributes": []
+      },
+      {
+        "relation": "receives_judgment",
+        "target": "JudgmentResult",
+        "cardinality": "many_to_many",
+        "description": "主体对应某一裁判结果、处理结果或责任结果",
+        "attributes": []
       }
     ],
     "incoming": [
@@ -793,6 +977,13 @@ var RELATIONS_BY_ENTITY = {
           "authorization_period_start",
           "authorization_period_end"
         ]
+      },
+      {
+        "relation": "targets_subject",
+        "source": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "description": "诉求直接针对的主体对象",
+        "attributes": []
       }
     ]
   },
@@ -855,6 +1046,27 @@ var RELATIONS_BY_ENTITY = {
         "source": "JudgmentResult",
         "cardinality": "many_to_many",
         "description": "裁判结果依据法律条文",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_provision",
+        "source": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "description": "诉求/理由/法院评判援引或依托法律条文",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_provision",
+        "source": "ArgumentPoint",
+        "cardinality": "many_to_many",
+        "description": "诉求/理由/法院评判援引或依托法律条文",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_provision",
+        "source": "JudicialAssessment",
+        "cardinality": "many_to_many",
+        "description": "诉求/理由/法院评判援引或依托法律条文",
         "attributes": []
       },
       {
@@ -987,7 +1199,7 @@ var RELATIONS_BY_ENTITY = {
         "relation": "includes",
         "source": "TrialOrganization",
         "cardinality": "one_to_many",
-        "description": "审判组织包含法官",
+        "description": "审判组织包含法官（is_presiding=true 表示审判长）",
         "attributes": [
           "is_presiding"
         ]
@@ -1238,6 +1450,13 @@ var RELATIONS_BY_ENTITY = {
         "cardinality": "one_to_one",
         "description": "再审案件源自原审案件",
         "attributes": []
+      },
+      {
+        "relation": "participates_in_case",
+        "source": "LegalSubject",
+        "cardinality": "many_to_many",
+        "description": "主体作为案件参与方进入特定案件上下文",
+        "attributes": []
       }
     ]
   },
@@ -1259,7 +1478,7 @@ var RELATIONS_BY_ENTITY = {
         "relation": "includes",
         "target": "Judge",
         "cardinality": "one_to_many",
-        "description": "审判组织包含法官",
+        "description": "审判组织包含法官（is_presiding=true 表示审判长）",
         "attributes": [
           "is_presiding"
         ]
@@ -1298,6 +1517,20 @@ var RELATIONS_BY_ENTITY = {
         "source": "ExecutionInfo",
         "cardinality": "one_to_one",
         "description": "执行依据裁判结果",
+        "attributes": []
+      },
+      {
+        "relation": "supports_result",
+        "source": "JudicialAssessment",
+        "cardinality": "many_to_many",
+        "description": "法院评判支撑最终裁判结果",
+        "attributes": []
+      },
+      {
+        "relation": "receives_judgment",
+        "source": "LegalSubject",
+        "cardinality": "many_to_many",
+        "description": "主体对应某一裁判结果、处理结果或责任结果",
         "attributes": []
       },
       {
@@ -1397,6 +1630,34 @@ var RELATIONS_BY_ENTITY = {
         "cardinality": "one_to_many",
         "description": "案件具有争议焦点",
         "attributes": []
+      },
+      {
+        "relation": "claims_focus",
+        "source": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "description": "诉求对应某一争议焦点",
+        "attributes": []
+      },
+      {
+        "relation": "opines_on_focus",
+        "source": "ProceduralOpinion",
+        "cardinality": "many_to_many",
+        "description": "意见围绕某一争议焦点展开",
+        "attributes": []
+      },
+      {
+        "relation": "assesses_focus",
+        "source": "JudicialAssessment",
+        "cardinality": "many_to_many",
+        "description": "法院评判直接回应某一争议焦点",
+        "attributes": []
+      },
+      {
+        "relation": "concerns_focus",
+        "source": "LegalSubject",
+        "cardinality": "many_to_many",
+        "description": "主体与某一争议焦点存在直接对应、主张或被评价关系",
+        "attributes": []
       }
     ]
   },
@@ -1449,8 +1710,234 @@ var RELATIONS_BY_ENTITY = {
         "cardinality": "one_to_many",
         "description": "案件具有事实",
         "attributes": []
+      },
+      {
+        "relation": "relates_to_fact",
+        "source": "LegalSubject",
+        "cardinality": "many_to_many",
+        "description": "主体参与、经历或关联某一案件事实",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "source": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "source": "ProceduralOpinion",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "source": "ArgumentPoint",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "source": "JudicialAssessment",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
       }
     ]
+  },
+  "LitigationClaim": {
+    "outgoing": [
+      {
+        "relation": "targets_subject",
+        "target": "LegalSubject",
+        "cardinality": "many_to_many",
+        "description": "诉求直接针对的主体对象",
+        "attributes": []
+      },
+      {
+        "relation": "claims_focus",
+        "target": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "description": "诉求对应某一争议焦点",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "target": "Fact",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_provision",
+        "target": "LegalProvision",
+        "cardinality": "many_to_many",
+        "description": "诉求/理由/法院评判援引或依托法律条文",
+        "attributes": []
+      }
+    ],
+    "incoming": [
+      {
+        "relation": "raises_claim",
+        "source": "LegalSubject",
+        "cardinality": "many_to_many",
+        "description": "主体提出某项诉求/请求",
+        "attributes": []
+      },
+      {
+        "relation": "supports_claim",
+        "source": "ArgumentPoint",
+        "cardinality": "many_to_many",
+        "description": "理由点支撑某项诉求/请求",
+        "attributes": []
+      },
+      {
+        "relation": "responds_to_claim",
+        "source": "JudicialAssessment",
+        "cardinality": "many_to_many",
+        "description": "法院评判回应某项诉求/请求",
+        "attributes": []
+      }
+    ]
+  },
+  "ProceduralOpinion": {
+    "outgoing": [
+      {
+        "relation": "opines_on_focus",
+        "target": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "description": "意见围绕某一争议焦点展开",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "target": "Fact",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
+      }
+    ],
+    "incoming": [
+      {
+        "relation": "expresses_opinion",
+        "source": "LegalSubject",
+        "cardinality": "many_to_many",
+        "description": "主体发表某项意见（上诉意见、辩护意见、代理意见等）",
+        "attributes": []
+      },
+      {
+        "relation": "supports_opinion",
+        "source": "ArgumentPoint",
+        "cardinality": "many_to_many",
+        "description": "理由点支撑某项意见表达",
+        "attributes": []
+      },
+      {
+        "relation": "responds_to_opinion",
+        "source": "JudicialAssessment",
+        "cardinality": "many_to_many",
+        "description": "法院评判回应某项意见",
+        "attributes": []
+      }
+    ]
+  },
+  "ArgumentPoint": {
+    "outgoing": [
+      {
+        "relation": "supports_claim",
+        "target": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "description": "理由点支撑某项诉求/请求",
+        "attributes": []
+      },
+      {
+        "relation": "supports_opinion",
+        "target": "ProceduralOpinion",
+        "cardinality": "many_to_many",
+        "description": "理由点支撑某项意见表达",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "target": "Fact",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_provision",
+        "target": "LegalProvision",
+        "cardinality": "many_to_many",
+        "description": "诉求/理由/法院评判援引或依托法律条文",
+        "attributes": []
+      }
+    ],
+    "incoming": [
+      {
+        "relation": "evaluates_argument",
+        "source": "JudicialAssessment",
+        "cardinality": "many_to_many",
+        "description": "法院评判评价某个理由点",
+        "attributes": []
+      }
+    ]
+  },
+  "JudicialAssessment": {
+    "outgoing": [
+      {
+        "relation": "assesses_focus",
+        "target": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "description": "法院评判直接回应某一争议焦点",
+        "attributes": []
+      },
+      {
+        "relation": "responds_to_claim",
+        "target": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "description": "法院评判回应某项诉求/请求",
+        "attributes": []
+      },
+      {
+        "relation": "responds_to_opinion",
+        "target": "ProceduralOpinion",
+        "cardinality": "many_to_many",
+        "description": "法院评判回应某项意见",
+        "attributes": []
+      },
+      {
+        "relation": "evaluates_argument",
+        "target": "ArgumentPoint",
+        "cardinality": "many_to_many",
+        "description": "法院评判评价某个理由点",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_fact",
+        "target": "Fact",
+        "cardinality": "many_to_many",
+        "description": "诉求/意见/理由/评判以案件事实为基础",
+        "attributes": []
+      },
+      {
+        "relation": "based_on_provision",
+        "target": "LegalProvision",
+        "cardinality": "many_to_many",
+        "description": "诉求/理由/法院评判援引或依托法律条文",
+        "attributes": []
+      },
+      {
+        "relation": "supports_result",
+        "target": "JudgmentResult",
+        "cardinality": "many_to_many",
+        "description": "法院评判支撑最终裁判结果",
+        "attributes": []
+      }
+    ],
+    "incoming": []
   },
   "CaseParticipant": {
     "outgoing": [],
@@ -1668,7 +2155,7 @@ var RELATION_DETAILS = {
   "includes": {
     "name": "includes",
     "cardinality": "one_to_many",
-    "description": "审判组织包含法官",
+    "description": "审判组织包含法官（is_presiding=true 表示审判长）",
     "attributes": [
       "is_presiding"
     ],
@@ -1711,6 +2198,150 @@ var RELATION_DETAILS = {
     "name": "has_fact",
     "cardinality": "one_to_many",
     "description": "案件具有事实",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "participates_in_case": {
+    "name": "participates_in_case",
+    "cardinality": "many_to_many",
+    "description": "主体作为案件参与方进入特定案件上下文",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "relates_to_fact": {
+    "name": "relates_to_fact",
+    "cardinality": "many_to_many",
+    "description": "主体参与、经历或关联某一案件事实",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "raises_claim": {
+    "name": "raises_claim",
+    "cardinality": "many_to_many",
+    "description": "主体提出某项诉求/请求",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "expresses_opinion": {
+    "name": "expresses_opinion",
+    "cardinality": "many_to_many",
+    "description": "主体发表某项意见（上诉意见、辩护意见、代理意见等）",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "supports_claim": {
+    "name": "supports_claim",
+    "cardinality": "many_to_many",
+    "description": "理由点支撑某项诉求/请求",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "supports_opinion": {
+    "name": "supports_opinion",
+    "cardinality": "many_to_many",
+    "description": "理由点支撑某项意见表达",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "targets_subject": {
+    "name": "targets_subject",
+    "cardinality": "many_to_many",
+    "description": "诉求直接针对的主体对象",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "claims_focus": {
+    "name": "claims_focus",
+    "cardinality": "many_to_many",
+    "description": "诉求对应某一争议焦点",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "opines_on_focus": {
+    "name": "opines_on_focus",
+    "cardinality": "many_to_many",
+    "description": "意见围绕某一争议焦点展开",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "assesses_focus": {
+    "name": "assesses_focus",
+    "cardinality": "many_to_many",
+    "description": "法院评判直接回应某一争议焦点",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "responds_to_claim": {
+    "name": "responds_to_claim",
+    "cardinality": "many_to_many",
+    "description": "法院评判回应某项诉求/请求",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "responds_to_opinion": {
+    "name": "responds_to_opinion",
+    "cardinality": "many_to_many",
+    "description": "法院评判回应某项意见",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "evaluates_argument": {
+    "name": "evaluates_argument",
+    "cardinality": "many_to_many",
+    "description": "法院评判评价某个理由点",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "based_on_fact": {
+    "name": "based_on_fact",
+    "cardinality": "many_to_many",
+    "description": "诉求/意见/理由/评判以案件事实为基础",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "based_on_provision": {
+    "name": "based_on_provision",
+    "cardinality": "many_to_many",
+    "description": "诉求/理由/法院评判援引或依托法律条文",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "supports_result": {
+    "name": "supports_result",
+    "cardinality": "many_to_many",
+    "description": "法院评判支撑最终裁判结果",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "concerns_focus": {
+    "name": "concerns_focus",
+    "cardinality": "many_to_many",
+    "description": "主体与某一争议焦点存在直接对应、主张或被评价关系",
+    "attributes": [],
+    "optional_attributes": [],
+    "acyclic": false
+  },
+  "receives_judgment": {
+    "name": "receives_judgment",
+    "cardinality": "many_to_many",
+    "description": "主体对应某一裁判结果、处理结果或责任结果",
     "attributes": [],
     "optional_attributes": [],
     "acyclic": false
@@ -1988,6 +2619,34 @@ var ENTITY_STYLES = {
     "size": 14,
     "note": "案件事实"
   },
+  "LitigationClaim": {
+    "shape": "box",
+    "color": "#2563EB",
+    "border": "#1D4ED8",
+    "size": 18,
+    "note": "各方诉求"
+  },
+  "ProceduralOpinion": {
+    "shape": "box",
+    "color": "#0EA5E9",
+    "border": "#0284C7",
+    "size": 16,
+    "note": "意见表达"
+  },
+  "ArgumentPoint": {
+    "shape": "diamond",
+    "color": "#7C3AED",
+    "border": "#6D28D9",
+    "size": 15,
+    "note": "理由点"
+  },
+  "JudicialAssessment": {
+    "shape": "hexagon",
+    "color": "#DC2626",
+    "border": "#B91C1C",
+    "size": 18,
+    "note": "法院评判"
+  },
   "CaseParticipant": {
     "shape": "box",
     "color": "#d35400",
@@ -2131,6 +2790,22 @@ var INHERITANCE_CHAIN = {
     "Fact",
     "JudicialEntity"
   ],
+  "LitigationClaim": [
+    "LitigationClaim",
+    "JudicialEntity"
+  ],
+  "ProceduralOpinion": [
+    "ProceduralOpinion",
+    "JudicialEntity"
+  ],
+  "ArgumentPoint": [
+    "ArgumentPoint",
+    "JudicialEntity"
+  ],
+  "JudicialAssessment": [
+    "JudicialAssessment",
+    "JudicialEntity"
+  ],
   "CaseParticipant": [
     "CaseParticipant",
     "JudicialEntity"
@@ -2165,17 +2840,21 @@ var ZH_LABELS = {
   "LawFirm": "律师事务所",
   "ExpertInstitution": "鉴定机构",
   "District": "辖区",
-  "LegalRole": "法律角色",
-  "CourtCase": "法院案件（精简节点，全文存ES）",
-  "CaseSummary": "案件结构化摘要（用于热层类案相似度计算）",
+  "LegalRole": "法律角色（2026.05.v2.2新增insurer——保险人角色，用于标注保险公司在案件中的身份）",
+  "CourtCase": "法院案件（精简节点，全文存ES。v2.2新增party_count——群体性案件当事人人数，dispute_resolution_type强制标注）",
+  "CaseSummary": "案件结构化摘要（用于热层类案相似度计算。v2.2新增claim_amount/judgment_amount——诉请金额/判决金额区分）",
   "TrialOrganization": "审判组织",
-  "JudgmentResult": "裁判结果",
+  "JudgmentResult": "裁判结果（v2.2新增cost_allocation——诉讼费/案件受理费分担信息）",
   "ExecutionInfo": "执行信息",
   "LegalDocument": "法律文书",
-  "Evidence": "证据",
-  "DisputeFocus": "案件争议焦点",
+  "Evidence": "证据（v2.2新增expert_institution/expert_conclusion——鉴定机构名称和鉴定结论摘要）",
+  "DisputeFocus": "案件争议焦点（v2.1新增：resolved_by_provision_ids关联法律条文，resolution_logic法院解决逻辑）",
   "LegalProvisionElement": "法条构成要件要素（主体/行为/结果/因果关系/主观要件等结构化分解，用于事实→法条匹配推理）",
   "Fact": "案件事实",
+  "LitigationClaim": "各方明确提出的诉求/请求（如上诉请求、辩护请求、赔偿请求、程序性申请）",
+  "ProceduralOpinion": "围绕诉求提出的意见表达（如上诉意见、辩护意见、代理意见、答辩意见）",
+  "ArgumentPoint": "支撑诉求/意见的理由点（事实理由、证据理由、法律理由、程序理由等）",
+  "JudicialAssessment": "法院对诉求、意见、理由的回应与综合评判",
   "CaseParticipant": "案件参与人（含审级角色变更）"
 };
 var EN_DESCRIPTIONS = {
@@ -2210,6 +2889,10 @@ var EN_DESCRIPTIONS = {
   "DisputeFocus": "Dispute focus",
   "LegalProvisionElement": "Legal provision constitutive element",
   "Fact": "Case fact",
+  "LitigationClaim": "Litigation claim / request",
+  "ProceduralOpinion": "Procedural opinion / stance",
+  "ArgumentPoint": "Argument point / reasoning unit",
+  "JudicialAssessment": "Judicial assessment / court response",
   "CaseParticipant": "Case participant (with trial-level role changes)"
 };
 var ABSTRACT_ROOTS = {
@@ -2246,6 +2929,10 @@ var TYPE_NAMES = [
   "Evidence",
   "DisputeFocus",
   "Fact",
+  "LitigationClaim",
+  "ProceduralOpinion",
+  "ArgumentPoint",
+  "JudicialAssessment",
   "CaseParticipant"
 ];
 var IS_A_EDGES = [
@@ -2351,6 +3038,22 @@ var IS_A_EDGES = [
   ],
   [
     "Fact",
+    "JudicialEntity"
+  ],
+  [
+    "LitigationClaim",
+    "JudicialEntity"
+  ],
+  [
+    "ProceduralOpinion",
+    "JudicialEntity"
+  ],
+  [
+    "ArgumentPoint",
+    "JudicialEntity"
+  ],
+  [
+    "JudicialAssessment",
     "JudicialEntity"
   ],
   [
@@ -2510,6 +3213,121 @@ var RELATION_EDGES = [
     "Fact"
   ],
   [
+    "participates_in_case",
+    "LegalSubject",
+    "CourtCase"
+  ],
+  [
+    "relates_to_fact",
+    "LegalSubject",
+    "Fact"
+  ],
+  [
+    "raises_claim",
+    "LegalSubject",
+    "LitigationClaim"
+  ],
+  [
+    "expresses_opinion",
+    "LegalSubject",
+    "ProceduralOpinion"
+  ],
+  [
+    "supports_claim",
+    "ArgumentPoint",
+    "LitigationClaim"
+  ],
+  [
+    "supports_opinion",
+    "ArgumentPoint",
+    "ProceduralOpinion"
+  ],
+  [
+    "targets_subject",
+    "LitigationClaim",
+    "LegalSubject"
+  ],
+  [
+    "claims_focus",
+    "LitigationClaim",
+    "DisputeFocus"
+  ],
+  [
+    "opines_on_focus",
+    "ProceduralOpinion",
+    "DisputeFocus"
+  ],
+  [
+    "assesses_focus",
+    "JudicialAssessment",
+    "DisputeFocus"
+  ],
+  [
+    "responds_to_claim",
+    "JudicialAssessment",
+    "LitigationClaim"
+  ],
+  [
+    "responds_to_opinion",
+    "JudicialAssessment",
+    "ProceduralOpinion"
+  ],
+  [
+    "evaluates_argument",
+    "JudicialAssessment",
+    "ArgumentPoint"
+  ],
+  [
+    "based_on_fact",
+    "LitigationClaim",
+    "Fact"
+  ],
+  [
+    "based_on_fact",
+    "ProceduralOpinion",
+    "Fact"
+  ],
+  [
+    "based_on_fact",
+    "ArgumentPoint",
+    "Fact"
+  ],
+  [
+    "based_on_fact",
+    "JudicialAssessment",
+    "Fact"
+  ],
+  [
+    "based_on_provision",
+    "LitigationClaim",
+    "LegalProvision"
+  ],
+  [
+    "based_on_provision",
+    "ArgumentPoint",
+    "LegalProvision"
+  ],
+  [
+    "based_on_provision",
+    "JudicialAssessment",
+    "LegalProvision"
+  ],
+  [
+    "supports_result",
+    "JudicialAssessment",
+    "JudgmentResult"
+  ],
+  [
+    "concerns_focus",
+    "LegalSubject",
+    "DisputeFocus"
+  ],
+  [
+    "receives_judgment",
+    "LegalSubject",
+    "JudgmentResult"
+  ],
+  [
     "matches_element",
     "Fact",
     "LegalProvisionElement"
@@ -2560,6 +3378,24 @@ var RELATION_LABELS = {
   "retries_from": "再审源自",
   "has_dispute_focus": "具有争议焦点",
   "has_fact": "具有事实",
+  "participates_in_case": "主体作为案件参与方进入特定案件上下文",
+  "relates_to_fact": "主体参与、经历或关联某一案件事实",
+  "raises_claim": "提出诉求",
+  "expresses_opinion": "表达意见",
+  "supports_claim": "支撑诉求",
+  "supports_opinion": "支撑意见",
+  "targets_subject": "指向主体",
+  "claims_focus": "诉求对应焦点",
+  "opines_on_focus": "意见围绕焦点",
+  "assesses_focus": "评判争议焦点",
+  "responds_to_claim": "回应诉求",
+  "responds_to_opinion": "回应意见",
+  "evaluates_argument": "评价理由",
+  "based_on_fact": "基于事实",
+  "based_on_provision": "基于法条",
+  "supports_result": "支撑裁判",
+  "concerns_focus": "主体与某一争议焦点存在直接对应、主张或被评价关系",
+  "receives_judgment": "主体对应某一裁判结果、处理结果或责任结果",
   "matches_element": "匹配要件",
   "resolved_by": "由法条解决",
   "leads_to": "事实/争议焦点推导出裁判结果（三段论推理的结论链路）"
@@ -2594,6 +3430,24 @@ var RELATION_DESC = {
   "retries_from": "CourtCase → CourtCase (one_to_one)",
   "has_dispute_focus": "CourtCase → DisputeFocus (one_to_many)",
   "has_fact": "CourtCase → Fact (one_to_many)",
+  "participates_in_case": "LegalSubject → CourtCase (many_to_many)",
+  "relates_to_fact": "LegalSubject → Fact (many_to_many)",
+  "raises_claim": "LegalSubject → LitigationClaim (many_to_many)",
+  "expresses_opinion": "LegalSubject → ProceduralOpinion (many_to_many)",
+  "supports_claim": "ArgumentPoint → LitigationClaim (many_to_many)",
+  "supports_opinion": "ArgumentPoint → ProceduralOpinion (many_to_many)",
+  "targets_subject": "LitigationClaim → LegalSubject (many_to_many)",
+  "claims_focus": "LitigationClaim → DisputeFocus (many_to_many)",
+  "opines_on_focus": "ProceduralOpinion → DisputeFocus (many_to_many)",
+  "assesses_focus": "JudicialAssessment → DisputeFocus (many_to_many)",
+  "responds_to_claim": "JudicialAssessment → LitigationClaim (many_to_many)",
+  "responds_to_opinion": "JudicialAssessment → ProceduralOpinion (many_to_many)",
+  "evaluates_argument": "JudicialAssessment → ArgumentPoint (many_to_many)",
+  "based_on_fact": "LitigationClaim, ProceduralOpinion, ArgumentPoint, JudicialAssessment → Fact (many_to_many)",
+  "based_on_provision": "LitigationClaim, ArgumentPoint, JudicialAssessment → LegalProvision (many_to_many)",
+  "supports_result": "JudicialAssessment → JudgmentResult (many_to_many)",
+  "concerns_focus": "LegalSubject → DisputeFocus (many_to_many)",
+  "receives_judgment": "LegalSubject → JudgmentResult (many_to_many)",
   "matches_element": "Fact → LegalProvisionElement (many_to_many)",
   "resolved_by": "DisputeFocus → LegalProvision (many_to_many)",
   "leads_to": "Fact, DisputeFocus → JudgmentResult (many_to_many)"

@@ -1009,9 +1009,13 @@ export class TerminalPanel {
         });
         this.renderVersionRail([baseVersion], 'v0');
         
-        // Auto-run quality analysis
+        // Auto-run quality analysis, but do not downgrade a successful parse into a parse failure.
         this.switchTab('termIssuesTabContent');
-        await this.handleQualityAnalysis(result.json_result);
+        try {
+          await this.handleQualityAnalysis(result.json_result);
+        } catch (qualityErr) {
+          this.setStatus(`解析成功，但质量分析失败: ${qualityErr.message}`, '#f59e0b');
+        }
       }
     } catch (err) {
       this.setStatus(`解析失败: ${err.message}`, '#e74c3c');
@@ -1606,6 +1610,11 @@ export class TerminalPanel {
     const activePrimaryEntity = activeEntry?.primary_entity || {};
     const activeChainWarning = activeGraphPayload.warning_text || '当前未形成有效的实体关系链，暂不能自动生成主检索正文。';
     const activeChainMissingItems = Array.isArray(activeGraphPayload.missing_items) ? activeGraphPayload.missing_items.filter(Boolean) : [];
+    const normalizedRetrievalText = String(activeEntry?.retrieval_text || '').trim();
+    const normalizedExpandedText = String(activeEntry?.expanded_text || '').trim();
+    const effectiveExpandedText = normalizedExpandedText && normalizedExpandedText !== normalizedRetrievalText
+      ? activeEntry?.expanded_text || ''
+      : '';
     const metaHeaderLines = this.buildRetrievalMetaHeaderLines(activeMetaHeader);
     const previewDocText = escapeHtml(JSON.stringify(previewDoc || {}, null, 2));
     const typeOptions = ['all', ...Array.from(new Set(entries.map(item => item?.entry_type).filter(Boolean)))];
@@ -1639,6 +1648,9 @@ export class TerminalPanel {
                 ['written', '已写入'],
               ].map(([value, label]) => `<option value="${value}" ${filters.status === value ? 'selected' : ''}>${label}</option>`).join('')}
             </select>
+            <span style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;background:#fff;color:#475569;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(activeGraphPayload.description || '-')}">
+              链路说明：${escapeHtml(activeGraphPayload.description || '-')}
+            </span>
           </div>
           <div style="font-size:12px;color:#64748b;display:flex;gap:10px;flex-wrap:wrap;">
             <span>来源版本：${escapeHtml(bundle.source_parse_version_id || 'v0')}</span>
@@ -1709,7 +1721,7 @@ export class TerminalPanel {
             `}
             <textarea id="retrievalTextInput" style="min-height:160px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;">${escapeHtml(activeEntry?.retrieval_text || '')}</textarea>
             <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('补充上下文', 'expanded_text')}</label>
-            <textarea id="retrievalExpandedInput" style="min-height:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;">${escapeHtml(activeEntry?.expanded_text || '')}</textarea>
+            <textarea id="retrievalExpandedInput" style="min-height:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;">${escapeHtml(effectiveExpandedText)}</textarea>
             <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('标签（逗号分隔）', 'keywords')}</label>
             <input id="retrievalKeywordsInput" value="${escapeHtml((activeEntry?.keywords || []).join('，'))}" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;" />
           </div>
@@ -1717,7 +1729,6 @@ export class TerminalPanel {
             <div style="font-size:12px;color:#475569;font-weight:700;">知识图谱链路</div>
             <div style="margin-top:6px;padding:10px;border:1px solid ${activeGraphPayload.is_valid_chain ? '#e5e7eb' : '#fecaca'};border-radius:8px;background:${activeGraphPayload.is_valid_chain ? '#fff' : '#fef2f2'};font-size:12px;color:#334155;line-height:1.7;">
               <div>链路名称：${escapeHtml(activeGraphPayload.path_label || activeGraphPayload.path_type || '-')}</div>
-              <div>链路说明：${escapeHtml(activeGraphPayload.description || '-')}</div>
               <div>首要实体：${escapeHtml(activePrimaryEntity.label || '-')}</div>
               <div style="margin-top:6px;color:${activeGraphPayload.is_valid_chain ? '#1e293b' : '#b91c1c'};white-space:pre-wrap;">${escapeHtml(activeGraphPayload.is_valid_chain ? (activeGraphPayload.chain_text || '暂无链路文本') : (((activeChainWarning || '').split('\n')[0]) || activeChainWarning))}</div>
               ${activeGraphPayload.is_valid_chain || !activeChainMissingItems.length ? '' : `<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;color:#b91c1c;">${activeChainMissingItems.map((item) => `<div>• ${escapeHtml(item)}</div>`).join('')}</div>`}

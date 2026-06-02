@@ -539,6 +539,29 @@ def _normalize_scalar_text(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value).strip())
 
 
+def _normalize_relation_ref_list(
+    values: Any,
+    *,
+    index_to_id: Optional[Dict[int, str]] = None,
+) -> List[str]:
+    if not isinstance(values, list):
+        return []
+    result: List[str] = []
+    for value in values:
+        resolved = ""
+        if isinstance(value, int) and index_to_id and value in index_to_id:
+            resolved = index_to_id[value]
+        else:
+            text = str(value or "").strip()
+            if text.isdigit() and index_to_id and int(text) in index_to_id:
+                resolved = index_to_id[int(text)]
+            else:
+                resolved = _normalize_relation_ref(text)
+        if resolved:
+            result.append(resolved)
+    return _dedupe_preserve_order(result)
+
+
 def _normalize_scalar_value(value: Any) -> Any:
     if isinstance(value, str):
         return _normalize_scalar_text(value)
@@ -563,6 +586,10 @@ def _build_stable_entity_id(entity_type: str, item: Dict[str, Any]) -> str:
         "legal_subjects": "subj_sig",
         "facts": "fact_sig",
         "dispute_focuses": "focus_sig",
+        "litigation_claims": "claim_sig",
+        "procedural_opinions": "opinion_sig",
+        "argument_points": "arg_sig",
+        "judicial_assessments": "assessment_sig",
         "evidence": "evid_sig",
         "judgment_results": "jr_sig",
         "legal_provisions": "prov_sig",
@@ -587,7 +614,11 @@ def _iter_entity_id_candidates(item: Dict[str, Any]) -> List[str]:
     if not isinstance(item, dict):
         return []
     candidates = []
-    for key in ("id", "stable_id", "node_id", "evidence_id", "fact_id", "focus_id", "result_id", "provision_id", "element_id", "subject_id"):
+    for key in (
+        "id", "stable_id", "node_id", "evidence_id", "fact_id", "focus_id",
+        "claim_id", "opinion_id", "argument_id", "assessment_id", "result_id",
+        "provision_id", "element_id", "subject_id"
+    ):
         value = item.get(key)
         text = _normalize_relation_ref(str(value or "").strip())
         if text:
@@ -615,6 +646,83 @@ def _entity_signature_payload(entity_type: str, item: Dict[str, Any]) -> Dict[st
             "case_number": _normalize_scalar_text(data.get("case_number") or data.get("related_case_number")),
             "focus_type": _normalize_scalar_text(data.get("focus_type")),
             "resolution_logic": _normalize_scalar_text(data.get("resolution_logic")),
+        },
+        "litigation_claims": lambda data: {
+            "claim_text": _normalize_scalar_text(data.get("claim_text") or data.get("content") or data.get("claim") or data.get("text")),
+            "case_number": _normalize_scalar_text(data.get("case_number") or data.get("related_case_number")),
+            "subject_name": _normalize_scalar_text(data.get("subject_name") or data.get("claimant_name")),
+            "role_code": _normalize_scalar_text(data.get("role_code") or data.get("subject_role_code")),
+            "claim_type": _normalize_scalar_text(data.get("claim_type")),
+            "requested_outcome": _normalize_scalar_text(data.get("requested_outcome") or data.get("request_result")),
+            "amount": _normalize_scalar_text(data.get("amount")),
+        },
+        "procedural_opinions": lambda data: {
+            "content": _normalize_scalar_text(data.get("content") or data.get("opinion_text") or data.get("text")),
+            "case_number": _normalize_scalar_text(data.get("case_number") or data.get("related_case_number")),
+            "subject_name": _normalize_scalar_text(data.get("subject_name") or data.get("speaker_name")),
+            "role_code": _normalize_scalar_text(data.get("role_code") or data.get("subject_role_code")),
+            "opinion_type": _normalize_scalar_text(data.get("opinion_type")),
+            "stance": _normalize_scalar_text(data.get("stance")),
+            "related_claim_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("related_claim_ids") or [])
+                if str(ref).strip()
+            ),
+        },
+        "argument_points": lambda data: {
+            "argument_text": _normalize_scalar_text(data.get("argument_text") or data.get("content") or data.get("reason") or data.get("text")),
+            "case_number": _normalize_scalar_text(data.get("case_number") or data.get("related_case_number")),
+            "subject_name": _normalize_scalar_text(data.get("subject_name") or data.get("speaker_name")),
+            "role_code": _normalize_scalar_text(data.get("role_code") or data.get("subject_role_code")),
+            "argument_basis_type": _normalize_scalar_text(data.get("argument_basis_type")),
+            "supports_claim_id": _normalize_scalar_text(_normalize_relation_ref(str(data.get("supports_claim_id") or ""))),
+            "supports_opinion_id": _normalize_scalar_text(_normalize_relation_ref(str(data.get("supports_opinion_id") or ""))),
+            "related_fact_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("related_fact_ids") or [])
+                if str(ref).strip()
+            ),
+            "related_provision_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("related_provision_ids") or [])
+                if str(ref).strip()
+            ),
+        },
+        "judicial_assessments": lambda data: {
+            "assessment_text": _normalize_scalar_text(data.get("assessment_text") or data.get("content") or data.get("text")),
+            "case_number": _normalize_scalar_text(data.get("case_number") or data.get("related_case_number")),
+            "issue_type": _normalize_scalar_text(data.get("issue_type")),
+            "assessment_outcome": _normalize_scalar_text(data.get("assessment_outcome")),
+            "responds_to_claim_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("responds_to_claim_ids") or [])
+                if str(ref).strip()
+            ),
+            "responds_to_opinion_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("responds_to_opinion_ids") or [])
+                if str(ref).strip()
+            ),
+            "responds_to_argument_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("responds_to_argument_ids") or [])
+                if str(ref).strip()
+            ),
+            "based_on_fact_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("based_on_fact_ids") or [])
+                if str(ref).strip()
+            ),
+            "based_on_provision_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("based_on_provision_ids") or [])
+                if str(ref).strip()
+            ),
+            "supports_judgment_result_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("supports_judgment_result_ids") or [])
+                if str(ref).strip()
+            ),
         },
         "evidence": lambda data: {
             "content": _normalize_scalar_text(data.get("content") or data.get("name") or data.get("text")),
@@ -778,6 +886,73 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, re
             "focus_type": item.get("focus_type") or "",
             "resolution_logic": item.get("resolution_logic") or "",
         },
+        "litigation_claims": lambda item, idx: {
+            **item,
+            "id": _normalize_relation_ref(item.get("id") or item.get("claim_id") or item.get("node_id") or f"claim_{idx}"),
+            "claim_text": item.get("claim_text") or item.get("content") or item.get("claim") or item.get("text") or "",
+            "case_number": item.get("case_number") or item.get("related_case_number") or "",
+            "subject_name": item.get("subject_name") or item.get("claimant_name") or "",
+            "role_code": item.get("role_code") or item.get("subject_role_code") or "",
+            "claim_type": item.get("claim_type") or "other",
+            "requested_outcome": item.get("requested_outcome") or item.get("request_result") or "",
+            "amount": item.get("amount") or "",
+        },
+        "procedural_opinions": lambda item, idx: {
+            **item,
+            "id": _normalize_relation_ref(item.get("id") or item.get("opinion_id") or item.get("node_id") or f"opinion_{idx}"),
+            "content": item.get("content") or item.get("opinion_text") or item.get("text") or "",
+            "case_number": item.get("case_number") or item.get("related_case_number") or "",
+            "subject_name": item.get("subject_name") or item.get("speaker_name") or "",
+            "role_code": item.get("role_code") or item.get("subject_role_code") or "",
+            "opinion_type": item.get("opinion_type") or "other",
+            "stance": item.get("stance") or "unknown",
+            "related_claim_ids": [
+                _normalize_relation_ref(x) for x in (item.get("related_claim_ids") or [])
+            ],
+        },
+        "argument_points": lambda item, idx: {
+            **item,
+            "id": _normalize_relation_ref(item.get("id") or item.get("argument_id") or item.get("node_id") or f"arg_{idx}"),
+            "argument_text": item.get("argument_text") or item.get("content") or item.get("reason") or item.get("text") or "",
+            "case_number": item.get("case_number") or item.get("related_case_number") or "",
+            "subject_name": item.get("subject_name") or item.get("speaker_name") or "",
+            "role_code": item.get("role_code") or item.get("subject_role_code") or "",
+            "argument_basis_type": item.get("argument_basis_type") or "other",
+            "supports_claim_id": _normalize_relation_ref(item.get("supports_claim_id") or ""),
+            "supports_opinion_id": _normalize_relation_ref(item.get("supports_opinion_id") or ""),
+            "related_fact_ids": [
+                _normalize_relation_ref(x) for x in (item.get("related_fact_ids") or [])
+            ],
+            "related_provision_ids": [
+                _normalize_relation_ref(x) for x in (item.get("related_provision_ids") or [])
+            ],
+        },
+        "judicial_assessments": lambda item, idx: {
+            **item,
+            "id": _normalize_relation_ref(item.get("id") or item.get("assessment_id") or item.get("node_id") or f"assessment_{idx}"),
+            "assessment_text": item.get("assessment_text") or item.get("content") or item.get("text") or "",
+            "case_number": item.get("case_number") or item.get("related_case_number") or "",
+            "issue_type": item.get("issue_type") or "mixed",
+            "assessment_outcome": item.get("assessment_outcome") or "unclear",
+            "responds_to_claim_ids": [
+                _normalize_relation_ref(x) for x in (item.get("responds_to_claim_ids") or [])
+            ],
+            "responds_to_opinion_ids": [
+                _normalize_relation_ref(x) for x in (item.get("responds_to_opinion_ids") or [])
+            ],
+            "responds_to_argument_ids": [
+                _normalize_relation_ref(x) for x in (item.get("responds_to_argument_ids") or [])
+            ],
+            "based_on_fact_ids": [
+                _normalize_relation_ref(x) for x in (item.get("based_on_fact_ids") or [])
+            ],
+            "based_on_provision_ids": [
+                _normalize_relation_ref(x) for x in (item.get("based_on_provision_ids") or [])
+            ],
+            "supports_judgment_result_ids": [
+                _normalize_relation_ref(x) for x in (item.get("supports_judgment_result_ids") or [])
+            ],
+        },
         "evidence": _normalize_evidence_item,
         "judgment_results": _normalize_judgment_result_item,
         "legal_provisions": _normalize_legal_provision_item,
@@ -818,7 +993,11 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, re
         for alias in [*_iter_entity_id_candidates(item), *_iter_entity_id_candidates(normalized)]:
             alias_map[alias] = canonical_id or alias
         normalized_items.append(normalized)
-    if entity_type in {"legal_provisions", "legal_provision_elements", "legal_subjects"}:
+    if entity_type in {
+        "legal_provisions", "legal_provision_elements", "legal_subjects",
+        "litigation_claims", "procedural_opinions", "argument_points",
+        "judicial_assessments"
+    }:
         normalized_items = _merge_entity_list(entity_type, [], normalized_items)
     return (normalized_items, alias_map) if return_aliases else normalized_items
 
@@ -882,7 +1061,11 @@ def align_enhancement_payload(base_output: Dict[str, Any], payload: Dict[str, An
     aligned = copy.deepcopy(payload)
     normalized_base = normalize_graph_output(copy.deepcopy(base_output or {}))
 
-    entity_keys = ("facts", "dispute_focuses", "evidence", "judgment_results", "legal_provisions", "legal_provision_elements")
+    entity_keys = (
+        "facts", "dispute_focuses", "litigation_claims", "procedural_opinions",
+        "argument_points", "judicial_assessments", "evidence",
+        "judgment_results", "legal_provisions", "legal_provision_elements"
+    )
     for key in entity_keys:
         if key not in aligned:
             continue
@@ -943,6 +1126,22 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
     output["dispute_focuses"] = focuses
     alias_map.update(focus_aliases)
 
+    claims, claim_aliases = _normalize_entity_collection_for_payload("litigation_claims", output.get("litigation_claims") or [], return_aliases=True)
+    output["litigation_claims"] = claims
+    alias_map.update(claim_aliases)
+
+    opinions, opinion_aliases = _normalize_entity_collection_for_payload("procedural_opinions", output.get("procedural_opinions") or [], return_aliases=True)
+    output["procedural_opinions"] = opinions
+    alias_map.update(opinion_aliases)
+
+    argument_points, argument_aliases = _normalize_entity_collection_for_payload("argument_points", output.get("argument_points") or [], return_aliases=True)
+    output["argument_points"] = argument_points
+    alias_map.update(argument_aliases)
+
+    assessments, assessment_aliases = _normalize_entity_collection_for_payload("judicial_assessments", output.get("judicial_assessments") or [], return_aliases=True)
+    output["judicial_assessments"] = assessments
+    alias_map.update(assessment_aliases)
+
     evidence, evidence_aliases = _normalize_entity_collection_for_payload("evidence", output.get("evidence") or [], return_aliases=True)
     output["evidence"] = evidence
     alias_map.update(evidence_aliases)
@@ -962,6 +1161,41 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
     elements, element_aliases = _normalize_entity_collection_for_payload("legal_provision_elements", output.get("legal_provision_elements") or [], return_aliases=True)
     output["legal_provision_elements"] = elements
     alias_map.update(element_aliases)
+
+    provision_index_to_id = {
+        idx: str(item.get("id") or item.get("provision_id") or "")
+        for idx, item in enumerate(legal_provisions)
+        if isinstance(item, dict) and (item.get("id") or item.get("provision_id"))
+    }
+    judgment_index_to_id = {
+        idx: str(item.get("id") or item.get("result_id") or "")
+        for idx, item in enumerate(judgment_results)
+        if isinstance(item, dict) and (item.get("id") or item.get("result_id"))
+    }
+
+    for point in argument_points:
+        if not isinstance(point, dict):
+            continue
+        point["related_provision_ids"] = _normalize_relation_ref_list(
+            point.get("related_provision_ids") or [],
+            index_to_id=provision_index_to_id,
+        )
+
+    for assessment in assessments:
+        if not isinstance(assessment, dict):
+            continue
+        assessment["responds_to_claim_ids"] = _normalize_relation_ref_list(assessment.get("responds_to_claim_ids") or [])
+        assessment["responds_to_opinion_ids"] = _normalize_relation_ref_list(assessment.get("responds_to_opinion_ids") or [])
+        assessment["responds_to_argument_ids"] = _normalize_relation_ref_list(assessment.get("responds_to_argument_ids") or [])
+        assessment["based_on_fact_ids"] = _normalize_relation_ref_list(assessment.get("based_on_fact_ids") or [])
+        assessment["based_on_provision_ids"] = _normalize_relation_ref_list(
+            assessment.get("based_on_provision_ids") or [],
+            index_to_id=provision_index_to_id,
+        )
+        assessment["supports_judgment_result_ids"] = _normalize_relation_ref_list(
+            assessment.get("supports_judgment_result_ids") or [],
+            index_to_id=judgment_index_to_id,
+        )
 
     relations = output.get("relations") or []
     normalized_relations = []
@@ -1747,10 +1981,19 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     facts = output.get("facts") or []
     for i, f in enumerate(facts):
         fid = f.get("id", f"fact_{i}")
-        label = f.get("content", "")[:40]
+        fact_content = str(f.get("content") or "").strip()
+        label = fact_content[:40]
         add_node(fid, label, "Fact", "JudicialEntity", 1,
-                 f"类型: {f.get('fact_type', '')}<br>案号: {f.get('case_number', '')}",
+                 (
+                     f"类型: {f.get('fact_type', '')}<br>"
+                     f"案号: {f.get('case_number', '')}<br>"
+                     f"内容: {fact_content}"
+                 ),
                  extra={
+                     "content": fact_content,
+                     "fullLabel": fact_content or label,
+                     "factType": f.get("fact_type", ""),
+                     "caseNumber": f.get("case_number", ""),
                      "entitySourceId": f.get("id") or f.get("fact_id") or fid,
                      "entityStableId": f.get("stable_id") or "",
                  })
@@ -1776,6 +2019,138 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             add_edge(cn_to_cc[case_num], dfid, "争议焦点")
         elif court_cases:
             add_edge(first_cc_id, dfid, "争议焦点")
+
+    # ── LitigationClaims ────────────────────────────────────────────────────
+    claims = output.get("litigation_claims") or []
+    for i, claim in enumerate(claims):
+        claim_id = claim.get("id") or claim.get("claim_id") or f"claim_{i}"
+        claim_text = str(claim.get("claim_text") or "").strip()
+        label = claim_text[:40] or f"诉求_{i}"
+        add_node(
+            claim_id,
+            label,
+            "LitigationClaim",
+            "JudicialEntity",
+            1,
+            (
+                f"提出方: {claim.get('subject_name', '')}<br>"
+                f"角色: {claim.get('role_code', '')}<br>"
+                f"类型: {claim.get('claim_type', '')}<br>"
+                f"目标结果: {claim.get('requested_outcome', '')}<br>"
+                f"金额: {claim.get('amount', '')}<br>"
+                f"案号: {claim.get('case_number', '')}<br>"
+                f"诉求内容: {claim_text}"
+            ),
+            extra={
+                "content": claim_text,
+                "fullLabel": claim_text or label,
+                "entitySourceId": claim.get("id") or claim.get("claim_id") or claim_id,
+                "entityStableId": claim.get("stable_id") or "",
+            },
+        )
+        case_num = claim.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], claim_id, "诉求")
+        elif court_cases:
+            add_edge(first_cc_id, claim_id, "诉求")
+
+    # ── ProceduralOpinions ────────────────────────────────────────────────
+    opinions = output.get("procedural_opinions") or []
+    for i, opinion in enumerate(opinions):
+        opinion_id = opinion.get("id") or opinion.get("opinion_id") or f"opinion_{i}"
+        opinion_text = str(opinion.get("content") or "").strip()
+        label = opinion_text[:40] or f"意见_{i}"
+        add_node(
+            opinion_id,
+            label,
+            "ProceduralOpinion",
+            "JudicialEntity",
+            1,
+            (
+                f"提出方: {opinion.get('subject_name', '')}<br>"
+                f"角色: {opinion.get('role_code', '')}<br>"
+                f"类型: {opinion.get('opinion_type', '')}<br>"
+                f"立场: {opinion.get('stance', '')}<br>"
+                f"案号: {opinion.get('case_number', '')}<br>"
+                f"意见内容: {opinion_text}"
+            ),
+            extra={
+                "content": opinion_text,
+                "fullLabel": opinion_text or label,
+                "entitySourceId": opinion.get("id") or opinion.get("opinion_id") or opinion_id,
+                "entityStableId": opinion.get("stable_id") or "",
+            },
+        )
+        case_num = opinion.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], opinion_id, "意见")
+        elif court_cases:
+            add_edge(first_cc_id, opinion_id, "意见")
+
+    # ── ArgumentPoints ────────────────────────────────────────────────────
+    argument_points = output.get("argument_points") or []
+    for i, point in enumerate(argument_points):
+        point_id = point.get("id") or point.get("argument_id") or f"arg_{i}"
+        point_text = str(point.get("argument_text") or "").strip()
+        label = point_text[:40] or f"理由_{i}"
+        add_node(
+            point_id,
+            label,
+            "ArgumentPoint",
+            "JudicialEntity",
+            2,
+            (
+                f"提出方: {point.get('subject_name', '')}<br>"
+                f"角色: {point.get('role_code', '')}<br>"
+                f"类型: {point.get('argument_basis_type', '')}<br>"
+                f"支撑诉求: {point.get('supports_claim_id', '')}<br>"
+                f"支撑意见: {point.get('supports_opinion_id', '')}<br>"
+                f"案号: {point.get('case_number', '')}<br>"
+                f"理由内容: {point_text}"
+            ),
+            extra={
+                "content": point_text,
+                "fullLabel": point_text or label,
+                "entitySourceId": point.get("id") or point.get("argument_id") or point_id,
+                "entityStableId": point.get("stable_id") or "",
+            },
+        )
+        case_num = point.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], point_id, "理由")
+        elif court_cases:
+            add_edge(first_cc_id, point_id, "理由")
+
+    # ── JudicialAssessments ───────────────────────────────────────────────
+    assessments = output.get("judicial_assessments") or []
+    for i, assessment in enumerate(assessments):
+        assessment_id = assessment.get("id") or assessment.get("assessment_id") or f"assessment_{i}"
+        assessment_text = str(assessment.get("assessment_text") or "").strip()
+        label = assessment_text[:40] or f"法院评判_{i}"
+        add_node(
+            assessment_id,
+            label,
+            "JudicialAssessment",
+            "JudicialEntity",
+            1,
+            (
+                f"对象类型: {assessment.get('issue_type', '')}<br>"
+                f"结论: {assessment.get('assessment_outcome', '')}<br>"
+                f"案号: {assessment.get('case_number', '')}<br>"
+                f"评判内容: {assessment_text}"
+            ),
+            extra={
+                "content": assessment_text,
+                "fullLabel": assessment_text or label,
+                "entitySourceId": assessment.get("id") or assessment.get("assessment_id") or assessment_id,
+                "entityStableId": assessment.get("stable_id") or "",
+            },
+        )
+        case_num = assessment.get("case_number", "")
+        if case_num and case_num in cn_to_cc:
+            add_edge(cn_to_cc[case_num], assessment_id, "评判")
+        elif court_cases:
+            add_edge(first_cc_id, assessment_id, "评判")
 
     # ── Relations — 显式关系边 ──────────────────────────────────────────
     rels = output.get("relations") or []
@@ -2332,7 +2707,11 @@ def compute_enhancement_delta(
     enhancement_payload: Dict[str, Any],
     new_json: Dict[str, Any],
 ) -> Dict[str, Any]:
-    entity_keys = ("facts", "dispute_focuses", "evidence", "judgment_results", "legal_provisions", "legal_provision_elements")
+    entity_keys = (
+        "facts", "dispute_focuses", "litigation_claims", "procedural_opinions",
+        "argument_points", "judicial_assessments", "evidence",
+        "judgment_results", "legal_provisions", "legal_provision_elements"
+    )
     entity_added_counts: Counter[str] = Counter()
     entity_updated_counts: Counter[str] = Counter()
 

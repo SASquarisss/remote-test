@@ -96,10 +96,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const hydratedVersions = Array.isArray(data.parse_versions) ? data.parse_versions : [];
         const activeVersionId = data.active_version_id || (hydratedVersions[hydratedVersions.length - 1] || {}).version_id || 'v0';
         const activeVersion = hydratedVersions.find((item) => item?.version_id === activeVersionId) || null;
+        const topLevelJsonResult = data.json_result || {};
+        const versionJsonResult = activeVersion?.json_result || {};
+        const watchedKeys = ['litigation_claims', 'procedural_opinions', 'argument_points', 'judicial_assessments'];
+        const countPopulatedKeys = (payload) => watchedKeys.reduce((sum, key) => {
+          const value = payload?.[key];
+          return sum + ((Array.isArray(value) && value.length > 0) ? 1 : 0);
+        }, 0);
+        const shouldPreferTopLevel =
+          !activeVersion
+          || countPopulatedKeys(topLevelJsonResult) > countPopulatedKeys(versionJsonResult);
+        const effectiveVersions = shouldPreferTopLevel
+          ? [{
+              version_id: data.active_version_id || 'v0',
+              label: '当前缓存',
+              version_type: 'hydrated',
+              source_run_id: null,
+              created_at: '',
+              change_summary: {},
+              highlight_patch: data.term_merge_highlight || null,
+              json_result: topLevelJsonResult,
+              nodes: data.nodes || [],
+              edges: data.edges || [],
+            }]
+          : hydratedVersions;
+        const effectiveActiveVersionId = shouldPreferTopLevel
+          ? (effectiveVersions[0]?.version_id || 'v0')
+          : activeVersionId;
+        const effectiveVersion = shouldPreferTopLevel
+          ? effectiveVersions[0]
+          : activeVersion;
         const result = {
-          json_result: activeVersion?.json_result || data.json_result,
-          nodes: activeVersion?.nodes || data.nodes || [],
-          edges: activeVersion?.edges || data.edges || [],
+          json_result: effectiveVersion?.json_result || topLevelJsonResult,
+          nodes: effectiveVersion?.nodes || data.nodes || [],
+          edges: effectiveVersion?.edges || data.edges || [],
           score: data.score || 0,
           issues: data.issues || [],
           row_id: data.row_id || null,
@@ -125,10 +155,10 @@ document.addEventListener('DOMContentLoaded', () => {
           workspaceLayoutMode: 'parse_primary',
           isOntologyVisible: true,
           activeTab: targetTab,
-          parseVersions: hydratedVersions,
-          parseActiveVersionId: activeVersionId,
+          parseVersions: effectiveVersions,
+          parseActiveVersionId: effectiveActiveVersionId,
           parseEnhancementRuns: data.term_enhancement_runs || [],
-          parseMergeHighlight: activeVersion?.highlight_patch || data.term_merge_highlight || null,
+          parseMergeHighlight: effectiveVersion?.highlight_patch || data.term_merge_highlight || null,
           parseEnhancementPreviewActive: false,
           parseEnhancementPreviewRunId: null,
           parseEnhancementPreviewPatch: null,
@@ -159,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
           terminalPanel.renderEnhancementResult(data.term_enhancement_result);
         }
         if (typeof terminalPanel.renderVersionRail === 'function') {
-          terminalPanel.renderVersionRail(hydratedVersions, activeVersionId);
+          terminalPanel.renderVersionRail(effectiveVersions, effectiveActiveVersionId);
         }
         if (data.retrieval_bundle && typeof terminalPanel.renderRetrievalBundle === 'function') {
           terminalPanel.lastRetrievalWriteManifest = data.retrieval_write_manifest || null;

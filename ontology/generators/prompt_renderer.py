@@ -198,6 +198,61 @@ ENUM_ZH_MAP: Dict[str, Dict[str, str]] = {
         "legal_consequence": "法律后果（如：应当承担违约责任）",
         "exception_clause": "免责/除外条款（如：不可抗力除外）",
     },
+    "LitigationClaim.claim_type": {
+        "appeal_claim": "上诉请求",
+        "defense_claim": "辩护/答辩请求",
+        "prosecution_claim": "公诉/抗诉请求",
+        "civil_claim": "民事实体诉求",
+        "counterclaim": "反诉请求",
+        "procedural_request": "程序性申请",
+        "sentencing_request": "量刑请求",
+        "compensation_request": "赔偿请求",
+        "other": "其他诉求",
+    },
+    "ProceduralOpinion.opinion_type": {
+        "appeal_opinion": "上诉意见",
+        "defense_opinion": "辩护意见",
+        "agent_opinion": "代理意见",
+        "prosecution_opinion": "公诉/抗诉意见",
+        "objection_opinion": "异议/反对意见",
+        "procedural_opinion": "程序性意见",
+        "other": "其他意见",
+    },
+    "ProceduralOpinion.stance": {
+        "support": "支持",
+        "oppose": "反对",
+        "partial_support": "部分支持",
+        "neutral": "中立/说明性",
+        "unknown": "立场不明",
+    },
+    "ArgumentPoint.argument_basis_type": {
+        "fact_based": "事实理由",
+        "evidence_based": "证据理由",
+        "legal_based": "法律理由",
+        "procedural_based": "程序理由",
+        "policy_based": "政策衡平理由",
+        "sentencing_based": "量刑理由",
+        "mixed": "混合理由",
+        "other": "其他理由",
+    },
+    "JudicialAssessment.issue_type": {
+        "claim": "回应诉求",
+        "opinion": "回应意见",
+        "argument": "回应理由",
+        "fact": "评价事实",
+        "evidence": "评价证据",
+        "provision": "评价法条适用",
+        "sentencing": "评价量刑",
+        "procedure": "评价程序问题",
+        "mixed": "综合回应",
+    },
+    "JudicialAssessment.assessment_outcome": {
+        "adopted": "采纳",
+        "rejected": "不采纳",
+        "partially_adopted": "部分采纳",
+        "not_addressed": "未明确回应",
+        "unclear": "态度不明",
+    },
     # Law
     "Law.law_level": {
         "constitution": "宪法",
@@ -284,7 +339,8 @@ def render_enum_reference(ontology: OntologySchema) -> str:
             "GuidingCase.", "CaseType.", "CourtCase.", "CaseParticipant.",
             "LegalRole.", "Evidence.", "JudgmentResult.", "LegalProvision.",
             "Court.", "TrialOrganization.", "Fact.", "CaseSummary.",
-            "DisputeFocus.", "LegalProvisionElement.",
+            "DisputeFocus.", "LegalProvisionElement.", "LitigationClaim.",
+            "ProceduralOpinion.", "ArgumentPoint.", "JudicialAssessment.",
         ])
     }
 
@@ -472,6 +528,67 @@ EXTRACTION_ENTITY_CONFIG = [
             ("id", "事实标识", "如 'fact_0', 'fact_1'"),
             ("content", "事实描述", ""),
             ("fact_type", "事实类型", "undisputed→无争议事实，disputed→有争议事实，to_be_proven→待证事实 [枚举值见参考表]"),
+            ("case_number", "关联案号", ""),
+        ],
+    },
+    {
+        "name": "LitigationClaim",
+        "display_name": "各方诉求/请求",
+        "fields": [
+            ("id", "诉求标识", "如 'claim_0'"),
+            ("claim_text", "诉求原文", "必须保留请求内容核心表述，如'撤销原判，改判无罪'"),
+            ("claim_type", "诉求类型", "见枚举值表，区分上诉请求、辩护请求、赔偿请求、程序性申请等"),
+            ("subject_name", "提出方名称", "明确写明是谁提出"),
+            ("role_code", "提出方角色", "如 appellant/appellee/defendant/agent"),
+            ("requested_outcome", "期望结果", "对诉求结果的结构化概括"),
+            ("amount", "涉及金额", "如有金额诉求则填写"),
+            ("case_number", "关联案号", ""),
+        ],
+    },
+    {
+        "name": "ProceduralOpinion",
+        "display_name": "意见表达",
+        "fields": [
+            ("id", "意见标识", "如 'opinion_0'"),
+            ("content", "意见内容", "如上诉意见、辩护意见、答辩意见、代理意见"),
+            ("opinion_type", "意见类型", "见枚举值表"),
+            ("stance", "立场", "support/oppose/partial_support/neutral/unknown"),
+            ("subject_name", "提出方名称", "明确写明主体"),
+            ("role_code", "提出方角色", "对应标准角色枚举"),
+            ("related_claim_ids", "关联诉求ID", "若该意见直接服务于某项诉求，则填写诉求ID数组"),
+            ("case_number", "关联案号", ""),
+        ],
+    },
+    {
+        "name": "ArgumentPoint",
+        "display_name": "理由点",
+        "fields": [
+            ("id", "理由标识", "如 'arg_0'"),
+            ("argument_text", "理由内容", "保留事实/证据/法律/程序理由的核心论述"),
+            ("argument_basis_type", "理由类型", "见枚举值表"),
+            ("subject_name", "提出方名称", "明确写明是谁在主张该理由"),
+            ("role_code", "提出方角色", "对应标准角色枚举"),
+            ("supports_claim_id", "支撑诉求ID", "若该理由直接支撑某诉求，则填写单个诉求ID"),
+            ("supports_opinion_id", "支撑意见ID", "若该理由直接支撑某意见，则填写单个意见ID"),
+            ("related_fact_ids", "关联事实ID", "引用到的事实节点ID数组"),
+            ("related_provision_ids", "关联法条ID", "引用到的法条节点ID数组"),
+            ("case_number", "关联案号", ""),
+        ],
+    },
+    {
+        "name": "JudicialAssessment",
+        "display_name": "法院评判/回应",
+        "fields": [
+            ("id", "评判标识", "如 'assessment_0'"),
+            ("assessment_text", "评判内容", "法院对诉求/意见/理由的回应原文或高保真摘要"),
+            ("issue_type", "评判对象类型", "见枚举值表"),
+            ("assessment_outcome", "评判结论", "adopted/rejected/partially_adopted/not_addressed/unclear"),
+            ("responds_to_claim_ids", "回应诉求ID", "被回应的诉求ID数组"),
+            ("responds_to_opinion_ids", "回应意见ID", "被回应的意见ID数组"),
+            ("responds_to_argument_ids", "回应理由ID", "被回应的理由ID数组"),
+            ("based_on_fact_ids", "依据事实ID", "法院评价所依赖的事实ID数组"),
+            ("based_on_provision_ids", "依据法条ID", "法院评价所依赖的法条ID数组"),
+            ("supports_judgment_result_ids", "支撑裁判结果ID", "若该评判直接导向裁判结果，则填写结果ID数组"),
             ("case_number", "关联案号", ""),
         ],
     },
@@ -749,6 +866,82 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append('      "case_number": ""')
     lines.append('    }')
     lines.append('  ],')
+    lines.append('  "litigation_claims": [')
+    lines.append('    {')
+    lines.append('      "id": "claim_0",')
+    lines.append('      "claim_text": "",')
+    e_claim = enums.get("LitigationClaim.claim_type", {}).get("values", [
+        "appeal_claim", "defense_claim", "prosecution_claim", "civil_claim",
+        "counterclaim", "procedural_request", "sentencing_request",
+        "compensation_request", "other"
+    ])
+    lines.append(f'      "claim_type": "{P.join(e_claim)}",')
+    lines.append('      "subject_name": "",')
+    lines.append('      "role_code": "",')
+    lines.append('      "requested_outcome": "",')
+    lines.append('      "amount": "",')
+    lines.append('      "case_number": ""')
+    lines.append('    }')
+    lines.append('  ],')
+    lines.append('  "procedural_opinions": [')
+    lines.append('    {')
+    lines.append('      "id": "opinion_0",')
+    lines.append('      "content": "",')
+    e_opinion = enums.get("ProceduralOpinion.opinion_type", {}).get("values", [
+        "appeal_opinion", "defense_opinion", "agent_opinion", "prosecution_opinion",
+        "objection_opinion", "procedural_opinion", "other"
+    ])
+    e_stance = enums.get("ProceduralOpinion.stance", {}).get("values", [
+        "support", "oppose", "partial_support", "neutral", "unknown"
+    ])
+    lines.append(f'      "opinion_type": "{P.join(e_opinion)}",')
+    lines.append(f'      "stance": "{P.join(e_stance)}",')
+    lines.append('      "subject_name": "",')
+    lines.append('      "role_code": "",')
+    lines.append('      "related_claim_ids": [],')
+    lines.append('      "case_number": ""')
+    lines.append('    }')
+    lines.append('  ],')
+    lines.append('  "argument_points": [')
+    lines.append('    {')
+    lines.append('      "id": "arg_0",')
+    lines.append('      "argument_text": "",')
+    e_argument = enums.get("ArgumentPoint.argument_basis_type", {}).get("values", [
+        "fact_based", "evidence_based", "legal_based", "procedural_based",
+        "policy_based", "sentencing_based", "mixed", "other"
+    ])
+    lines.append(f'      "argument_basis_type": "{P.join(e_argument)}",')
+    lines.append('      "subject_name": "",')
+    lines.append('      "role_code": "",')
+    lines.append('      "supports_claim_id": "",')
+    lines.append('      "supports_opinion_id": "",')
+    lines.append('      "related_fact_ids": [],')
+    lines.append('      "related_provision_ids": [],')
+    lines.append('      "case_number": ""')
+    lines.append('    }')
+    lines.append('  ],')
+    lines.append('  "judicial_assessments": [')
+    lines.append('    {')
+    lines.append('      "id": "assessment_0",')
+    lines.append('      "assessment_text": "",')
+    e_issue_type = enums.get("JudicialAssessment.issue_type", {}).get("values", [
+        "claim", "opinion", "argument", "fact", "evidence",
+        "provision", "sentencing", "procedure", "mixed"
+    ])
+    e_assess_outcome = enums.get("JudicialAssessment.assessment_outcome", {}).get("values", [
+        "adopted", "rejected", "partially_adopted", "not_addressed", "unclear"
+    ])
+    lines.append(f'      "issue_type": "{P.join(e_issue_type)}",')
+    lines.append(f'      "assessment_outcome": "{P.join(e_assess_outcome)}",')
+    lines.append('      "responds_to_claim_ids": [],')
+    lines.append('      "responds_to_opinion_ids": [],')
+    lines.append('      "responds_to_argument_ids": [],')
+    lines.append('      "based_on_fact_ids": [],')
+    lines.append('      "based_on_provision_ids": [],')
+    lines.append('      "supports_judgment_result_ids": [],')
+    lines.append('      "case_number": ""')
+    lines.append('    }')
+    lines.append('  ],')
     lines.append('  "relations": [')
     lines.append('    {')
     lines.append('      "source_id": "",')
@@ -784,6 +977,9 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 10. **证据采信意见（admission_status、admission_reason、probative_force）为强制提取字段**，每份证据都必须填写，不可留空
 11. **facts / dispute_focuses / relations 不是可选增强项，而是图谱主链的必填层；不能只写 case_summary 而把三者留空**
 12. **如果已抽到 evidence、judgment_results、legal_provisions、case_summary 中的关键事实/争议焦点，就必须继续补出对应 facts / dispute_focuses / relations**
+13. **如果文本出现上诉请求、辩护意见、答辩意见、代理意见、程序申请、法院逐项回应等内容，必须显式输出 litigation_claims / procedural_opinions / argument_points / judicial_assessments**
+14. **argument_points 不是 claim/opinion 的附属长文本字段；只要出现“理由是/其认为/辩称/法院认为不能成立因为”等论证片段，就应拆成独立理由点**
+15. **judicial_assessments 必须体现法院对诉求/意见/理由的回应结论，并通过 relations 连接到 claim/opinion/argument/judgment_result**
 
 ## 强制提取要点
 - **法条提取（LegalProvision）必须从以下源头全面提取**：judgment_reason、basic_facts、judgment_essence、related_law中的每一个法条引用都要提取。即使是司法解释、行政规章等，只要被引用就必须提取。**平均每个案例应提取 3-10 条法条，如果只提取到 0-1 条说明有遗漏，请重新检查文本。**
@@ -798,7 +994,9 @@ HEADER_TEMPLATE = """你是一个专业的法律文本解析工具。你的任�
 - **争议焦点和关键事实**：case_summary.disputed_issues和key_facts已包含审理所需的焦点和事实信息，后处理阶段会自动拆分为独立节点。
 - **事实节点（facts）必须显式输出**：至少提取 1-3 条可以独立成立的关键事实，每条事实应保持客观表述，并填写 `content`、`fact_type`、`case_number`；不要只把事实塞进 `case_summary.key_facts`。
 - **争议焦点节点（dispute_focuses）必须显式输出**：至少提取 1 条焦点，填写 `content`、`case_number`；不要只把焦点塞进 `case_summary.disputed_issues`。
-- **关系边（relations）不得空置**：若已抽到主体、证据、事实、争议焦点、裁判结果、法条，则必须尽量补出显式边，优先考虑 `relates_to_fact`、`receives_judgment`、`proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`judgment_cites`、`submitted_for`。
+- **诉求链（litigation_claims）必须显式输出**：只要文本有“请求/上诉请求/辩护请求/赔偿请求/程序申请”等表述，就要拆成独立诉求节点，并标明提出方、诉求类型、期望结果。
+- **意见链（procedural_opinions / argument_points / judicial_assessments）必须显式输出**：只要文本有“上诉意见/辩护意见/代理意见/答辩意见/法院认为”之类论证结构，就必须拆出意见、理由和法院回应，不能全部折叠进 `judgment_results.reasoning`。
+- **关系边（relations）不得空置**：若已抽到主体、证据、事实、争议焦点、诉求、意见、理由、法院评判、裁判结果、法条，则必须尽量补出显式边，优先考虑 `raises_claim`、`expresses_opinion`、`supports_claim`、`supports_opinion`、`responds_to_claim`、`responds_to_opinion`、`evaluates_argument`、`supports_result`、`based_on_fact`、`based_on_provision`、`relates_to_fact`、`receives_judgment`、`proves_fact`、`has_fact`、`has_dispute_focus`、`resolved_by`、`leads_to`、`judgment_cites`、`submitted_for`。
 - **禁止把关系退化成文本描述**：不要只在 `reasoning` 或 `case_summary` 中叙述“某主体参与某事实”“某主体对应某裁判结果”“某证据证明某事实”“某焦点由某结果解决”，而不在 `relations` 中落边。
 - **法条构成要件元素（legal_provision_elements）**：对每个被引用的法条，分解其构成要件要素（主体要件、行为要件、结果要件等），通过provision_index关联回legal_provisions数组中的对应法条。
 """

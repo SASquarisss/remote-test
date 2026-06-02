@@ -1,8 +1,114 @@
 {
-  "generated_at": "2026-05-22T07:46:37+00:00",
+  "generated_at": "2026-06-02T03:25:25+00:00",
   "ontology_path": "ontology/schemas/legal_ontology_v2.yaml",
   "ontology_summary": {
     "entities": {
+      "ArgumentPoint": {
+        "parent": "JudicialEntity",
+        "required": [
+          "argument_text",
+          "case_id"
+        ],
+        "optional": [
+          "argument_basis_type",
+          "case_number",
+          "related_fact_ids",
+          "related_provision_ids",
+          "role_code",
+          "subject_id",
+          "subject_name",
+          "supports_claim_id",
+          "supports_opinion_id"
+        ],
+        "fields": [
+          [
+            "argument_basis_type",
+            {
+              "required": false,
+              "enum_values": [
+                "fact_based",
+                "evidence_based",
+                "legal_based",
+                "procedural_based",
+                "policy_based",
+                "sentencing_based",
+                "mixed",
+                "other"
+              ]
+            }
+          ],
+          [
+            "argument_text",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_number",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "related_fact_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "related_provision_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "role_code",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "subject_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "subject_name",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "supports_claim_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "supports_opinion_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
       "Attorney": {
         "parent": "Person",
         "required": [
@@ -1061,6 +1167,119 @@
           ]
         ]
       },
+      "JudicialAssessment": {
+        "parent": "JudicialEntity",
+        "required": [
+          "assessment_text",
+          "case_id"
+        ],
+        "optional": [
+          "assessment_outcome",
+          "based_on_fact_ids",
+          "based_on_provision_ids",
+          "case_number",
+          "issue_type",
+          "responds_to_argument_ids",
+          "responds_to_claim_ids",
+          "responds_to_opinion_ids",
+          "supports_judgment_result_ids"
+        ],
+        "fields": [
+          [
+            "assessment_outcome",
+            {
+              "required": false,
+              "enum_values": [
+                "adopted",
+                "rejected",
+                "partially_adopted",
+                "not_addressed",
+                "unclear"
+              ]
+            }
+          ],
+          [
+            "assessment_text",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "based_on_fact_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "based_on_provision_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_number",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "issue_type",
+            {
+              "required": false,
+              "enum_values": [
+                "claim",
+                "opinion",
+                "argument",
+                "fact",
+                "evidence",
+                "provision",
+                "sentencing",
+                "procedure",
+                "mixed"
+              ]
+            }
+          ],
+          [
+            "responds_to_argument_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "responds_to_claim_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "responds_to_opinion_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "supports_judgment_result_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
       "JudicialEntity": {
         "parent": null,
         "required": [
@@ -1694,6 +1913,121 @@
           ]
         ]
       },
+      "LitigationClaim": {
+        "parent": "JudicialEntity",
+        "required": [
+          "case_id",
+          "claim_text"
+        ],
+        "optional": [
+          "amount",
+          "case_number",
+          "claim_type",
+          "legal_basis_summary",
+          "requested_outcome",
+          "role_code",
+          "subject_id",
+          "subject_name",
+          "target_subject_id",
+          "target_subject_name"
+        ],
+        "fields": [
+          [
+            "amount",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_number",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "claim_text",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "claim_type",
+            {
+              "required": false,
+              "enum_values": [
+                "appeal_claim",
+                "defense_claim",
+                "prosecution_claim",
+                "civil_claim",
+                "counterclaim",
+                "procedural_request",
+                "sentencing_request",
+                "compensation_request",
+                "other"
+              ]
+            }
+          ],
+          [
+            "legal_basis_summary",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "requested_outcome",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "role_code",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "subject_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "subject_name",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "target_subject_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "target_subject_name",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
+      },
       "Organization": {
         "parent": "LegalSubject",
         "required": [
@@ -1767,6 +2101,101 @@
         "required": [],
         "optional": [],
         "fields": []
+      },
+      "ProceduralOpinion": {
+        "parent": "JudicialEntity",
+        "required": [
+          "case_id",
+          "content"
+        ],
+        "optional": [
+          "case_number",
+          "opinion_type",
+          "related_claim_ids",
+          "role_code",
+          "stance",
+          "subject_id",
+          "subject_name"
+        ],
+        "fields": [
+          [
+            "case_id",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "case_number",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "content",
+            {
+              "required": true,
+              "enum_values": []
+            }
+          ],
+          [
+            "opinion_type",
+            {
+              "required": false,
+              "enum_values": [
+                "appeal_opinion",
+                "defense_opinion",
+                "agent_opinion",
+                "prosecution_opinion",
+                "objection_opinion",
+                "procedural_opinion",
+                "other"
+              ]
+            }
+          ],
+          [
+            "related_claim_ids",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "role_code",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "stance",
+            {
+              "required": false,
+              "enum_values": [
+                "support",
+                "oppose",
+                "partial_support",
+                "neutral",
+                "unknown"
+              ]
+            }
+          ],
+          [
+            "subject_id",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ],
+          [
+            "subject_name",
+            {
+              "required": false,
+              "enum_values": []
+            }
+          ]
+        ]
       },
       "Procuratorate": {
         "parent": "Organization",
@@ -2003,10 +2432,37 @@
         "cardinality": "many_to_many",
         "attributes": []
       },
+      "assesses_focus": {
+        "from_type": "JudicialAssessment",
+        "to_type": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
       "based_on": {
         "from_type": "ExecutionInfo",
         "to_type": "JudgmentResult",
         "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "based_on_fact": {
+        "from_type": [
+          "LitigationClaim",
+          "ProceduralOpinion",
+          "ArgumentPoint",
+          "JudicialAssessment"
+        ],
+        "to_type": "Fact",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "based_on_provision": {
+        "from_type": [
+          "LitigationClaim",
+          "ArgumentPoint",
+          "JudicialAssessment"
+        ],
+        "to_type": "LegalProvision",
+        "cardinality": "many_to_many",
         "attributes": []
       },
       "belongs_to": {
@@ -2034,6 +2490,12 @@
           "similarity_score"
         ]
       },
+      "claims_focus": {
+        "from_type": "LitigationClaim",
+        "to_type": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
       "concerns_focus": {
         "from_type": "LegalSubject",
         "to_type": "DisputeFocus",
@@ -2050,6 +2512,18 @@
         "from_type": "LawFirm",
         "to_type": "Attorney",
         "cardinality": "one_to_many",
+        "attributes": []
+      },
+      "evaluates_argument": {
+        "from_type": "JudicialAssessment",
+        "to_type": "ArgumentPoint",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "expresses_opinion": {
+        "from_type": "LegalSubject",
+        "to_type": "ProceduralOpinion",
+        "cardinality": "many_to_many",
         "attributes": []
       },
       "guides_case_type": {
@@ -2132,6 +2606,12 @@
           "match_score"
         ]
       },
+      "opines_on_focus": {
+        "from_type": "ProceduralOpinion",
+        "to_type": "DisputeFocus",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
       "participates_in_case": {
         "from_type": "LegalSubject",
         "to_type": "CourtCase",
@@ -2158,6 +2638,12 @@
       "proves_fact": {
         "from_type": "Evidence",
         "to_type": "Fact, DisputeFocus",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "raises_claim": {
+        "from_type": "LegalSubject",
+        "to_type": "LitigationClaim",
         "cardinality": "many_to_many",
         "attributes": []
       },
@@ -2190,6 +2676,18 @@
         "cardinality": "many_to_many",
         "attributes": []
       },
+      "responds_to_claim": {
+        "from_type": "JudicialAssessment",
+        "to_type": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "responds_to_opinion": {
+        "from_type": "JudicialAssessment",
+        "to_type": "ProceduralOpinion",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
       "retries_from": {
         "from_type": "CourtCase",
         "to_type": "CourtCase",
@@ -2212,6 +2710,30 @@
         "from_type": "LegalProvisionVersion",
         "to_type": "LegalProvisionVersion",
         "cardinality": "one_to_one",
+        "attributes": []
+      },
+      "supports_claim": {
+        "from_type": "ArgumentPoint",
+        "to_type": "LitigationClaim",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "supports_opinion": {
+        "from_type": "ArgumentPoint",
+        "to_type": "ProceduralOpinion",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "supports_result": {
+        "from_type": "JudicialAssessment",
+        "to_type": "JudgmentResult",
+        "cardinality": "many_to_many",
+        "attributes": []
+      },
+      "targets_subject": {
+        "from_type": "LitigationClaim",
+        "to_type": "LegalSubject",
+        "cardinality": "many_to_many",
         "attributes": []
       },
       "tried_by": {
@@ -2239,14 +2761,14 @@
         "attributes": []
       }
     },
-    "entity_count": 32,
-    "relation_count": 36,
-    "sha1": "87caa8bf8f1a8dc47474e2449de4bde341e252b7"
+    "entity_count": 36,
+    "relation_count": 50,
+    "sha1": "66f27c9387db643126733c331e64781924934fda"
   },
   "categories": {
     "civil": {
       "prompt_file": "ontology/prompts/auto_v5_civil.txt",
-      "prompt_sha1": "b16fd733fa9ceb5ca0be9016e8edd904af1b0a41",
+      "prompt_sha1": "94687cea82d56fb035d66d4aa72ca8add1817fdc",
       "few_shot": {
         "row_id": "2478",
         "score": 95.0,
@@ -2265,6 +2787,10 @@
           "facts": 4,
           "focuses": 2,
           "relations": 9,
+          "claims": 0,
+          "opinions": 0,
+          "arguments": 0,
+          "assessments": 0,
           "relation_types": 4,
           "graph_ready": true,
           "rich_graph": true
@@ -2292,11 +2818,28 @@
         },
         "change_coverage": {
           "covered_entities": [],
-          "missing_entities": [],
+          "missing_entities": [
+            "ArgumentPoint",
+            "JudicialAssessment",
+            "LitigationClaim",
+            "ProceduralOpinion"
+          ],
           "covered_relations": [],
           "missing_relations": [
-            "concerns_focus",
-            "participates_in_case"
+            "assesses_focus",
+            "based_on_fact",
+            "based_on_provision",
+            "claims_focus",
+            "evaluates_argument",
+            "expresses_opinion",
+            "opines_on_focus",
+            "raises_claim",
+            "responds_to_claim",
+            "responds_to_opinion",
+            "supports_claim",
+            "supports_opinion",
+            "supports_result",
+            "targets_subject"
           ],
           "field_status": {}
         }
@@ -2304,7 +2847,7 @@
     },
     "criminal": {
       "prompt_file": "ontology/prompts/auto_v5_criminal.txt",
-      "prompt_sha1": "fe5fca6da4a6565cf8c0605410f4dfed7dbf00ce",
+      "prompt_sha1": "6fc7bae84a0c5c8d44df3118bc1f085eb381a883",
       "few_shot": {
         "row_id": "23127",
         "score": 90.0,
@@ -2323,6 +2866,10 @@
           "facts": 3,
           "focuses": 2,
           "relations": 7,
+          "claims": 0,
+          "opinions": 0,
+          "arguments": 0,
+          "assessments": 0,
           "relation_types": 4,
           "graph_ready": true,
           "rich_graph": true
@@ -2351,11 +2898,28 @@
         },
         "change_coverage": {
           "covered_entities": [],
-          "missing_entities": [],
+          "missing_entities": [
+            "ArgumentPoint",
+            "JudicialAssessment",
+            "LitigationClaim",
+            "ProceduralOpinion"
+          ],
           "covered_relations": [],
           "missing_relations": [
-            "concerns_focus",
-            "participates_in_case"
+            "assesses_focus",
+            "based_on_fact",
+            "based_on_provision",
+            "claims_focus",
+            "evaluates_argument",
+            "expresses_opinion",
+            "opines_on_focus",
+            "raises_claim",
+            "responds_to_claim",
+            "responds_to_opinion",
+            "supports_claim",
+            "supports_opinion",
+            "supports_result",
+            "targets_subject"
           ],
           "field_status": {}
         }
@@ -2363,7 +2927,7 @@
     },
     "administrative": {
       "prompt_file": "ontology/prompts/auto_v5_admin.txt",
-      "prompt_sha1": "4bbd293dc1277f778de5517e5a404e4f7de82c63",
+      "prompt_sha1": "63ceb37f556d14bba283006002aa5e4d7a402143",
       "few_shot": {
         "row_id": "2847",
         "score": 95.0,
@@ -2382,6 +2946,10 @@
           "facts": 3,
           "focuses": 2,
           "relations": 16,
+          "claims": 0,
+          "opinions": 0,
+          "arguments": 0,
+          "assessments": 0,
           "relation_types": 7,
           "graph_ready": true,
           "rich_graph": true
@@ -2412,11 +2980,28 @@
         },
         "change_coverage": {
           "covered_entities": [],
-          "missing_entities": [],
+          "missing_entities": [
+            "ArgumentPoint",
+            "JudicialAssessment",
+            "LitigationClaim",
+            "ProceduralOpinion"
+          ],
           "covered_relations": [],
           "missing_relations": [
-            "concerns_focus",
-            "participates_in_case"
+            "assesses_focus",
+            "based_on_fact",
+            "based_on_provision",
+            "claims_focus",
+            "evaluates_argument",
+            "expresses_opinion",
+            "opines_on_focus",
+            "raises_claim",
+            "responds_to_claim",
+            "responds_to_opinion",
+            "supports_claim",
+            "supports_opinion",
+            "supports_result",
+            "targets_subject"
           ],
           "field_status": {}
         }
@@ -2425,8 +3010,8 @@
   },
   "evaluation_prompt": {
     "prompt_file": "ontology/prompts/auto_ontology_evaluation.txt",
-    "prompt_sha1": "8fbf3636397f16c9cf24509a44f6538e4b6997be",
-    "ontology_sha1": "87caa8bf8f1a8dc47474e2449de4bde341e252b7",
-    "generated_at": "2026-05-22T07:46:36+00:00"
+    "prompt_sha1": "445880dcb25629873d2f655ba6ee11a2e5e29cde",
+    "ontology_sha1": "66f27c9387db643126733c331e64781924934fda",
+    "generated_at": "2026-06-02T03:25:24+00:00"
   }
 }

@@ -213,6 +213,36 @@ types:  # types（类型定义）
     fact_type_enum: [undisputed, disputed, to_be_proven]  # undisputed（无争议）; disputed（有争议）; to_be_proven（待证明）
     description: "案件事实"  # description（描述）
 
+  LitigationClaim:
+    is_a: JudicialEntity  # is_a（继承自）
+    required: [case_id, claim_text]  # required（必填字段）; claim_text（诉求内容）
+    optional: [case_number, subject_id, subject_name, role_code, claim_type, requested_outcome, amount, target_subject_id, target_subject_name, legal_basis_summary]  # optional（可选字段）; case_number（案号）; subject_id（主体标识）; subject_name（主体名称）; role_code（角色编码）; claim_type（诉求类型）; requested_outcome（请求结果）; target_subject_id（目标主体标识）
+    claim_type_enum: [appeal_claim, defense_claim, prosecution_claim, civil_claim, counterclaim, procedural_request, sentencing_request, compensation_request, other]  # appeal_claim（上诉请求）; defense_claim（辩护/答辩请求）; prosecution_claim（公诉/抗诉请求）; civil_claim（民事实体诉求）; counterclaim（反诉请求）; procedural_request（程序性申请）; sentencing_request（量刑请求）; compensation_request（赔偿请求）
+    description: "各方明确提出的诉求/请求（如上诉请求、辩护请求、赔偿请求、程序性申请）"  # description（描述）
+
+  ProceduralOpinion:
+    is_a: JudicialEntity  # is_a（继承自）
+    required: [case_id, content]  # required（必填字段）; content（内容）
+    optional: [case_number, subject_id, subject_name, role_code, opinion_type, stance, related_claim_ids]  # optional（可选字段）; case_number（案号）; subject_id（主体标识）; subject_name（主体名称）; role_code（角色编码）; opinion_type（意见类型）; stance（立场）; related_claim_ids（关联诉求标识列表）
+    opinion_type_enum: [appeal_opinion, defense_opinion, agent_opinion, prosecution_opinion, objection_opinion, procedural_opinion, other]  # appeal_opinion（上诉意见）; defense_opinion（辩护意见）; agent_opinion（代理意见）; prosecution_opinion（公诉/抗诉意见）; objection_opinion（异议/反对意见）; procedural_opinion（程序性意见）; other（其他）
+    stance_enum: [support, oppose, partial_support, neutral, unknown]  # support（支持）; oppose（反对）; partial_support（部分支持）; neutral（中立）; unknown（未知）
+    description: "围绕诉求提出的意见表达（如上诉意见、辩护意见、代理意见、答辩意见）"  # description（描述）
+
+  ArgumentPoint:
+    is_a: JudicialEntity  # is_a（继承自）
+    required: [case_id, argument_text]  # required（必填字段）; argument_text（理由内容）
+    optional: [case_number, subject_id, subject_name, role_code, argument_basis_type, supports_claim_id, supports_opinion_id, related_fact_ids, related_provision_ids]  # optional（可选字段）; case_number（案号）; subject_id（主体标识）; subject_name（主体名称）; role_code（角色编码）; argument_basis_type（理由类型）; supports_claim_id（支撑诉求标识）; supports_opinion_id（支撑意见标识）
+    argument_basis_type_enum: [fact_based, evidence_based, legal_based, procedural_based, policy_based, sentencing_based, mixed, other]  # fact_based（事实理由）; evidence_based（证据理由）; legal_based（法律理由）; procedural_based（程序理由）; policy_based（政策理由）; sentencing_based（量刑理由）; mixed（混合类型）; other（其他）
+    description: "支撑诉求/意见的理由点（事实理由、证据理由、法律理由、程序理由等）"  # description（描述）
+
+  JudicialAssessment:
+    is_a: JudicialEntity  # is_a（继承自）
+    required: [case_id, assessment_text]  # required（必填字段）; assessment_text（评判内容）
+    optional: [case_number, issue_type, assessment_outcome, responds_to_claim_ids, responds_to_opinion_ids, responds_to_argument_ids, based_on_fact_ids, based_on_provision_ids, supports_judgment_result_ids]  # optional（可选字段）; case_number（案号）; issue_type（评判对象类型）; assessment_outcome（评判结论）; responds_to_claim_ids（回应诉求标识列表）; responds_to_opinion_ids（回应意见标识列表）; responds_to_argument_ids（回应理由标识列表）; based_on_fact_ids（依据事实标识列表）
+    issue_type_enum: [claim, opinion, argument, fact, evidence, provision, sentencing, procedure, mixed]  # claim（诉求）; opinion（意见）; argument（理由）; fact（事实）; provision（法条）; sentencing（量刑）; procedure（程序）; mixed（混合类型）
+    assessment_outcome_enum: [adopted, rejected, partially_adopted, not_addressed, unclear]  # adopted（采纳）; rejected（不采纳）; partially_adopted（部分采纳）; not_addressed（未回应）; unclear（不明确）
+    description: "法院对诉求、意见、理由的回应与综合评判"  # description（描述）
+
   CaseParticipant:
     is_a: JudicialEntity  # is_a（继承自）
     required: [case_id, role_code]  # required（必填字段）; role_code（角色编码）
@@ -410,6 +440,90 @@ relations:  # relations（关系定义）
     cardinality: many_to_many  # cardinality（基数）
     description: "主体参与、经历或关联某一案件事实"  # description（描述）
 
+  raises_claim:  # raises_claim（提出诉求）
+    from: LegalSubject
+    to: LitigationClaim
+    cardinality: many_to_many  # cardinality（基数）
+    description: "主体提出某项诉求/请求"  # description（描述）
+
+  expresses_opinion:  # expresses_opinion（表达意见）
+    from: LegalSubject
+    to: ProceduralOpinion
+    cardinality: many_to_many  # cardinality（基数）
+    description: "主体发表某项意见（上诉意见、辩护意见、代理意见等）"  # description（描述）
+
+  supports_claim:  # supports_claim（支撑诉求）
+    from: ArgumentPoint
+    to: LitigationClaim
+    cardinality: many_to_many  # cardinality（基数）
+    description: "理由点支撑某项诉求/请求"  # description（描述）
+
+  supports_opinion:  # supports_opinion（支撑意见）
+    from: ArgumentPoint
+    to: ProceduralOpinion
+    cardinality: many_to_many  # cardinality（基数）
+    description: "理由点支撑某项意见表达"  # description（描述）
+
+  targets_subject:  # targets_subject（指向主体）
+    from: LitigationClaim
+    to: LegalSubject
+    cardinality: many_to_many  # cardinality（基数）
+    description: "诉求直接针对的主体对象"  # description（描述）
+
+  claims_focus:  # claims_focus（诉求对应焦点）
+    from: LitigationClaim
+    to: DisputeFocus
+    cardinality: many_to_many  # cardinality（基数）
+    description: "诉求对应某一争议焦点"  # description（描述）
+
+  opines_on_focus:  # opines_on_focus（意见围绕焦点）
+    from: ProceduralOpinion
+    to: DisputeFocus
+    cardinality: many_to_many  # cardinality（基数）
+    description: "意见围绕某一争议焦点展开"  # description（描述）
+
+  assesses_focus:  # assesses_focus（评判焦点）
+    from: JudicialAssessment
+    to: DisputeFocus
+    cardinality: many_to_many  # cardinality（基数）
+    description: "法院评判直接回应某一争议焦点"  # description（描述）
+
+  responds_to_claim:  # responds_to_claim（回应诉求）
+    from: JudicialAssessment
+    to: LitigationClaim
+    cardinality: many_to_many  # cardinality（基数）
+    description: "法院评判回应某项诉求/请求"  # description（描述）
+
+  responds_to_opinion:  # responds_to_opinion（回应意见）
+    from: JudicialAssessment
+    to: ProceduralOpinion
+    cardinality: many_to_many  # cardinality（基数）
+    description: "法院评判回应某项意见"  # description（描述）
+
+  evaluates_argument:  # evaluates_argument（评价理由）
+    from: JudicialAssessment
+    to: ArgumentPoint
+    cardinality: many_to_many  # cardinality（基数）
+    description: "法院评判评价某个理由点"  # description（描述）
+
+  based_on_fact:  # based_on_fact（基于事实）
+    from: [LitigationClaim, ProceduralOpinion, ArgumentPoint, JudicialAssessment]
+    to: Fact
+    cardinality: many_to_many  # cardinality（基数）
+    description: "诉求/意见/理由/评判以案件事实为基础"  # description（描述）
+
+  based_on_provision:  # based_on_provision（基于法条）
+    from: [LitigationClaim, ArgumentPoint, JudicialAssessment]
+    to: LegalProvision
+    cardinality: many_to_many  # cardinality（基数）
+    description: "诉求/理由/法院评判援引或依托法律条文"  # description（描述）
+
+  supports_result:  # supports_result（支撑裁判结果）
+    from: JudicialAssessment
+    to: JudgmentResult
+    cardinality: many_to_many  # cardinality（基数）
+    description: "法院评判支撑最终裁判结果"  # description（描述）
+
   concerns_focus:  # concerns_focus（关联争点）
     from: LegalSubject
     to: DisputeFocus
@@ -519,7 +633,7 @@ engineering:  # engineering（工程配置）
     Court: "name + district.code"  # name（名称）; district（区级）; code（编码）
     Person: "name + case_id（每个案件内独立）"  # name（名称）
     Organization: "credit_code（全局唯一，跨案件关联）"  # credit_code（统一社会信用代码）
-  data_version: "2026.05.v2.2"  # data_version（数据版本）
+  data_version: "2026.06.v2.3"  # data_version（数据版本）
   incremental_update: true  # incremental_update（增量更新）
   graph_storage:  # graph_storage（图存储）
     node_prefix: "LEGAL_"  # node_prefix（节点前缀）
