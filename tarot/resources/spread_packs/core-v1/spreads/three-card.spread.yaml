@@ -1,0 +1,60 @@
+schema: tarot.spread.v1
+spread_id: three-card
+pack_id: core-v1
+locale: zh-CN
+version: 1
+
+name:
+  zh-CN: 三牌阵
+  en-US: Three Card Spread
+
+subtitle:
+  zh-CN: 过去、现在、未来
+  en-US: Past, Present, Future
+
+description:
+  zh-CN: 最适合日常问题和快速指引的基础牌阵
+  en-US: A simple spread for daily questions and quick guidance
+
+card_count: 3
+
+tags:
+  - beginner
+  - daily
+  - quick-guidance
+
+availability:
+  premium_reserved: false
+  visible_by_default: true
+
+layout:
+  template: row-3
+  slot_order:
+    - 0
+    - 1
+    - 2
+
+positions:
+  - slot: 0
+    position_id: past
+    interpretation_weight: 0.28
+  - slot: 1
+    position_id: present
+    interpretation_weight: 0.40
+  - slot: 2
+    position_id: future
+    interpretation_weight: 0.32
+
+reading_strategy:
+  synthesis_template: linear-timeline
+  recommend_sections:
+    - card_readings
+    - overall_analysis
+    - action_advice
+    - long_term_advice
+  advice_weight: medium
+  timing_enabled: true
+
+ui_hints:
+  animate_draw_order: true
+  highlight_current_slot: true

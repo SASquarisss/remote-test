@@ -1,0 +1,58 @@
+schema: tarot.manifest.v1
+pack_type: meaning_pack
+pack_id: rws-core-v1
+version: "1.0.0"
+
+name:
+  zh-CN: 韦特基础牌义包
+  en-US: RWS Core Meaning Pack
+
+description:
+  zh-CN: 基于 RWS 体系整理的基础结构化牌义资源
+  en-US: Structured core meaning pack based on the RWS system
+
+locales:
+  - zh-CN
+  - en-US
+
+tags:
+  - rws
+  - core
+  - meanings
+
+license:
+  license_type: mixed
+  commercial_use_allowed: false
+  attribution_required: true
+  notes:
+    zh-CN: 原始文本、结构化整理和产品化文案可能来自不同来源，需结合 source_refs 使用
+
+source:
+  primary_source_id: rws-pictorial-key
+  source_urls:
+    - https://rider-waite.com/symbolism/pictorial-key-1-1/
+  provenance:
+    zh-CN: 基于公版资料与人工结构化整理
+
+meaning_spec:
+  card_schema: tarot.card.v1
+  includes_symbolism: true
+  includes_domain_meanings: true
+  includes_prompt_fragments: true
+
+compatibility:
+  recommended_image_packs:
+    - rws-public-domain
+  recommended_spread_packs:
+    - core-v1
+
+stats:
+  total_cards: 78
+  major_arcana: 22
+  minor_arcana: 56
+  completed_cards: 1
+
+build:
+  imported_at: "2026-06-02T00:00:00Z"
+  built_by: manual-bootstrap
+  tool_version: "1.0.0"

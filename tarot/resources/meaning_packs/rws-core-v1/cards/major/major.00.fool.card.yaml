@@ -1,0 +1,81 @@
+schema: tarot.card.v1
+canonical_card_id: major.00.fool
+pack_id: rws-core-v1
+locale: zh-CN
+version: 1
+
+names:
+  zh-CN:
+    display: 愚者
+    aliases:
+      - 愚人
+  en-US:
+    display: The Fool
+    aliases:
+      - Fool
+
+arcana: major
+order: 0
+
+rank:
+  code: "00"
+  label: fool
+
+tags:
+  - new_beginning
+  - leap_of_faith
+  - innocence
+
+element: air
+
+astrology:
+  planet: uranus
+  zodiac: null
+
+numerology:
+  number: 0
+  notes:
+    zh-CN: 象征无限可能与未定形状态
+
+symbolism:
+  visual_points:
+    - id: cliff
+      label: 悬崖
+      meaning: 象征未知边界与跃迁
+    - id: white_dog
+      label: 白犬
+      meaning: 本能提醒与陪伴
+    - id: white_rose
+      label: 白玫瑰
+      meaning: 纯粹与开放
+
+orientation_profiles:
+  upright:
+    keywords:
+      - 开始
+      - 自由
+      - 冒险
+    core_meaning:
+      zh-CN: 新旅程即将展开，重点在于信任与尝试
+  reversed:
+    keywords:
+      - 冲动
+      - 迷失
+      - 逃避
+    core_meaning:
+      zh-CN: 开始的力量被犹豫、混乱或轻率所扭曲
+
+prompt_fragments:
+  concise:
+    zh-CN: 愚者象征开始、尝试、迈入未知
+  mystical:
+    zh-CN: 命运的门槛已经显现，你正站在跃入新旅程的边缘
+
+source_refs:
+  - source_id: rws-pictorial-key
+    kind: public_domain_text
+    notes: 基于公版原始资料整理
+
+quality:
+  reviewed: true
+  confidence: high

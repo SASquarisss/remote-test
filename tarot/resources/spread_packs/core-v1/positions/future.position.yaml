@@ -1,0 +1,30 @@
+schema: tarot.position.v1
+position_id: future
+pack_id: core-v1
+locale: zh-CN
+version: 1
+
+name:
+  zh-CN: 未来
+  en-US: Future
+
+description:
+  zh-CN: 问题后续的趋势走向、建议方向与潜在结果
+
+interpretation_role: timeline_future
+
+keywords:
+  - 未来
+
+focus:
+  question_aspect: future
+  time_dimension: future
+  advice_weight: medium
+
+prompt_fragments:
+  concise:
+    zh-CN: 未来位用于说明与当前问题相关的未来维度信息
+
+quality:
+  reviewed: true
+  confidence: high

@@ -1,0 +1,32 @@
+schema: tarot.position.v1
+position_id: obstacle
+pack_id: core-v1
+locale: zh-CN
+version: 1
+
+name:
+  zh-CN: 阻碍
+  en-US: Obstacle
+
+description:
+  zh-CN: 当前问题推进过程中最主要的卡点、阻力或内在冲突
+
+interpretation_role: challenge
+
+keywords:
+  - 阻碍
+  - 卡点
+  - 挑战
+
+focus:
+  question_aspect: challenge
+  time_dimension: present
+  advice_weight: high
+
+prompt_fragments:
+  concise:
+    zh-CN: 阻碍位用于指出当前最需要面对的核心卡点
+
+quality:
+  reviewed: true
+  confidence: high

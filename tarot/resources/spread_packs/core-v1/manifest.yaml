@@ -1,0 +1,48 @@
+schema: tarot.manifest.v1
+pack_type: spread_pack
+pack_id: core-v1
+version: "1.0.0"
+
+name:
+  zh-CN: 基础牌阵包
+  en-US: Core Spread Pack
+
+description:
+  zh-CN: 首版基础牌阵与位置规则集合
+  en-US: Core spread and position rules for the first release
+
+locales:
+  - zh-CN
+  - en-US
+
+tags:
+  - core
+  - spread
+  - starter
+
+license:
+  license_type: proprietary
+  commercial_use_allowed: true
+  attribution_required: false
+  notes:
+    zh-CN: 该包主要为项目自定义规则设计
+
+source:
+  primary_source_id: internal-design
+  source_urls: []
+  provenance:
+    zh-CN: 基于产品设计与人工规则定义整理
+
+spread_spec:
+  spread_schema: tarot.spread.v1
+  includes_layouts: true
+  includes_position_templates: true
+
+stats:
+  spreads: 1
+  positions: 3
+
+build:
+  imported_at: "2026-06-02T00:00:00Z"
+  built_by: manual-bootstrap
+  tool_version: "1.0.0"

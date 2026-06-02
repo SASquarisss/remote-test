@@ -1,0 +1,30 @@
+schema: tarot.position.v1
+position_id: present
+pack_id: core-v1
+locale: zh-CN
+version: 1
+
+name:
+  zh-CN: 现在
+  en-US: Present
+
+description:
+  zh-CN: 当前局势的核心状态、矛盾与正在发生的能量
+
+interpretation_role: timeline_present
+
+keywords:
+  - 现在
+
+focus:
+  question_aspect: present
+  time_dimension: present
+  advice_weight: high
+
+prompt_fragments:
+  concise:
+    zh-CN: 现在位用于说明与当前问题相关的现在维度信息
+
+quality:
+  reviewed: true
+  confidence: high

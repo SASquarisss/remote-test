@@ -1,0 +1,9 @@
+source_id: wikimedia-rws-category
+category: image_source
+name: Wikimedia Commons Rider-Waite tarot deck
+source_urls:
+  - https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot_deck
+license_summary:
+  zh-CN: 计划从明确标识为公版的原始 RWS 图像逐张导入，避免使用后期重着色商业版本
+notes:
+  zh-CN: 每张单卡导入前仍需逐页确认具体版权说明

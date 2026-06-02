@@ -1,0 +1,37 @@
+{
+  "question": "我的感情发展会如何？",
+  "locale": "zh-CN",
+  "tone": "mystical",
+  "spread": {
+    "spread_pack_id": "core-v1",
+    "spread_id": "three-card",
+    "name": "三牌阵"
+  },
+  "resources": {
+    "image_pack_id": "rws-public-domain",
+    "meaning_pack_id": "rws-core-v1"
+  },
+  "cards": [
+    {
+      "slot": 0,
+      "position_id": "past",
+      "position_name": "过去",
+      "canonical_card_id": "minor.cups.05.five",
+      "orientation": "reversed"
+    },
+    {
+      "slot": 1,
+      "position_id": "present",
+      "position_name": "现在",
+      "canonical_card_id": "minor.swords.02.two",
+      "orientation": "upright"
+    },
+    {
+      "slot": 2,
+      "position_id": "future",
+      "position_name": "未来",
+      "canonical_card_id": "minor.wands.09.nine",
+      "orientation": "reversed"
+    }
+  ]
+}

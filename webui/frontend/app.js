@@ -1,282 +1,457 @@
-/**
- * 法律知识图谱 WebUI 前端逻辑
- * Cytoscape.js 渲染 + API 交互
- */
+import {
+    TarotApiError,
+    createTarotApiClient,
+} from './tarot-api.js';
 
-const COLORS = {
-    norm:   '#3b82f6',
-    subject:'#22c55e',
-    entity: '#f59e0b',
-    meta:   '#a855f7',
-    edge:   '#64748b'
+const STORAGE_KEY = 'tarot-demo-session-id';
+const DECK_RENDER_COUNT = 24;
+const SAMPLE_QUESTIONS = [
+    '我的感情发展会如何？',
+    '我接下来应该如何处理现在的工作压力？',
+    '这段关系值得我继续投入吗？',
+];
+
+const api = createTarotApiClient('');
+
+const $ = (id) => document.getElementById(id);
+const pages = {
+    home: $('homePage'),
+    draw: $('drawPage'),
+    result: $('resultPage'),
 };
 
-let cy = null;
-let currentElements = [];
+const apiStatus = $('apiStatus');
+const restartBtn = $('restartBtn');
+const homeQuestion = $('questionInput');
+const questionHint = $('questionHint');
+const questionCount = $('questionCount');
+const spreadList = $('spreadList');
+const backHomeBtn = $('backHomeBtn');
+const drawQuestion = $('drawQuestion');
+const drawSpreadName = $('drawSpreadName');
+const remainingCount = $('remainingCount');
+const drawSubtitle = $('drawSubtitle');
+const positionList = $('positionList');
+const deckGrid = $('deckGrid');
+const generateReadingBtn = $('generateReadingBtn');
+const resultRestartBtn = $('resultRestartBtn');
+const resultQuestion = $('resultQuestion');
+const readingTitle = $('readingTitle');
+const openingMessage = $('openingMessage');
+const readingCards = $('readingCards');
+const overallAnalysis = $('overallAnalysis');
+const energyFlow = $('energyFlow');
+const conflictHarmony = $('conflictHarmony');
+const timingHint = $('timingHint');
+const actionAdvice = $('actionAdvice');
+const longTermAdvice = $('longTermAdvice');
+const toast = $('toast');
+const loadingMask = $('loadingMask');
+const loadingText = $('loadingText');
 
-// ===== DOM Refs =====
-const $ = id => document.getElementById(id);
-const inputText   = $('inputText');
-const parseBtn    = $('parseBtn');
-const loadSampleBtn=$('loadSampleBtn');
-const clearBtn    = $('clearBtn');
-const statsSection= $('statsSection');
-const statGrid    = $('statGrid');
-const jsonSection = $('jsonSection');
-const jsonPreview = $('jsonPreview');
-const emptyState  = $('emptyState');
-const searchNode  = $('searchNode');
-const fitBtn      = $('fitBtn');
-const layoutBtn   = $('layoutBtn');
-const layoutSelect= $('layoutSelect');
-const detailPanel = $('detailPanel');
-const detailType  = $('detailType');
-const detailBody  = $('detailBody');
-const closeDetail = $('closeDetail');
+const state = {
+    spreads: [],
+    session: null,
+    currentPage: 'home',
+    loading: false,
+};
 
-// ===== Sample Data (示例：行政-不履行职责) =====
-const SAMPLE_TEXT = `案件类型：行政-不履行XX职责
-法院：最高人民法院
-案号：（2025）最高法行第一号
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 2600);
+}
 
-基本事实：
-申请人王某于2024年3月向某市人民政府申请公开某项行政许可的实施情况。该市政府于同年4月收到申请后，在法定期限内未作出任何书面回复。王某于2024年7月向法院提起行政诉讼，请求确认该市政府不履行法定职责。
+function setLoading(isLoading, message = '群星正在为你排列答案...') {
+    state.loading = isLoading;
+    loadingText.textContent = message;
+    loadingMask.classList.toggle('hidden', !isLoading);
+    generateReadingBtn.disabled = isLoading || !state.session || state.session.remaining_count > 0;
+    renderDeck();
+}
 
-裁判理由：
-一、关于政府信息公开职责。根据《中华人民共和国政府信息公开条例》第二十七条规定，行政机关收到政府信息公开申请，能当场回复的，应当场回复；不能当场回复的，应当在收到申请之日起20个工作日内予以书面回复。本案中，市政府收到申请后未在法定期限内回复，已构成不履行法定职责。
-二、关于判决方式。根据《中华人民共和国行政诉讼法》第七十六条，行政机关不履行或者无正当理由拖延履行法定职责的，人民法院判决确认其不履行。
+function setApiStatus(mode, text) {
+    apiStatus.textContent = text;
+    apiStatus.classList.remove('status-pending', 'status-connected', 'status-error');
+    apiStatus.classList.add(mode);
+}
 
-裁判结果：确认某市人民政府对王某的政府信息公开申请未在法定期限内予以回复的行为违法，责令其在判决生效之日起20日内书面回复王某。
-`;
+function persistSession() {
+    if (state.session?.session_id) {
+        sessionStorage.setItem(STORAGE_KEY, state.session.session_id);
+    } else {
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+}
 
-// ===== Init =====
-function initCytoscape(elements = []) {
-    if (cy) { cy.destroy(); }
-    currentElements = elements;
+function resetSession(keepQuestion = false) {
+    const currentQuestion = homeQuestion.value;
+    state.session = null;
+    persistSession();
+    if (!keepQuestion) {
+        homeQuestion.value = '';
+    } else {
+        homeQuestion.value = currentQuestion;
+    }
+    updateQuestionMeta();
+    showPage('home');
+    renderDrawPage();
+    renderResultPage();
+}
 
-    if (elements.length === 0) {
-        emptyState.classList.remove('hidden');
+function showPage(pageName) {
+    state.currentPage = pageName;
+    Object.entries(pages).forEach(([name, element]) => {
+        element.classList.toggle('active', name === pageName);
+    });
+}
+
+function validateQuestion(question) {
+    const normalized = question.trim().replace(/\s+/g, ' ');
+    if (!normalized) {
+        throw new Error('请先输入你想咨询的问题');
+    }
+    if (normalized.length < 6) {
+        throw new Error('问题至少需要 6 个字符');
+    }
+    if (normalized.length > 120) {
+        throw new Error('问题最多 120 个字符');
+    }
+    return normalized;
+}
+
+function updateQuestionMeta() {
+    const length = homeQuestion.value.trim().length;
+    questionCount.textContent = `${length} / 120`;
+    if (length === 0) {
+        questionHint.textContent = '建议聚焦一个核心问题，字数 6-120 字。';
         return;
     }
-    emptyState.classList.add('hidden');
-
-    cy = cytoscape({
-        container: document.getElementById('cy'),
-        elements: elements,
-        style: [
-            {
-                selector: 'node',
-                style: {
-                    'background-color': 'data(category)',
-                    'label': 'data(label)',
-                    'width': 36,
-                    'height': 36,
-                    'font-size': '11px',
-                    'color': '#e2e8f0',
-                    'text-outline-color': '#0f172a',
-                    'text-outline-width': 2,
-                    'text-valign': 'bottom',
-                    'text-halign': 'center',
-                    'text-margin-y': 4,
-                    'border-width': 2,
-                    'border-color': '#1e293b'
-                }
-            },
-            {
-                selector: 'node[norm]',
-                style: { 'background-color': COLORS.norm }
-            },
-            {
-                selector: 'node[subject]',
-                style: { 'background-color': COLORS.subject }
-            },
-            {
-                selector: 'node[entity]',
-                style: { 'background-color': COLORS.entity }
-            },
-            {
-                selector: 'edge',
-                style: {
-                    'width': 1.5,
-                    'line-color': COLORS.edge,
-                    'target-arrow-color': COLORS.edge,
-                    'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier',
-                    'label': 'data(label)',
-                    'font-size': '9px',
-                    'color': '#94a3b8',
-                    'text-outline-color': '#0f172a',
-                    'text-outline-width': 2,
-                    'arrow-scale': 0.8
-                }
-            },
-            {
-                selector: ':selected',
-                style: {
-                    'border-width': 3,
-                    'border-color': '#ffffff',
-                    'line-color': '#ffffff',
-                    'target-arrow-color': '#ffffff'
-                }
-            }
-        ],
-        layout: { name: 'cose', padding: 20, animate: true, animationDuration: 500 }
-    });
-
-    // 节点点击
-    cy.on('tap', 'node', evt => {
-        const node = evt.target;
-        showDetail(node.data());
-    });
-
-    // 背景点击关闭详情
-    cy.on('tap', evt => {
-        if (evt.target === cy) {
-            hideDetail();
-        }
-    });
-
-    runLayout('cose');
-}
-
-function runLayout(name) {
-    if (!cy) return;
-    const opts = { name, padding: 30, animate: true, animationDuration: 600 };
-    if (name === 'cose') {
-        Object.assign(opts, {
-            componentSpacing: 80,
-            nodeOverlap: 20,
-            refresh: 20,
-            fit: true,
-            randomize: false
-        });
+    if (length < 6) {
+        questionHint.textContent = '问题有点短，可以再具体一点。';
+        return;
     }
-    cy.layout(opts).run();
+    questionHint.textContent = '问题已经足够清晰，可以开始选择牌阵。';
 }
 
-// ===== Detail Panel =====
-function showDetail(data) {
-    detailType.textContent = data.entity_type || 'Unknown';
-    detailType.style.background = COLORS[data.category] || COLORS.meta;
-    detailType.style.color = '#fff';
+function orientationText(value) {
+    return value === 'upright' ? '正位' : '逆位';
+}
 
-    const skip = ['id', 'label', 'entity_type', 'category'];
-    let html = '';
-    for (const [k, v] of Object.entries(data)) {
-        if (skip.includes(k)) continue;
-        let display = v;
-        if (Array.isArray(v)) display = v.join(', ');
-        else if (typeof v === 'object') display = JSON.stringify(v);
-        html += `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${escapeHtml(String(display))}</span></div>`;
+function cardSymbol(card) {
+    if (!card) return '✧';
+    if (card.arcana_type === 'major') return '✦';
+    const symbols = {
+        cups: '杯',
+        swords: '剑',
+        wands: '杖',
+        pentacles: '币',
+    };
+    return symbols[card.suit] || '✦';
+}
+
+function createCardMini(card, orientation) {
+    if (!card) {
+        return `
+            <div class="card-mini empty">
+                <span class="card-symbol">✧</span>
+                <span class="card-name">待抽取</span>
+                <span class="card-orientation">命运未揭晓</span>
+            </div>
+        `;
     }
-    detailBody.innerHTML = html;
-    detailPanel.classList.remove('hidden');
+    return `
+        <div class="card-mini">
+            <span class="card-symbol">${cardSymbol(card)}</span>
+            <span class="card-name">${card.name_cn}</span>
+            <span class="card-orientation">${orientationText(orientation)}</span>
+        </div>
+    `;
 }
 
-function hideDetail() {
-    detailPanel.classList.add('hidden');
+function renderSpreadList() {
+    spreadList.innerHTML = '';
+    state.spreads.forEach((spread) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'spread-card';
+        button.innerHTML = `
+            <div>
+                <h3>${spread.name}</h3>
+                <p class="spread-subtitle">${spread.subtitle}</p>
+            </div>
+            <p>${spread.description}</p>
+            <div class="spread-footer">
+                <span class="pill">${spread.card_count} 张牌</span>
+                <span class="pill ${spread.premium_reserved ? 'premium' : ''}">
+                    ${spread.premium_reserved ? '预留深度版' : '首版可用'}
+                </span>
+            </div>
+        `;
+        button.addEventListener('click', () => startDivination(spread.id));
+        spreadList.appendChild(button);
+    });
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+function renderDrawPage() {
+    if (!state.session) {
+        drawQuestion.textContent = '尚未开始新的占卜';
+        drawSpreadName.textContent = '--';
+        remainingCount.textContent = '0';
+        drawSubtitle.textContent = '点击下方任意卡牌，命运将揭示下一张答案。';
+        positionList.innerHTML = '';
+        renderDeck();
+        return;
+    }
 
-// ===== Stats =====
-function updateStats(elements) {
-    const nodes = elements.filter(e => !e.data.source);
-    const edges = elements.filter(e => e.data.source);
-    const cats = {};
-    nodes.forEach(n => {
-        const c = n.data.category || 'unknown';
-        cats[c] = (cats[c] || 0) + 1;
+    const session = state.session;
+    drawQuestion.textContent = session.question;
+    drawSpreadName.textContent = session.spread.name;
+    remainingCount.textContent = String(session.remaining_count);
+    drawSubtitle.textContent = session.remaining_count > 0
+        ? `当前正在抽取「${session.positions[session.drawn_cards.length]?.name || ''}」位置。`
+        : '卡牌已经全部抽满，可以开始解读。';
+
+    positionList.innerHTML = '';
+    session.positions.forEach((position, index) => {
+        const drawnCard = session.drawn_cards.find((item) => item.position_index === index);
+        const article = document.createElement('article');
+        const isActive = !drawnCard && index === session.drawn_cards.length && session.remaining_count > 0;
+        article.className = `position-card${drawnCard ? ' filled' : ''}${isActive ? ' active' : ''}`;
+        article.innerHTML = `
+            <div>
+                <h3>${position.name}</h3>
+                <p class="position-description">${position.description}</p>
+            </div>
+            ${createCardMini(drawnCard?.card, drawnCard?.orientation)}
+            <p class="card-position-note">
+                ${drawnCard
+                    ? `${drawnCard.card.name_cn}${orientationText(drawnCard.orientation)}已经落入此位。`
+                    : isActive
+                        ? '当前命运之门正为这个位置开启。'
+                        : '等待抽取。'}
+            </p>
+        `;
+        positionList.appendChild(article);
     });
 
-    let html = '';
-    html += `<div class="stat-card"><div class="num">${nodes.length}</div><div class="label">节点</div></div>`;
-    html += `<div class="stat-card"><div class="num">${edges.length}</div><div class="label">关系</div></div>`;
-    for (const [c, n] of Object.entries(cats)) {
-        html += `<div class="stat-card"><div class="num" style="color:${COLORS[c]||'#fff'}">${n}</div><div class="label">${c}</div></div>`;
-    }
-    statGrid.innerHTML = html;
-    statsSection.classList.remove('hidden');
+    generateReadingBtn.disabled = state.loading || session.remaining_count > 0;
+    renderDeck();
 }
 
-// ===== API =====
-async function parseAndRender() {
-    const text = inputText.value.trim();
-    if (!text) { alert('请输入案例文本'); return; }
+function renderDeck() {
+    deckGrid.innerHTML = '';
+    const disabled = state.loading || !state.session || state.session.remaining_count === 0;
+    for (let index = 0; index < DECK_RENDER_COUNT; index += 1) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'deck-card';
+        button.disabled = disabled;
+        button.setAttribute('aria-label', `抽取第 ${index + 1} 张牌背`);
+        button.addEventListener('click', drawNextCard);
+        deckGrid.appendChild(button);
+    }
+}
 
-    setLoading(true);
+function renderResultPage() {
+    if (!state.session?.reading) {
+        resultQuestion.textContent = '';
+        readingTitle.textContent = '';
+        openingMessage.textContent = '';
+        readingCards.innerHTML = '';
+        overallAnalysis.textContent = '';
+        energyFlow.textContent = '';
+        conflictHarmony.textContent = '';
+        timingHint.textContent = '';
+        actionAdvice.textContent = '';
+        longTermAdvice.textContent = '';
+        return;
+    }
+
+    const { question, reading } = state.session;
+    resultQuestion.textContent = question;
+    readingTitle.textContent = reading.title;
+    openingMessage.textContent = reading.opening_message;
+    overallAnalysis.textContent = reading.overall_analysis;
+    energyFlow.textContent = reading.energy_flow;
+    conflictHarmony.textContent = reading.conflict_and_harmony;
+    timingHint.textContent = reading.timing_hint;
+    actionAdvice.textContent = reading.action_advice;
+    longTermAdvice.textContent = reading.long_term_advice;
+
+    readingCards.innerHTML = '';
+    reading.cards.forEach((cardReading) => {
+        const drawnCard = state.session.drawn_cards.find((item) => item.position_name === cardReading.position_name);
+        const article = document.createElement('article');
+        article.className = 'reading-card';
+        article.innerHTML = `
+            <div class="reading-card-header">
+                ${createCardMini(drawnCard?.card, cardReading.orientation)}
+                <div>
+                    <p class="reading-meta">${cardReading.position_name}</p>
+                    <h3>${cardReading.card_name}（${orientationText(cardReading.orientation)}）</h3>
+                    <span class="meaning">核心含义：${cardReading.core_meaning}</span>
+                </div>
+            </div>
+            <p class="card-analysis">${cardReading.analysis}</p>
+        `;
+        readingCards.appendChild(article);
+    });
+}
+
+function hydrateSession(payload) {
+    state.session = {
+        session_id: payload.session_id,
+        status: payload.status,
+        question: payload.question,
+        spread_id: payload.spread_id || payload.spread.id,
+        spread: payload.spread,
+        positions: payload.positions,
+        drawn_cards: payload.drawn_cards || [],
+        remaining_count: payload.remaining_count,
+        reading: payload.reading || null,
+        expires_at: payload.expires_at,
+    };
+    persistSession();
+    renderDrawPage();
+    renderResultPage();
+}
+
+async function startDivination(spreadId) {
+    let question;
     try {
-        const res = await fetch('/api/parse', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, model: 'deepseek-v4-pro' })
+        question = validateQuestion(homeQuestion.value);
+    } catch (error) {
+        showToast(error.message);
+        homeQuestion.focus();
+        return;
+    }
+
+    try {
+        setLoading(true, '星辰正在校准你的问题...');
+        const response = await api.createDivination({
+            question,
+            spread_id: spreadId,
         });
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || '解析失败');
-        }
-        const data = await res.json();
-
-        // 显示 JSON
-        jsonPreview.textContent = JSON.stringify(data.raw_json, null, 2);
-        jsonSection.classList.remove('hidden');
-
-        // 渲染图谱
-        const elements = data.cytoscape_elements.elements || [];
-        initCytoscape(elements);
-        updateStats(elements);
-    } catch (e) {
-        alert('解析失败: ' + e.message);
-        console.error(e);
+        hydrateSession({
+            ...response,
+            spread_id: response.spread.id,
+            drawn_cards: [],
+            reading: null,
+        });
+        showPage('draw');
+        showToast('牌阵已展开，开始抽牌吧。');
+    } catch (error) {
+        handleApiError(error);
     } finally {
         setLoading(false);
     }
 }
 
-function setLoading(isLoading) {
-    parseBtn.disabled = isLoading;
-    parseBtn.querySelector('.btn-text').classList.toggle('hidden', isLoading);
-    parseBtn.querySelector('.spinner').classList.toggle('hidden', !isLoading);
-}
-
-// ===== Search =====
-function searchNodes(query) {
-    if (!cy) return;
-    cy.nodes().unselect();
-    if (!query) return;
-    const matches = cy.nodes().filter(n => {
-        const label = (n.data('label') || '').toLowerCase();
-        const type = (n.data('entity_type') || '').toLowerCase();
-        return label.includes(query.toLowerCase()) || type.includes(query.toLowerCase());
-    });
-    if (matches.length > 0) {
-        matches.select();
-        cy.fit(matches, 60);
+async function drawNextCard() {
+    if (!state.session || state.loading || state.session.remaining_count === 0) {
+        return;
+    }
+    try {
+        setLoading(true, '命运正在翻开下一张牌...');
+        const response = await api.drawCard(state.session.session_id, {
+            client_draw_index: state.session.drawn_cards.length,
+        });
+        state.session.drawn_cards = [...state.session.drawn_cards, response.drawn_card];
+        state.session.status = response.status;
+        state.session.remaining_count = response.remaining_count;
+        renderDrawPage();
+        persistSession();
+        if (response.all_cards_drawn) {
+            showToast('所有牌位都已揭晓，可以开始解读。');
+        }
+    } catch (error) {
+        handleApiError(error);
+    } finally {
+        setLoading(false);
     }
 }
 
-// ===== Event Listeners =====
-parseBtn.addEventListener('click', parseAndRender);
-loadSampleBtn.addEventListener('click', () => {
-    inputText.value = SAMPLE_TEXT;
-});
-clearBtn.addEventListener('click', () => {
-    inputText.value = '';
-    if (cy) { cy.destroy(); cy = null; }
-    emptyState.classList.remove('hidden');
-    statsSection.classList.add('hidden');
-    jsonSection.classList.add('hidden');
-    hideDetail();
-});
-fitBtn.addEventListener('click', () => { if (cy) cy.fit(cy.nodes(), 40); });
-layoutBtn.addEventListener('click', () => { runLayout(layoutSelect.value); });
-layoutSelect.addEventListener('change', () => { runLayout(layoutSelect.value); });
-closeDetail.addEventListener('click', hideDetail);
-searchNode.addEventListener('input', e => searchNodes(e.target.value));
+async function generateReading() {
+    if (!state.session || state.loading || state.session.remaining_count > 0) {
+        return;
+    }
+    try {
+        setLoading(true, '群星正在为你排列答案...');
+        const response = await api.generateReading(state.session.session_id);
+        state.session.status = response.status;
+        state.session.reading = response.reading;
+        persistSession();
+        renderResultPage();
+        showPage('result');
+    } catch (error) {
+        handleApiError(error);
+    } finally {
+        setLoading(false);
+    }
+}
 
-// 初始化
-console.log('法律知识图谱 WebUI 已加载');
+async function restoreSession() {
+    const savedSessionId = sessionStorage.getItem(STORAGE_KEY);
+    if (!savedSessionId) {
+        return;
+    }
+    try {
+        const response = await api.getDivinationSession(savedSessionId);
+        hydrateSession(response);
+        if (response.status === 'reading_ready' && response.reading) {
+            showPage('result');
+        } else {
+            showPage('draw');
+        }
+        showToast('已恢复你刚才的占卜会话。');
+    } catch (error) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        if (!(error instanceof TarotApiError && error.code === 'SESSION_NOT_FOUND')) {
+            handleApiError(error);
+        }
+    }
+}
+
+async function init() {
+    updateQuestionMeta();
+    if (!homeQuestion.value) {
+        homeQuestion.value = SAMPLE_QUESTIONS[0];
+        updateQuestionMeta();
+    }
+
+    setApiStatus('status-pending', '正在连接占卜之门...');
+    try {
+        const [health, spreadsResponse] = await Promise.all([
+            api.getHealth(),
+            api.getSpreads(),
+        ]);
+        state.spreads = spreadsResponse.items || [];
+        renderSpreadList();
+        setApiStatus('status-connected', `${health.service} 已连接，命运流转正常`);
+        await restoreSession();
+    } catch (error) {
+        setApiStatus('status-error', '占卜服务暂时失联');
+        handleApiError(error, true);
+    }
+    renderDeck();
+}
+
+function handleApiError(error, silentToast = false) {
+    console.error(error);
+    const message = error instanceof TarotApiError ? error.message : (error?.message || '请求失败');
+    if (!silentToast) {
+        showToast(message);
+    }
+}
+
+homeQuestion.addEventListener('input', updateQuestionMeta);
+restartBtn.addEventListener('click', () => resetSession(true));
+backHomeBtn.addEventListener('click', () => resetSession(true));
+resultRestartBtn.addEventListener('click', () => resetSession(false));
+generateReadingBtn.addEventListener('click', generateReading);
+
+init();

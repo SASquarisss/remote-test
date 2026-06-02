@@ -1,0 +1,30 @@
+schema: tarot.position.v1
+position_id: past
+pack_id: core-v1
+locale: zh-CN
+version: 1
+
+name:
+  zh-CN: 过去
+  en-US: Past
+
+description:
+  zh-CN: 影响当前问题形成的背景、经历与既有能量
+
+interpretation_role: timeline_past
+
+keywords:
+  - 过去
+
+focus:
+  question_aspect: past
+  time_dimension: past
+  advice_weight: low
+
+prompt_fragments:
+  concise:
+    zh-CN: 过去位用于说明与当前问题相关的过去维度信息
+
+quality:
+  reviewed: true
+  confidence: high

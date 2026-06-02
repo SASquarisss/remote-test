@@ -1,0 +1,13 @@
+attribution_id: rws-public-domain-default
+pack_id: rws-public-domain
+display_name:
+  zh-CN: Rider-Waite-Smith 公版图像来源说明
+  en-US: Rider-Waite-Smith Public Domain Attribution Notes
+attribution_text:
+  zh-CN: 本图片包计划使用可验证的 Rider-Waite-Smith 原始公版图像资源，正式上线前需逐张确认来源页与版权说明。
+required_in_product: false
+required_in_repo: true
+source_links:
+  - https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot_deck
+notes:
+  zh-CN: 若后续改用商业授权版本，此文件需更新为新的授权说明

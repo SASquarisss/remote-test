@@ -1,0 +1,51 @@
+schema: tarot.manifest.v1
+pack_type: image_pack
+pack_id: rws-public-domain
+version: "1.0.0"
+
+name:
+  zh-CN: RWS 公版图片包
+  en-US: RWS Public Domain Image Pack
+
+description:
+  zh-CN: 基于原始 Rider-Waite-Smith 公版资源整理的图片包
+  en-US: Public-domain image pack based on original Rider-Waite-Smith resources
+
+locales:
+  - universal
+
+tags:
+  - rws
+  - public-domain
+  - image-pack
+
+license:
+  license_type: public_domain
+  commercial_use_allowed: true
+  attribution_required: false
+  notes:
+    zh-CN: 使用前仍需逐项复核具体来源页与实际文件版本
+
+source:
+  primary_source_id: wikimedia-rws-category
+  source_urls:
+    - https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot_deck
+  provenance:
+    zh-CN: 计划从可验证的公版来源逐张导入
+
+asset_spec:
+  file_format: jpg
+  thumbnail_format: webp
+  has_transparency: false
+  full_dir: full/
+  thumbnail_dir: thumbnails/
+  naming_rule: "{canonical_card_id}.jpg"
+
+stats:
+  total_cards: 0
+  imported_cards: 0
+
+build:
+  imported_at: "2026-06-02T00:00:00Z"
+  built_by: manual-bootstrap
+  tool_version: "1.0.0"

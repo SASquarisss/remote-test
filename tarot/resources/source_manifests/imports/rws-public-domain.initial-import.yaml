@@ -1,0 +1,18 @@
+import_batch_id: rws-public-domain-initial-001
+pack_id: rws-public-domain
+created_at: "2026-06-02T00:00:00Z"
+imported_by: manual-bootstrap
+source_id: wikimedia-rws-category
+target_dirs:
+  full: tarot/resources/image_packs/rws-public-domain/full/
+  thumbnails: tarot/resources/image_packs/rws-public-domain/thumbnails/
+import_policy:
+  require_per_file_license_check: true
+  allow_overwrite: false
+  generate_thumbnails: true
+file_stats:
+  planned_total: 78
+  imported_total: 0
+  failed_total: 0
+notes:
+  zh-CN: 首批导入批次模板，正式导入时逐张记录结果

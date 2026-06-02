@@ -3,80 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>法律知识图谱可视化</title>
+    <title>塔罗占卜 Demo</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
-    <script src="https://unpkg.com/cytoscape-popper@2.0.0/cytoscape-popper.js"></script>
 </head>
 <body>
-    <div id="app">
-        <header class="top-bar">
-            <h1>法律知识图谱 · 解析与可视化</h1>
-            <div class="legend">
-                <span class="tag norm">规范层</span>
-                <span class="tag subject">主体层</span>
-                <span class="tag entity">案件层</span>
+    <div class="starfield" aria-hidden="true"></div>
+    <div id="app" class="app-shell">
+        <header class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Mystic Reading Demo</p>
+                <h1>塔罗占卜</h1>
+                <p class="subtitle">选择牌阵，探索内心的智慧</p>
+            </div>
+            <div class="hero-actions">
+                <span id="apiStatus" class="status-badge status-pending">正在连接占卜之门...</span>
+                <button id="restartBtn" class="ghost-button" type="button">新的占卜</button>
             </div>
         </header>
 
-        <main class="main-grid">
-            <!-- 左侧: 输入区 -->
-            <aside class="panel left-panel">
-                <div class="input-section">
-                    <h3>📝 案例原文输入</h3>
-                    <textarea id="inputText" placeholder="请粘贴案例文本（支持裁判文书、指导性案例等）..."></textarea>
-                    <div class="btn-row">
-                        <button id="parseBtn" class="btn primary">
-                            <span class="btn-text">解析并生成图谱</span>
-                            <span class="spinner hidden"></span>
-                        </button>
-                        <button id="loadSampleBtn" class="btn secondary">加载示例</button>
-                        <button id="clearBtn" class="btn ghost">清空</button>
+        <main class="page-container">
+            <section id="homePage" class="page active">
+                <div class="panel intro-panel">
+                    <h2>请输入您的占卜问题</h2>
+                    <p class="panel-tip">详细的问题将帮助获得更精准的解读</p>
+                    <label class="question-field">
+                        <span class="sr-only">占卜问题</span>
+                        <textarea id="questionInput" maxlength="120" placeholder="例如：我应该如何处理当前的工作困境？我的感情发展会如何？"></textarea>
+                    </label>
+                    <div class="field-meta">
+                        <span id="questionHint">建议聚焦一个核心问题，字数 6-120 字。</span>
+                        <span id="questionCount">0 / 120</span>
                     </div>
                 </div>
 
-                <div class="stats-section hidden" id="statsSection">
-                    <h3>📊 解析概览</h3>
-                    <div class="stat-grid" id="statGrid"></div>
+                <section class="spread-section">
+                    <div class="section-heading">
+                        <h2>选择牌阵</h2>
+                        <p>点击任意牌阵，即可带着你的问题进入抽牌流程。</p>
+                    </div>
+                    <div id="spreadList" class="spread-grid"></div>
+                </section>
+            </section>
+
+            <section id="drawPage" class="page">
+                <div class="section-heading draw-heading">
+                    <div>
+                        <h2>抽取卡牌</h2>
+                        <p id="drawSubtitle">点击下方任意卡牌，命运将揭示下一张答案。</p>
+                    </div>
+                    <button id="backHomeBtn" class="ghost-button" type="button">返回首页</button>
                 </div>
 
-                <div class="json-section hidden" id="jsonSection">
-                    <h3>📦 原始 JSON</h3>
-                    <pre id="jsonPreview"></pre>
+                <div class="session-summary">
+                    <div class="summary-card">
+                        <span class="summary-label">你的问题</span>
+                        <p id="drawQuestion"></p>
+                    </div>
+                    <div class="summary-card compact">
+                        <span class="summary-label">当前牌阵</span>
+                        <p id="drawSpreadName"></p>
+                    </div>
+                    <div class="summary-card compact">
+                        <span class="summary-label">剩余卡牌</span>
+                        <p id="remainingCount">0</p>
+                    </div>
                 </div>
-            </aside>
 
-            <!-- 右侧: 图谱区 -->
-            <section class="panel right-panel">
-                <div class="toolbar">
-                    <input type="text" id="searchNode" placeholder="搜索节点..." />
-                    <button id="fitBtn" class="btn small">适应屏幕</button>
-                    <button id="layoutBtn" class="btn small">重新布局</button>
-                    <select id="layoutSelect">
-                        <option value="cose">力导向 (COSE)</option>
-                        <option value="circle">圆形</option>
-                        <option value="grid">网格</option>
-                        <option value="breadthfirst">层次</option>
-                    </select>
+                <div id="positionList" class="position-grid"></div>
+
+                <div class="deck-panel panel">
+                    <div class="deck-header">
+                        <div>
+                            <h3>命运牌堆</h3>
+                            <p>每点击一张牌背，系统会为当前牌位随机抽出一张塔罗牌。</p>
+                        </div>
+                        <button id="generateReadingBtn" class="primary-button" type="button" disabled>开始解读</button>
+                    </div>
+                    <div id="deckGrid" class="deck-grid"></div>
                 </div>
-                <div id="cy"></div>
-                <div class="empty-state" id="emptyState">
-                    <div class="empty-icon">🔍</div>
-                    <p>在左侧输入案例文本并点击"解析"，<br>图谱将在此处实时渲染</p>
+            </section>
+
+            <section id="resultPage" class="page">
+                <div class="section-heading result-heading">
+                    <div>
+                        <h2>塔罗解读</h2>
+                        <p>卡牌的智慧指引</p>
+                    </div>
+                    <button id="resultRestartBtn" class="primary-button" type="button">新的占卜</button>
+                </div>
+
+                <div class="question-echo panel">
+                    <span class="summary-label">你的问题</span>
+                    <p id="resultQuestion"></p>
+                </div>
+
+                <div class="reading-opening panel">
+                    <h3 id="readingTitle"></h3>
+                    <p id="openingMessage"></p>
+                </div>
+
+                <div id="readingCards" class="reading-card-grid"></div>
+
+                <div class="analysis-grid">
+                    <article class="analysis-panel panel">
+                        <h3>综合分析</h3>
+                        <p id="overallAnalysis"></p>
+                    </article>
+                    <article class="analysis-panel panel">
+                        <h3>能量流动</h3>
+                        <p id="energyFlow"></p>
+                    </article>
+                    <article class="analysis-panel panel">
+                        <h3>冲突与和谐</h3>
+                        <p id="conflictHarmony"></p>
+                    </article>
+                    <article class="analysis-panel panel">
+                        <h3>时机提示</h3>
+                        <p id="timingHint"></p>
+                    </article>
+                </div>
+
+                <div class="advice-stack">
+                    <article class="advice-panel panel">
+                        <h3>行动建议</h3>
+                        <p id="actionAdvice"></p>
+                    </article>
+                    <article class="advice-panel panel">
+                        <h3>长期建议</h3>
+                        <p id="longTermAdvice"></p>
+                    </article>
                 </div>
             </section>
         </main>
+    </div>
 
-        <!-- 节点详情浮层 -->
-        <div id="detailPanel" class="detail-panel hidden">
-            <div class="detail-header">
-                <span class="detail-type" id="detailType">Entity</span>
-                <button id="closeDetail" class="btn icon">✕</button>
-            </div>
-            <div class="detail-body" id="detailBody"></div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <div id="loadingMask" class="loading-mask hidden">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <p id="loadingText">群星正在为你排列答案...</p>
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script type="module" src="/static/app.js"></script>
 </body>
 </html>

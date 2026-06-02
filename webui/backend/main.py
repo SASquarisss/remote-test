@@ -19,9 +19,12 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 from parser_bridge import parse_text_to_kg
 from kg_builder import convert_to_cytoscape
+from tarot_mock_api import router as tarot_router, register_exception_handlers as register_tarot_handlers
 
 
 app = FastAPI(title="法律知识图谱 WebUI", version="0.1.0")
+register_tarot_handlers(app)
+app.include_router(tarot_router)
 
 FRONTEND_DIR = BACKEND_DIR.parent / "frontend"
 

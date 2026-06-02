@@ -1,0 +1,32 @@
+schema: tarot.position.v1
+position_id: outcome
+pack_id: core-v1
+locale: zh-CN
+version: 1
+
+name:
+  zh-CN: 结果
+  en-US: Outcome
+
+description:
+  zh-CN: 在当前趋势延续下，问题最可能呈现出的阶段性结果与走向
+
+interpretation_role: outcome
+
+keywords:
+  - 结果
+  - 走向
+  - 阶段结论
+
+focus:
+  question_aspect: outcome
+  time_dimension: future
+  advice_weight: medium
+
+prompt_fragments:
+  concise:
+    zh-CN: 结果位用于说明当前趋势下最可能显现的阶段性走向
+
+quality:
+  reviewed: true
+  confidence: high
