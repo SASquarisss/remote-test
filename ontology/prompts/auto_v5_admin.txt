@@ -408,6 +408,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
   ],
   "legal_subjects": [
     {
+      "id": "",
       "name": "",
       "subject_type": "natural_person|organization",
       "org_type": "company|government_agency|ngo|law_firm|expert_institution|court|procuratorate|individual_business|partnership|sole_proprietorship",
@@ -423,6 +424,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
   ],
   "attorneys": [
     {
+      "id": "",
       "name": "",
       "law_firm": "",
       "representation_for": "",
@@ -431,6 +433,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
   ],
   "judges": [
     {
+      "id": "",
       "name": "",
       "role": "presiding_judge|judge|acting_judge|people_juror|clerk",
       "case_number": ""
@@ -438,6 +441,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
   ],
   "prosecutors": [
     {
+      "id": "",
       "name": "",
       "role": "public_prosecutor|procurator|protest_organ",
       "unit": "",
@@ -446,6 +450,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
   ],
   "trial_organizations": [
     {
+      "id": "",
       "case_number": "",
       "members": [],
       "summary": ""
@@ -644,6 +649,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
   ],
   "legal_subjects": [
     {
+      "id": "subj_0",
       "name": "日本某株式会社",
       "subject_type": "organization",
       "roles": [
@@ -660,6 +666,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
       ]
     },
     {
+      "id": "subj_1",
       "name": "国家知识产权局",
       "subject_type": "organization",
       "roles": [
@@ -676,6 +683,7 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
       ]
     },
     {
+      "id": "subj_2",
       "name": "某药业公司",
       "subject_type": "organization",
       "roles": [
@@ -692,6 +700,9 @@ relations 数组中的 `relation_type` 只能使用下表中的本体关系名�
       ]
     }
   ],
+  "attorneys": [],
+  "judges": [],
+  "prosecutors": [],
   "legal_provisions": [
     {
       "statute": "中华人民共和国专利法",

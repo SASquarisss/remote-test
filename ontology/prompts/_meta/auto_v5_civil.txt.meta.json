@@ -1,6 +1,6 @@
 {
   "prompt_file": "ontology/prompts/auto_v5_civil.txt",
-  "prompt_sha1": "94687cea82d56fb035d66d4aa72ca8add1817fdc",
+  "prompt_sha1": "1959eb66174dca15f0875b5de480b45fe8262643",
   "few_shot": {
     "row_id": "2478",
     "score": 95.0,
@@ -50,29 +50,9 @@
     },
     "change_coverage": {
       "covered_entities": [],
-      "missing_entities": [
-        "ArgumentPoint",
-        "JudicialAssessment",
-        "LitigationClaim",
-        "ProceduralOpinion"
-      ],
+      "missing_entities": [],
       "covered_relations": [],
-      "missing_relations": [
-        "assesses_focus",
-        "based_on_fact",
-        "based_on_provision",
-        "claims_focus",
-        "evaluates_argument",
-        "expresses_opinion",
-        "opines_on_focus",
-        "raises_claim",
-        "responds_to_claim",
-        "responds_to_opinion",
-        "supports_claim",
-        "supports_opinion",
-        "supports_result",
-        "targets_subject"
-      ],
+      "missing_relations": [],
       "field_status": {}
     }
   }

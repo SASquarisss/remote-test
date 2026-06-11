@@ -145,6 +145,27 @@ types:  # types（类型定义）
     role_enum: [plaintiff, defendant, third_party, witness, agent, expert_witness, interpreter, prosecutor, applicant, respondent, relator, appellant, appellee, retrial_applicant, retrial_respondent, mediator, arbitrator, beneficiary, victim, criminal_defendant, enforcement_applicant, enforcement_respondent, judicial_review_applicant, insolvency_debtor, surety, class_representative, insurer]  # plaintiff（原告）; defendant（被告）; third_party（第三人）; witness（证人）; agent（代理人）; expert_witness（鉴定人）; interpreter（翻译）; applicant（申请人）
     description: "法律角色（2026.05.v2.2新增insurer——保险人角色，用于标注保险公司在案件中的身份）"  # description（描述）
 
+  # ==================== 裁判尺度与量刑层 ====================
+  SentencingCircumstance:
+    is_a: JudicialEntity
+    required: [case_id, circumstance_type, content]
+    optional: [subject_id, subject_name]
+    circumstance_type_enum: [statutory_mitigating, statutory_aggravating, discretionary_mitigating, discretionary_aggravating]
+    description: "量刑情节/酌定情节（法定从宽、法定从严、酌定从宽、酌定从严）"
+
+  LegalInterpretation:
+    is_a: JudicialEntity
+    required: [case_id, content]
+    optional: [provision_element_id]
+    description: "法庭对特定法条元素或法律概念的司法适用解释"
+
+  # ==================== 证据网络扩展 ====================
+  EvidenceChain:
+    is_a: JudicialEntity
+    required: [case_id, name]
+    optional: [description, proved_fact_ids]
+    description: "证据链（多个相互印证的证据聚合体）"
+
   # ==================== 案件层 ====================
   CourtCase:
     is_a: JudicialEntity  # is_a（继承自）
@@ -549,11 +570,49 @@ relations:  # relations（关系定义）
     cardinality: many_to_many  # cardinality（基数）
     description: "争议焦点由法律条文解决（争议焦点→法条映射）"  # description（描述）
 
-  leads_to:  # leads_to（导向裁判）
+  leads_to:
     from: [Fact, DisputeFocus]
     to: JudgmentResult
-    cardinality: many_to_many  # cardinality（基数）
+    cardinality: many_to_many
     description: "事实/争议焦点推导出裁判结果（三段论推理的结论链路）"  # description（描述）
+
+  # ==================== 证据网络层关系扩展 ====================
+  corroborates:
+    from: Evidence
+    to: Evidence
+    cardinality: many_to_many
+    description: "证据之间相互印证"
+
+  contradicts:
+    from: Evidence
+    to: Evidence
+    cardinality: many_to_many
+    description: "证据之间相互矛盾"
+
+  forms_chain:
+    from: Evidence
+    to: EvidenceChain
+    cardinality: many_to_many
+    description: "证据构成证据链"
+
+  # ==================== 裁判尺度与解释层关系扩展 ====================
+  mitigates:
+    from: SentencingCircumstance
+    to: JudgmentResult
+    cardinality: many_to_many
+    description: "量刑情节从轻/减轻处罚"
+
+  aggravates:
+    from: SentencingCircumstance
+    to: JudgmentResult
+    cardinality: many_to_many
+    description: "量刑情节从重处罚"
+
+  interprets:
+    from: JudicialAssessment
+    to: [LegalProvisionElement, LegalInterpretation]
+    cardinality: many_to_many
+    description: "法庭评判对法条元素进行法律解释"
 
 constraints:  # constraints（约束）
   # 1. 官方案号正则

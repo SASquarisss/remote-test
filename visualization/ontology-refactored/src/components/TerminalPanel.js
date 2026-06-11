@@ -1,3 +1,5 @@
+import { Network } from 'vis-network';
+import { DataSet } from 'vis-data';
 import { store } from '../store/index.js';
 import { safeGetElement } from '../utils/dom.js';
 import { escapeHtml } from '../utils/formatter.js';
@@ -12,6 +14,7 @@ import {
   updateRetrievalEntry,
   reembedRetrievalBundle,
   writeRetrievalBundle,
+  augmentProvisions,
 } from '../api/backend.js';
 
 export class TerminalPanel {
@@ -31,6 +34,7 @@ export class TerminalPanel {
     this.clearBtn = safeGetElement('btnTermClear');
     this.evalBtn = safeGetElement('btnTermEvaluate');
     this.enhanceBtn = safeGetElement('btnTermEnhance');
+    this.augmentBtn = safeGetElement('btnTermAugment');
     this.statusArea = safeGetElement('termStatusArea');
     
     this.lastResult = null;
@@ -93,19 +97,29 @@ export class TerminalPanel {
           
           <div class="term-splitter" id="splitterLeft"></div>
           
-          <div id="termJsonColumn" class="term-col term-col-middle" style="width: 42%; flex: none; background: #fff;">
-            <div class="term-col-header" style="border-bottom: 1px solid #e0e0e0; background: #fbfcfe;">
-              <div class="term-tab-group" id="jsonTabGroup">
-                <span class="term-tab active" data-target="termJsonArea">
-                  <span class="term-tab-label">📄 解析数据</span>
-                </span>
-                <span class="term-tab" data-target="termEnhanceTabContent">
-                  <span class="term-tab-label">✨ 增量解析数据</span>
-                </span>
-                <span class="term-tab" data-target="termRetrievalTabContent">
-                  <span class="term-tab-label">🧠 检索资产</span>
-                </span>
+          <div id="termJsonColumn" class="term-col term-col-middle" style="width: 42%; flex: none; background: #fff; display: flex; flex-direction: column;">
+            <div class="term-col-header" style="border-bottom: 1px solid #e0e0e0; background: #fbfcfe; display: flex; justify-content: space-between; align-items: center; padding: 0 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="btnToggleLeftCol" style="background:none;border:none;cursor:pointer;padding:4px;font-size:16px;color:#64748b;display:flex;align-items:center;" title="收起左侧原文">◀</button>
+                <div class="term-tab-group" id="jsonTabGroup" style="border-bottom: none;">
+                  <span class="term-tab active" data-target="termJsonArea">
+                    <span class="term-tab-label">📄 解析数据</span>
+                  </span>
+                  <span class="term-tab" data-target="termEnhanceTabContent">
+                    <span class="term-tab-label">✨ 增量解析数据</span>
+                  </span>
+                  <span class="term-tab" data-target="termRetrievalTabContent">
+                    <span class="term-tab-label">🧠 检索资产</span>
+                  </span>
+                  <span class="term-tab" data-target="termAugmentationTabContent">
+                    <span class="term-tab-label">📈 数据增强</span>
+                  </span>
+                  <span class="term-tab" data-target="termDiscoveryTabContent">
+                    <span class="term-tab-label">💡 知识发现</span>
+                  </span>
+                </div>
               </div>
+              <button id="btnToggleRightCol" style="background:none;border:none;cursor:pointer;padding:4px;font-size:16px;color:#64748b;display:flex;align-items:center;" title="收起右侧视图">▶</button>
             </div>
             <div style="flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
               <div class="term-json-area term-content-pane" id="termJsonArea" style="flex: 1; display: flex; flex-direction: row; min-width:0;">
@@ -129,10 +143,36 @@ export class TerminalPanel {
                   </div>
                 </div>
               </div>
+              <div id="termAugmentationTabContent" class="term-content-pane" style="display: none; flex: 1; flex-direction: column; overflow: hidden; background: #fff;">
+                <div id="termAugmentationPane" style="display:flex; flex:1; min-height:0; flex-direction:column;">
+                  <div id="termAugmentationPlaceholder" style="padding:16px; color:#94a3b8;">等待进行数据增强（如法条补充）...</div>
+                  <div id="termAugmentationContent" style="display:none; padding:16px; flex:1; overflow:auto; font-size:13px; line-height:1.6; color:#334155;"></div>
+                </div>
+              </div>
+              <div id="termDiscoveryTabContent" class="term-content-pane" style="display: none; flex: 1; flex-direction: column; overflow: hidden; background: #fff;">
+                <div id="termDiscoveryHistoryTabs" style="display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0; min-height: 28px; width: 100%; border-bottom: 1px solid #e2e8f0; padding: 8px 12px; box-sizing: border-box;"></div>
+                <div id="termDiscoveryPane" style="display:flex; flex:1; min-height:0; flex-direction:row;">
+                  <div id="termDiscoveryPlaceholder" style="padding:16px; color:#94a3b8; width:100%;">请在右侧「深度思考」面板发起分析以生成知识发现内容...</div>
+                  
+                  <div id="termDiscoveryContentLeft" style="display:none; width:50%; border-right:1px solid #e2e8f0; padding:16px; overflow:auto; font-size:13px; line-height:1.6; color:#334155;">
+                    <div style="font-weight:bold; font-size:14px; margin-bottom:12px; color:#1e293b;">🤔 思考过程</div>
+                    <div id="termDiscoveryReasoning" style="white-space:pre-wrap; margin-bottom:16px;"></div>
+                    <div style="font-weight:bold; font-size:14px; margin-bottom:12px; color:#1e293b; border-top:1px dashed #e2e8f0; padding-top:12px;">📌 核心结论</div>
+                    <div id="termDiscoveryConclusion" style="font-weight:bold; color:#0f172a;"></div>
+                  </div>
+                  
+                  <div id="termDiscoveryContentRight" style="display:none; width:50%; padding:0; display:flex; flex-direction:column; overflow:hidden;">
+                    <div id="termDiscoverySubGraph" style="flex:1; background:#f8fafc; display:flex; flex-direction:column; overflow:hidden;">
+                      等待渲染图谱...
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="term-eval-row">
               <button class="btn-eval" id="btnTermEvaluate" disabled>🔍 本体论评估</button>
               <button class="btn-enhance" id="btnTermEnhance" disabled>✨ 增量解析</button>
+              <button class="btn-enhance" id="btnTermAugment" disabled style="background: #10b981; color: white; border: none;">📖 法条补充</button>
               <span class="term-eval-score" id="termEvalScoreArea"></span>
             </div>
           </div>
@@ -144,6 +184,12 @@ export class TerminalPanel {
               <div class="term-tab-group">
                 <span class="term-tab active ready" data-target="termVisContainer">
                   <span class="term-tab-label">📊 图谱应用</span>
+                </span>
+                <span class="term-tab" data-target="termDeepThinkingTabContent">
+                  <span class="term-tab-label">🤔 深度思考</span>
+                </span>
+                <span class="term-tab" data-target="termSubGraphTabContent">
+                  <span class="term-tab-label">🔗 子图</span>
                 </span>
                 <span class="term-tab" data-target="termIssuesTabContent">
                   <span class="term-tab-label">⚠ 问题</span>
@@ -164,6 +210,25 @@ export class TerminalPanel {
             <div id="termWorkspaceContent" style="flex: 1; position: relative; overflow: hidden;">
               <!-- VisContainer moved here dynamically -->
               
+              <div id="termDeepThinkingTabContent" class="term-content-pane term-deep-thinking-area" style="display: none; position: absolute; inset: 0; background: #fff;">
+                <div id="termDeepThinkingContainer" style="width: 100%; height: 100%; display: flex; align-items: flex-start; padding: 16px; color: #334155; flex-direction: column; gap: 12px; overflow: auto;">
+                  <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">预设深度思考能力矩阵</div>
+                  <button class="dt-preset-btn" data-think-type="法条适用分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">🔍 法条适用分析</button>
+                  <button class="dt-preset-btn" data-think-type="构成要件分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">⚖️ 构成要件分析</button>
+                  <button class="dt-preset-btn" data-think-type="证据采信分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">📝 证据采信分析</button>
+                  <button class="dt-preset-btn" data-think-type="裁判尺度分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">📐 裁判尺度分析</button>
+                  <button class="dt-preset-btn" data-think-type="诉求抗辩分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">⚔️ 诉求抗辩分析</button>
+                  <div style="font-size: 12px; color: #94a3b8; margin-top: 16px;">* 点击上方按钮发起分析，结果将在中间「知识发现」面板中展示。</div>
+                </div>
+              </div>
+
+              <div id="termSubGraphTabContent" class="term-content-pane term-subgraph-area" style="display: none; position: absolute; inset: 0; background: #fff;">
+                <div id="termSubGraphContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #94a3b8; flex-direction: column;">
+                  <div style="font-size: 14px;">暂无子图数据</div>
+                  <div style="font-size: 12px; margin-top: 8px;">请在检索资产列表中点击条目进行查看</div>
+                </div>
+              </div>
+
               <div id="termIssuesTabContent" class="term-content-pane term-issues-area" style="display: none; position: absolute; inset: 0; background: #fff;">
                 <div class="term-tab-scroll" id="termIssuesScroll" style="padding-bottom: 40px;">
                   <div class="term-issues-placeholder" id="termIssuesPlaceholder">等待分析...</div>
@@ -336,6 +401,44 @@ export class TerminalPanel {
       });
     }
 
+    const btnToggleLeftCol = document.getElementById('btnToggleLeftCol');
+    if (btnToggleLeftCol) {
+      btnToggleLeftCol.addEventListener('click', () => {
+        const leftCol = document.getElementById('termControls');
+        const splitterLeft = document.getElementById('splitterLeft');
+        if (leftCol.style.display === 'none') {
+          leftCol.style.display = 'flex';
+          if (splitterLeft) splitterLeft.style.display = 'block';
+          btnToggleLeftCol.innerHTML = '◀';
+          btnToggleLeftCol.title = '收起左侧原文';
+        } else {
+          leftCol.style.display = 'none';
+          if (splitterLeft) splitterLeft.style.display = 'none';
+          btnToggleLeftCol.innerHTML = '▶';
+          btnToggleLeftCol.title = '展开左侧原文';
+        }
+      });
+    }
+
+    const btnToggleRightCol = document.getElementById('btnToggleRightCol');
+    if (btnToggleRightCol) {
+      btnToggleRightCol.addEventListener('click', () => {
+        const rightCol = document.getElementById('termWorkspace');
+        const splitterRight = document.getElementById('splitterRight');
+        if (rightCol.style.display === 'none') {
+          rightCol.style.display = 'block';
+          if (splitterRight) splitterRight.style.display = 'block';
+          btnToggleRightCol.innerHTML = '▶';
+          btnToggleRightCol.title = '收起右侧视图';
+        } else {
+          rightCol.style.display = 'none';
+          if (splitterRight) splitterRight.style.display = 'none';
+          btnToggleRightCol.innerHTML = '◀';
+          btnToggleRightCol.title = '展开右侧视图';
+        }
+      });
+    }
+
     if (this.parseBtn) {
       this.parseBtn.addEventListener('click', () => this.handleParse());
     }
@@ -358,6 +461,9 @@ export class TerminalPanel {
     }
     if (this.enhanceBtn) {
       this.enhanceBtn.addEventListener('click', () => this.handleEnhanceParse());
+    }
+    if (this.augmentBtn) {
+      this.augmentBtn.addEventListener('click', () => this.handleAugmentProvisions());
     }
 
     const versionRail = document.getElementById('termJsonVersionRail');
@@ -455,6 +561,15 @@ export class TerminalPanel {
           if (entryId) {
             this.persistRetrievalUIState({ activeEntryId: entryId });
             this.renderRetrievalBundle(this.lastRetrievalBundle, { activeEntryId: entryId });
+            
+            // Switch right panel to subgraph tab and ensure it renders properly
+            this.switchTab('termSubGraphTabContent');
+            if (this.subNetwork) {
+              setTimeout(() => {
+                this.subNetwork.redraw();
+                this.subNetwork.fit();
+              }, 50);
+            }
           }
         }
       });
@@ -496,6 +611,24 @@ export class TerminalPanel {
           if (this.lastRetrievalBundle) this.renderRetrievalBundle(this.lastRetrievalBundle);
         }
       });
+    }
+
+    const deepThinkingPane = document.getElementById('termDeepThinkingContainer');
+    if (deepThinkingPane) {
+      deepThinkingPane.addEventListener('click', (e) => {
+        const btn = e.target.closest('.dt-preset-btn');
+        if (btn) {
+          const thinkType = btn.getAttribute('data-think-type');
+          if (thinkType) {
+            this.handleDeepThink(thinkType);
+          }
+        }
+      });
+    }
+
+    const btnMergeDiscovery = document.getElementById('btnMergeDiscovery');
+    if (btnMergeDiscovery) {
+      btnMergeDiscovery.addEventListener('click', () => this.handleMergeDiscovery());
     }
   }
 
@@ -876,12 +1009,22 @@ export class TerminalPanel {
   }
 
   updateEnhanceButtonState() {
-    if (!this.enhanceBtn) return;
-    const ready = Boolean(this.lastEvalResult && !this.isEnhancing);
-    this.enhanceBtn.disabled = !ready;
-    this.enhanceBtn.classList.toggle('ready', ready);
-    this.enhanceBtn.style.opacity = ready ? '1' : '0.92';
-    this.enhanceBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    if (this.enhanceBtn) {
+      const ready = Boolean(this.lastEvalResult && !this.isEnhancing);
+      this.enhanceBtn.disabled = !ready;
+      this.enhanceBtn.classList.toggle('ready', ready);
+      this.enhanceBtn.style.opacity = ready ? '1' : '0.92';
+      this.enhanceBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    }
+    
+    if (this.augmentBtn) {
+      // Augment is ready as soon as we have a valid json result
+      const ready = Boolean(this.lastResult && this.lastResult.json_result);
+      this.augmentBtn.disabled = !ready;
+      this.augmentBtn.classList.toggle('ready', ready);
+      this.augmentBtn.style.opacity = ready ? '1' : '0.5';
+      this.augmentBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    }
   }
 
   resetEnhancementState() {
@@ -1648,9 +1791,6 @@ export class TerminalPanel {
                 ['written', '已写入'],
               ].map(([value, label]) => `<option value="${value}" ${filters.status === value ? 'selected' : ''}>${label}</option>`).join('')}
             </select>
-            <span style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;background:#fff;color:#475569;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(activeGraphPayload.description || '-')}">
-              链路说明：${escapeHtml(activeGraphPayload.description || '-')}
-            </span>
           </div>
           <div style="font-size:12px;color:#64748b;display:flex;gap:10px;flex-wrap:wrap;">
             <span>来源版本：${escapeHtml(bundle.source_parse_version_id || 'v0')}</span>
@@ -1705,8 +1845,11 @@ export class TerminalPanel {
               <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#f8fafc;color:#475569;">首要实体：${escapeHtml(activePrimaryEntity.label || activeEntry?.title || '-')}</span>
             </div>
             <div style="padding:10px 12px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff;display:flex;flex-direction:column;gap:6px;">
-              <div style="font-size:12px;font-weight:700;color:#1e3a8a;">统一元数据头</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:12px;font-weight:700;color:#1e3a8a;">统一元数据头</div>
+                <button onclick="const content = document.getElementById('metaHeaderContent'); if(content.style.display === 'none') { content.style.display = 'flex'; this.innerText = '收起'; } else { content.style.display = 'none'; this.innerText = '展开'; }" style="background:none;border:none;color:#3b82f6;font-size:12px;cursor:pointer;padding:0;">收起</button>
+              </div>
+              <div id="metaHeaderContent" style="display:flex;gap:6px;flex-wrap:wrap;">
                 ${metaHeaderLines.map(([label, value]) => `<span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#fff;color:#334155;border:1px solid #dbeafe;">${escapeHtml(label)}：${escapeHtml(String(value))}</span>`).join('') || '<span style="font-size:12px;color:#64748b;">暂无元数据</span>'}
               </div>
             </div>
@@ -1719,7 +1862,7 @@ export class TerminalPanel {
                 ${activeChainMissingItems.length ? `<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">${activeChainMissingItems.map((item) => `<div>• ${escapeHtml(item)}</div>`).join('')}</div>` : ''}
               </div>
             `}
-            <textarea id="retrievalTextInput" style="min-height:160px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;">${escapeHtml(activeEntry?.retrieval_text || '')}</textarea>
+            <textarea id="retrievalTextInput" style="min-height:350px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;white-space:pre-wrap;">${escapeHtml(activeEntry?.retrieval_text || '')}</textarea>
             <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('补充上下文', 'expanded_text')}</label>
             <textarea id="retrievalExpandedInput" style="min-height:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;font-family:monospace;">${escapeHtml(effectiveExpandedText)}</textarea>
             <label style="font-size:12px;color:#475569;font-weight:700;">${this.buildRetrievalFieldLabel('标签（逗号分隔）', 'keywords')}</label>
@@ -1729,6 +1872,7 @@ export class TerminalPanel {
             <div style="font-size:12px;color:#475569;font-weight:700;">知识图谱链路</div>
             <div style="margin-top:6px;padding:10px;border:1px solid ${activeGraphPayload.is_valid_chain ? '#e5e7eb' : '#fecaca'};border-radius:8px;background:${activeGraphPayload.is_valid_chain ? '#fff' : '#fef2f2'};font-size:12px;color:#334155;line-height:1.7;">
               <div>链路名称：${escapeHtml(activeGraphPayload.path_label || activeGraphPayload.path_type || '-')}</div>
+              <div>链路说明：${escapeHtml(activeGraphPayload.description || '-')}</div>
               <div>首要实体：${escapeHtml(activePrimaryEntity.label || '-')}</div>
               <div style="margin-top:6px;color:${activeGraphPayload.is_valid_chain ? '#1e293b' : '#b91c1c'};white-space:pre-wrap;">${escapeHtml(activeGraphPayload.is_valid_chain ? (activeGraphPayload.chain_text || '暂无链路文本') : (((activeChainWarning || '').split('\n')[0]) || activeChainWarning))}</div>
               ${activeGraphPayload.is_valid_chain || !activeChainMissingItems.length ? '' : `<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;color:#b91c1c;">${activeChainMissingItems.map((item) => `<div>• ${escapeHtml(item)}</div>`).join('')}</div>`}
@@ -1786,6 +1930,9 @@ export class TerminalPanel {
         </div>
       </div>
     `;
+
+    this.renderSubGraph(activeEntry);
+
     store.setState({
       retrievalBundle: bundle,
       retrievalEntries: entries,
@@ -1805,6 +1952,88 @@ export class TerminalPanel {
       previewMode,
       lastWriteSummary: writeSummary,
     });
+  }
+
+  renderSubGraph(activeEntry) {
+    const container = document.getElementById('termSubGraphContainer');
+    if (!container) return;
+
+    if (!activeEntry || !activeEntry.graph_payload || !activeEntry.graph_payload.chain_nodes || !activeEntry.graph_payload.chain_edges) {
+      container.innerHTML = `
+        <div style="font-size: 14px;">暂无子图数据</div>
+        <div style="font-size: 12px; margin-top: 8px;">该检索资产不包含子图结构信息</div>
+      `;
+      if (this.subNetwork) {
+        this.subNetwork.destroy();
+        this.subNetwork = null;
+      }
+      return;
+    }
+
+    container.innerHTML = ''; // clear
+
+    const wrapText = (text, maxLen = 30) => {
+      if (!text || text.length <= maxLen) return text;
+      let result = '';
+      for (let i = 0; i < text.length; i += maxLen) {
+        result += text.substring(i, i + maxLen) + '\n';
+      }
+      return result.trim();
+    };
+
+    const nodes = activeEntry.graph_payload.chain_nodes.map(n => ({
+      id: n.id,
+      label: wrapText(n.label, 30),
+      shape: 'box',
+      color: {
+        background: '#eef2ff',
+        border: '#4338ca'
+      },
+      font: { color: '#334155' }
+    }));
+
+    const edges = activeEntry.graph_payload.chain_edges.map((e, index) => {
+      // In chain structure, edge[i] connects node[i] to node[i+1]
+      const fromNode = activeEntry.graph_payload.chain_nodes[index];
+      const toNode = activeEntry.graph_payload.chain_nodes[index + 1];
+      
+      return {
+        id: e.id || `edge_${index}`,
+        from: fromNode?.id,
+        to: toNode?.id,
+        label: e.label || e.relation_type,
+        arrows: 'to',
+        font: { align: 'horizontal', size: 10, color: '#64748b' },
+        color: { color: '#cbd5e1' }
+      };
+    }).filter(e => e.from && e.to); // ensure valid edges
+
+    const data = {
+      nodes: new DataSet(nodes),
+      edges: new DataSet(edges)
+    };
+
+    const options = {
+      layout: {
+        hierarchical: {
+          direction: 'UD',
+          sortMethod: 'directed',
+          levelSeparation: 120,
+          nodeSpacing: 150
+        }
+      },
+      physics: false,
+      interaction: {
+        dragNodes: true,
+        dragView: true,
+        zoomView: true
+      }
+    };
+
+    if (this.subNetwork) {
+      this.subNetwork.destroy();
+    }
+    this.subNetwork = new Network(container, data, options);
   }
 
   async handleBuildRetrieval(force = false) {
@@ -2222,7 +2451,457 @@ export class TerminalPanel {
       this.updateEnhanceButtonState();
     }
   }
+
+  async handleAugmentProvisions() {
+    const version = this.getActiveVersion() || this.lastResult;
+    if (!version || !version.json_result) return;
+    
+    this.setStatus('正在补充法条原文...', '#2563eb');
+    if (this.augmentBtn) {
+      this.augmentBtn.disabled = true;
+      this.augmentBtn.style.cursor = 'not-allowed';
+      this.augmentBtn.style.opacity = '0.5';
+    }
+    
+    const placeholder = document.getElementById('termAugmentationPlaceholder');
+    const contentArea = document.getElementById('termAugmentationContent');
+    
+    if (placeholder) {
+      placeholder.style.display = 'block';
+      placeholder.textContent = '正在连接向量库补充法条原文...';
+    }
+    if (contentArea) contentArea.style.display = 'none';
+
+    try {
+      this.switchTab('termAugmentationTabContent');
+      const jsonObj = typeof version.json_result === 'string' ? JSON.parse(version.json_result) : version.json_result;
+      
+      const res = await augmentProvisions(jsonObj);
+      
+      // Update local state with augmented data
+      if (res.status === 'success' && res.graph_data) {
+        const newGraphData = {
+          ...this.lastResult,
+          json_result: res.graph_data
+        };
+        
+        // Push a new version
+        const newVersionId = `v${this.getVersionList().length}`;
+        const newVersion = {
+          version_id: newVersionId,
+          label: '数据增强 (法条补充)',
+          created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+          json_result: res.graph_data,
+          nodes: res.nodes || this.lastResult.nodes,
+          edges: res.edges || this.lastResult.edges,
+          change_summary: {
+            entity_updated: { legal_provisions: 1 } // Just a marker
+          }
+        };
+        
+        const versions = [...this.getVersionList(), newVersion];
+        store.setState({
+          parseVersions: versions,
+          parseActiveVersionId: newVersionId
+        });
+        
+        this.applyVersionSnapshot(newVersion, { highlightPatch: { changedKeys: ['legal_provisions'] } });
+        
+        // Render logs
+        if (placeholder) placeholder.style.display = 'none';
+        if (contentArea) {
+          contentArea.style.display = 'block';
+          contentArea.innerHTML = res.logs.map(log => {
+            const color = log.type === 'error' ? '#dc2626' : log.type === 'success' ? '#16a34a' : log.type === 'warning' ? '#d97706' : '#2563eb';
+            return `<div style="margin-bottom: 8px;"><span style="color: ${color}; font-weight: bold;">[${log.type.toUpperCase()}]</span> ${escapeHtml(log.msg)}</div>`;
+          }).join('');
+        }
+        
+        this.setStatus('法条补充完成', '#16a34a');
+      }
+    } catch (e) {
+      this.setStatus(`法条补充失败: ${e.message}`, '#dc2626');
+      if (placeholder) {
+        placeholder.style.display = 'block';
+        placeholder.textContent = `法条补充失败: ${e.message}`;
+      }
+    } finally {
+      if (this.augmentBtn) {
+        this.augmentBtn.disabled = false;
+        this.augmentBtn.style.cursor = 'pointer';
+        this.augmentBtn.style.opacity = '1';
+      }
+    }
+  }
   
+  async handleDeepThink(thinkType) {
+    const version = this.getActiveVersion() || this.lastResult;
+    if (!version || !version.json_result) return;
+    
+    // Switch UI to Discovery tab
+    this.switchTab('termDiscoveryTabContent');
+    const placeholder = document.getElementById('termDiscoveryPlaceholder');
+    const contentLeft = document.getElementById('termDiscoveryContentLeft');
+    const contentRight = document.getElementById('termDiscoveryContentRight');
+    const reasoningArea = document.getElementById('termDiscoveryReasoning');
+    const conclusionArea = document.getElementById('termDiscoveryConclusion');
+    const graphArea = document.getElementById('termDiscoverySubGraph');
+    
+    if (placeholder) placeholder.style.display = 'none';
+    if (contentLeft) contentLeft.style.display = 'block';
+    if (contentRight) contentRight.style.display = 'flex';
+    
+    reasoningArea.innerHTML = '<span style="color:#94a3b8">大模型正在思考中，请稍候...</span>';
+    conclusionArea.innerHTML = '';
+    graphArea.innerHTML = '<span style="color:#94a3b8; padding: 16px;">等待推理完成生成 JSON 数据...</span>';
+    
+    try {
+      const graphData = typeof version.json_result === 'string' ? JSON.parse(version.json_result) : version.json_result;
+      
+      const response = await fetch('/api/deep-think', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          think_type: thinkType,
+          graph_data: graphData
+        })
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let fullContent = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunkStr = decoder.decode(value, { stream: true });
+        const lines = chunkStr.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.error) throw new Error(data.error);
+              if (data.chunk) {
+                fullContent += data.chunk;
+                // Since reasoning is mixed with JSON initially before we parse it, we just stream everything
+                reasoningArea.textContent = fullContent;
+                // Scroll to bottom
+                contentLeft.scrollTop = contentLeft.scrollHeight;
+              }
+            } catch (e) {
+              console.error("SSE parse error", e);
+            }
+          }
+        }
+      }
+      
+      // Parse the final JSON from fullContent
+      try {
+        // Find the first { and last } to extract JSON
+        const startIdx = fullContent.lastIndexOf('```json');
+        const endIdx = fullContent.lastIndexOf('```');
+        
+        let jsonStr = '';
+        let reasoningText = fullContent;
+        
+        if (startIdx >= 0 && endIdx > startIdx) {
+          jsonStr = fullContent.substring(startIdx + 7, endIdx).trim();
+          reasoningText = fullContent.substring(0, startIdx).trim();
+        } else {
+          // fallback
+          const firstBrace = fullContent.indexOf('{');
+          const lastBrace = fullContent.lastIndexOf('}');
+          if (firstBrace >= 0 && lastBrace >= firstBrace) {
+            jsonStr = fullContent.substring(firstBrace, lastBrace + 1);
+            reasoningText = fullContent.substring(0, firstBrace).trim();
+          }
+        }
+        
+        if (jsonStr) {
+          const resultObj = JSON.parse(jsonStr);
+          
+          // Save to history
+          if (!this.discoveryHistory) this.discoveryHistory = [];
+          this.discoveryHistory.push({
+            id: `dt_${Date.now()}`,
+            type: thinkType.replace('分析', ''), // 短语
+            timestamp: new Date().toLocaleTimeString(),
+            result: resultObj,
+            reasoning: reasoningText
+          });
+          
+          this.renderDiscoveryHistoryTabs();
+          this.showDiscoveryResult(this.discoveryHistory.length - 1);
+          
+        } else {
+          throw new Error("无法从输出中解析有效 JSON 结构");
+        }
+      } catch (e) {
+        conclusionArea.innerHTML = `<span style="color:red">解析结果失败: ${e.message}</span>`;
+      }
+      
+    } catch (e) {
+      reasoningArea.innerHTML = `<span style="color:#dc2626">请求失败: ${e.message}</span>`;
+    }
+  }
+
+  renderDiscoveryHistoryTabs() {
+    const container = document.getElementById('termDiscoveryHistoryTabs');
+    if (!container) return;
+    
+    container.innerHTML = (this.discoveryHistory || []).map((h, idx) => `
+      <div class="discovery-history-tab" data-idx="${idx}" style="
+        padding: 4px 10px; 
+        border-radius: 4px; 
+        font-size: 12px; 
+        cursor: pointer;
+        background: ${idx === this.activeDiscoveryIdx ? '#2563eb' : '#e2e8f0'};
+        color: ${idx === this.activeDiscoveryIdx ? '#fff' : '#475569'};
+        white-space: nowrap;
+        flex-shrink: 0;
+      ">
+        ${h.type} (${h.timestamp})
+      </div>
+    `).join('');
+    
+    container.querySelectorAll('.discovery-history-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const idx = parseInt(e.target.getAttribute('data-idx'));
+        this.showDiscoveryResult(idx);
+      });
+    });
+  }
+
+  showDiscoveryResult(idx) {
+    if (!this.discoveryHistory || !this.discoveryHistory[idx]) return;
+    this.activeDiscoveryIdx = idx;
+    this.renderDiscoveryHistoryTabs();
+    
+    const record = this.discoveryHistory[idx];
+    this.lastDiscoveryResult = record.result;
+    
+    const placeholder = document.getElementById('termDiscoveryPlaceholder');
+    const contentLeft = document.getElementById('termDiscoveryContentLeft');
+    const contentRight = document.getElementById('termDiscoveryContentRight');
+    if (placeholder) placeholder.style.display = 'none';
+    if (contentLeft) contentLeft.style.display = 'block';
+    if (contentRight) contentRight.style.display = 'flex';
+    
+    const reasoningArea = document.getElementById('termDiscoveryReasoning');
+    const conclusionArea = document.getElementById('termDiscoveryConclusion');
+    const graphArea = document.getElementById('termDiscoverySubGraph');
+    
+    reasoningArea.innerHTML = escapeHtml(record.reasoning || '无推理过程').replace(/\n/g, '<br/>');
+    conclusionArea.innerHTML = escapeHtml(record.result.conclusion || '无结论').replace(/\n/g, '<br/>');
+    
+    // Also show the JSON data in the right column of discovery tab with better formatting
+    try {
+      const renderjson = window.renderjson;
+      if (renderjson) {
+        renderjson.set_show_to_level(3);
+        renderjson.set_icons('+', '-');
+        
+        graphArea.innerHTML = `<div style="padding: 12px; font-weight: 600; border-bottom: 1px solid #e2e8f0; color: #1e293b; flex-shrink: 0;">图谱补充数据 (JSON)</div>
+          <div id="discoveryJsonContent" style="flex: 1; overflow: auto; padding: 12px; position: relative;">
+          </div>
+          <div style="padding: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; flex-shrink: 0;">
+            <button id="btnMergeDiscoveryDynamic" style="padding: 6px 12px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              🔄 合并至主图谱
+            </button>
+          </div>`;
+          
+        const jsonContent = document.getElementById('discoveryJsonContent');
+        const rendered = renderjson(record.result.knowledge_discovery);
+        rendered.style.whiteSpace = 'pre';
+        rendered.style.fontFamily = "monospace";
+        rendered.style.fontSize = "12px";
+        jsonContent.appendChild(rendered);
+        
+        // Bind the dynamic merge button
+        setTimeout(() => {
+          const btn = document.getElementById('btnMergeDiscoveryDynamic');
+          if (btn) btn.addEventListener('click', () => {
+            this.handleMergeDiscovery();
+            this.switchTab('termJsonArea'); // switch back to main JSON view after merge
+          });
+        }, 0);
+      } else {
+        throw new Error("renderjson not found");
+      }
+    } catch(e) {
+      // Fallback if renderjson is not available
+      graphArea.innerHTML = `<div style="padding: 12px; font-weight: 600; border-bottom: 1px solid #e2e8f0; color: #1e293b; flex-shrink: 0;">图谱补充数据 (JSON)</div>
+        <div style="flex: 1; overflow: auto; padding: 12px; position: relative; background: #1e1e1e;">
+          <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; color: #d4d4d4;">${escapeHtml(JSON.stringify(record.result.knowledge_discovery, null, 2))}</pre>
+        </div>
+        <div style="padding: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; flex-shrink: 0;">
+          <button id="btnMergeDiscoveryDynamic" style="padding: 6px 12px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            🔄 合并至主图谱
+          </button>
+        </div>`;
+        
+      // Bind the dynamic merge button
+      setTimeout(() => {
+        const btn = document.getElementById('btnMergeDiscoveryDynamic');
+        if (btn) btn.addEventListener('click', () => {
+          this.handleMergeDiscovery();
+          this.switchTab('termJsonArea'); // switch back to main JSON view after merge
+        });
+      }, 0);
+    }
+    
+    // Auto switch to right subgraph tab
+    const rightTabs = document.querySelectorAll('.onto-tab');
+    const rightContents = document.querySelectorAll('.onto-tab-content');
+    
+    rightTabs.forEach(t => t.classList.remove('active'));
+    rightContents.forEach(c => c.style.display = 'none');
+    
+    const subGraphTab = document.querySelector('.onto-tab[data-target="ontologySubGraphHost"]');
+    const subGraphHost = document.getElementById('ontologySubGraphHost');
+    
+    if (subGraphTab) subGraphTab.classList.add('active');
+    if (subGraphHost) {
+      subGraphHost.style.display = 'block';
+      // 保证容器真正可见后，延迟渲染/重绘，避免画布 0x0
+      setTimeout(() => {
+        this.renderDiscoverySubGraph(record.result.knowledge_discovery);
+      }, 50);
+    } else {
+      this.renderDiscoverySubGraph(record.result.knowledge_discovery);
+    }
+  }
+
+  renderDiscoverySubGraph(discoveryData) {
+    const container = document.getElementById('ontologySubGraphHost'); // Target right side tab instead
+    if (!container) return;
+    
+    if (!discoveryData || (!discoveryData.new_nodes?.length && !discoveryData.new_edges?.length)) {
+      container.innerHTML = '<span style="color:#94a3b8; padding: 16px;">本次分析未产生新的图谱节点或边。</span>';
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    const nodes = new DataSet((discoveryData.new_nodes || []).map(n => ({
+      id: n.id,
+      label: n.type + '\n' + (n.content?.substring(0, 15) || '') + (n.content?.length > 15 ? '...' : ''),
+      shape: 'box',
+      color: { background: '#fef08a', border: '#f59e0b' },
+      font: { size: 12, multi: 'html' }
+    })));
+    
+    const edges = new DataSet((discoveryData.new_edges || []).map(e => ({
+      id: e.id,
+      from: e.from,
+      to: e.to,
+      label: e.label || '',
+      arrows: 'to',
+      color: { color: '#f59e0b' },
+      font: { size: 10, align: 'horizontal' },
+      dashes: true
+    })));
+    
+    const options = {
+      layout: {
+        hierarchical: {
+          enabled: true,
+          direction: 'UD',
+          sortMethod: 'directed',
+          levelSeparation: 100,
+          nodeSpacing: 150
+        }
+      },
+      physics: false,
+      interaction: { dragNodes: true, dragView: true, zoomView: true }
+    };
+    
+    // We must ensure it's visible before rendering or redraw afterwards
+    setTimeout(() => {
+      this.subNetwork = new Network(container, { nodes, edges }, options);
+      this.subNetwork.fit();
+    }, 50);
+  }
+
+  handleMergeDiscovery() {
+    if (!this.lastDiscoveryResult || !this.lastDiscoveryResult.knowledge_discovery) return;
+    
+    const version = this.getActiveVersion() || this.lastResult;
+    if (!version || !version.json_result) return;
+    
+    try {
+      const graphData = typeof version.json_result === 'string' ? JSON.parse(version.json_result) : version.json_result;
+      const discovery = this.lastDiscoveryResult.knowledge_discovery;
+      
+      // We do a very basic merge here for demo purposes. 
+      // In a real scenario, we should map "new_nodes" to the correct arrays (e.g. judicial_assessments)
+      if (discovery.new_nodes) {
+        if (!graphData.virtual_nodes) graphData.virtual_nodes = [];
+        graphData.virtual_nodes.push(...discovery.new_nodes);
+      }
+      
+      if (discovery.new_edges) {
+        if (!graphData.relations) graphData.relations = [];
+        discovery.new_edges.forEach(e => {
+          graphData.relations.push({
+            id: e.id,
+            source: e.from,
+            target: e.to,
+            type: e.type || e.label || "DiscoveryEdge"
+          });
+        });
+      }
+      
+      const baseNodes = version.nodes || this.lastResult?.nodes || [];
+      const baseEdges = version.edges || this.lastResult?.edges || [];
+      
+      const convertedNewNodes = (discovery.new_nodes || []).map(n => ({
+        id: n.id,
+        label: n.content || n.type,
+        type: n.type || 'VirtualNode',
+        group: n.type || 'VirtualNode'
+      }));
+      
+      const convertedNewEdges = (discovery.new_edges || []).map(e => ({
+        id: e.id,
+        source: e.from,
+        target: e.to,
+        label: e.label || ''
+      }));
+      
+      const newVersionId = `v${this.getVersionList().length}`;
+      const newVersion = {
+        version_id: newVersionId,
+        label: '深度思考 (知识合并)',
+        created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        json_result: graphData,
+        nodes: [...baseNodes, ...convertedNewNodes],
+        edges: [...baseEdges, ...convertedNewEdges],
+        change_summary: {
+          entity_updated: { virtual_nodes: discovery.new_nodes?.length || 0 },
+          relation_added: { relations: discovery.new_edges?.length || 0 }
+        }
+      };
+      
+      const versions = [...this.getVersionList(), newVersion];
+      store.setState({
+        parseVersions: versions,
+        parseActiveVersionId: newVersionId
+      });
+      
+      this.applyVersionSnapshot(newVersion, { highlightPatch: { changedKeys: ['virtual_nodes', 'relations'] } });
+      this.setStatus('深度思考结果已合并至主图谱', '#16a34a');
+      this.switchTab('termJsonArea');
+      
+    } catch (e) {
+      this.setStatus(`合并失败: ${e.message}`, '#dc2626');
+    }
+  }
+
   switchTab(targetId) {
     const termBody = document.getElementById('termBody');
     if (!termBody) return;
@@ -2270,6 +2949,14 @@ export class TerminalPanel {
             termGraphModeBar.style.display = 'none';
           }
         }
+
+    // Ensure sub-graph redraws correctly when switching to it manually
+    if (targetId === 'termSubGraphTabContent' && this.subNetwork) {
+      setTimeout(() => {
+        this.subNetwork.redraw();
+        this.subNetwork.fit();
+      }, 50);
+    }
   }
 
   bindJumpEvents(container) {

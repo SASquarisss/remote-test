@@ -271,10 +271,22 @@ def clean_fewshot_output(output: dict) -> dict:
             for cc in (output.get("court_cases") or [])
         ],
         "legal_subjects": [
-            {"name": s.get("name", ""), "subject_type": s.get("subject_type", ""),
+            {"id": s.get("id", f"subj_{i}"), "name": s.get("name", ""), "subject_type": s.get("subject_type", ""),
              "roles": [{k: r.get(k, "") for k in ["role_code", "role_name", "case_number"]}
                        for r in (s.get("roles") or [])]}
-            for s in (output.get("legal_subjects") or [])
+            for i, s in enumerate(output.get("legal_subjects") or [])
+        ],
+        "attorneys": [
+            {"id": a.get("id", f"atty_{i}"), "name": a.get("name", ""), "law_firm": a.get("law_firm", ""), "representation_for": a.get("representation_for", ""), "case_number": a.get("case_number", "")}
+            for i, a in enumerate(output.get("attorneys") or [])
+        ],
+        "judges": [
+            {"id": j.get("id", f"judge_{i}"), "name": j.get("name", ""), "role": j.get("role", ""), "case_number": j.get("case_number", "")}
+            for i, j in enumerate(output.get("judges") or [])
+        ],
+        "prosecutors": [
+            {"id": p.get("id", f"prosecutor_{i}"), "name": p.get("name", ""), "role": p.get("role", ""), "unit": p.get("unit", ""), "case_number": p.get("case_number", "")}
+            for i, p in enumerate(output.get("prosecutors") or [])
         ],
         "legal_provisions": [
             {k: p.get(k, "") for k in ["statute", "article", "paragraph", "item",

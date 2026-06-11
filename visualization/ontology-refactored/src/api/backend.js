@@ -41,6 +41,16 @@ export async function ontologyEvaluate(text, jsonResult, rowId) {
   return data;
 }
 
+export async function augmentProvisions(graphData) {
+  const res = await fetch(`${API_BASE}/api/augment-provisions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ graph_data: graphData })
+  });
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return await res.json();
+}
+
 export async function parseEnhancement(rawText, jsonResult, rowId, qualityResult, ontologyEval) {
   const response = await fetch(`${API_BASE}/api/parse-enhancement`, {
     method: 'POST',

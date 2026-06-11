@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-02T03:25:25+00:00",
+  "generated_at": "2026-06-02T06:17:11+00:00",
   "ontology_path": "ontology/schemas/legal_ontology_v2.yaml",
   "ontology_summary": {
     "entities": {
@@ -2768,7 +2768,7 @@
   "categories": {
     "civil": {
       "prompt_file": "ontology/prompts/auto_v5_civil.txt",
-      "prompt_sha1": "94687cea82d56fb035d66d4aa72ca8add1817fdc",
+      "prompt_sha1": "1959eb66174dca15f0875b5de480b45fe8262643",
       "few_shot": {
         "row_id": "2478",
         "score": 95.0,
@@ -2818,36 +2818,16 @@
         },
         "change_coverage": {
           "covered_entities": [],
-          "missing_entities": [
-            "ArgumentPoint",
-            "JudicialAssessment",
-            "LitigationClaim",
-            "ProceduralOpinion"
-          ],
+          "missing_entities": [],
           "covered_relations": [],
-          "missing_relations": [
-            "assesses_focus",
-            "based_on_fact",
-            "based_on_provision",
-            "claims_focus",
-            "evaluates_argument",
-            "expresses_opinion",
-            "opines_on_focus",
-            "raises_claim",
-            "responds_to_claim",
-            "responds_to_opinion",
-            "supports_claim",
-            "supports_opinion",
-            "supports_result",
-            "targets_subject"
-          ],
+          "missing_relations": [],
           "field_status": {}
         }
       }
     },
     "criminal": {
       "prompt_file": "ontology/prompts/auto_v5_criminal.txt",
-      "prompt_sha1": "6fc7bae84a0c5c8d44df3118bc1f085eb381a883",
+      "prompt_sha1": "97de9e43e929991733cd7e0e0c2304a5e48955a5",
       "few_shot": {
         "row_id": "23127",
         "score": 90.0,
@@ -2898,36 +2878,16 @@
         },
         "change_coverage": {
           "covered_entities": [],
-          "missing_entities": [
-            "ArgumentPoint",
-            "JudicialAssessment",
-            "LitigationClaim",
-            "ProceduralOpinion"
-          ],
+          "missing_entities": [],
           "covered_relations": [],
-          "missing_relations": [
-            "assesses_focus",
-            "based_on_fact",
-            "based_on_provision",
-            "claims_focus",
-            "evaluates_argument",
-            "expresses_opinion",
-            "opines_on_focus",
-            "raises_claim",
-            "responds_to_claim",
-            "responds_to_opinion",
-            "supports_claim",
-            "supports_opinion",
-            "supports_result",
-            "targets_subject"
-          ],
+          "missing_relations": [],
           "field_status": {}
         }
       }
     },
     "administrative": {
       "prompt_file": "ontology/prompts/auto_v5_admin.txt",
-      "prompt_sha1": "63ceb37f556d14bba283006002aa5e4d7a402143",
+      "prompt_sha1": "23a343a7cba9993b400bd515c8a13c1d69f5087f",
       "few_shot": {
         "row_id": "2847",
         "score": 95.0,
@@ -2980,29 +2940,9 @@
         },
         "change_coverage": {
           "covered_entities": [],
-          "missing_entities": [
-            "ArgumentPoint",
-            "JudicialAssessment",
-            "LitigationClaim",
-            "ProceduralOpinion"
-          ],
+          "missing_entities": [],
           "covered_relations": [],
-          "missing_relations": [
-            "assesses_focus",
-            "based_on_fact",
-            "based_on_provision",
-            "claims_focus",
-            "evaluates_argument",
-            "expresses_opinion",
-            "opines_on_focus",
-            "raises_claim",
-            "responds_to_claim",
-            "responds_to_opinion",
-            "supports_claim",
-            "supports_opinion",
-            "supports_result",
-            "targets_subject"
-          ],
+          "missing_relations": [],
           "field_status": {}
         }
       }
@@ -3012,6 +2952,6 @@
     "prompt_file": "ontology/prompts/auto_ontology_evaluation.txt",
     "prompt_sha1": "445880dcb25629873d2f655ba6ee11a2e5e29cde",
     "ontology_sha1": "66f27c9387db643126733c331e64781924934fda",
-    "generated_at": "2026-06-02T03:25:24+00:00"
+    "generated_at": "2026-06-02T06:17:11+00:00"
   }
 }

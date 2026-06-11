@@ -863,6 +863,16 @@ def _normalize_legal_subject_item(subject: Dict[str, Any], index: int) -> Dict[s
     return normalized
 
 
+def _normalize_attorney_item(attorney: Dict[str, Any], index: int) -> Dict[str, Any]:
+    normalized = {
+        **attorney,
+        "id": _normalize_relation_ref(attorney.get("id") or attorney.get("node_id") or f"atty_{index}"),
+        "name": attorney.get("name") or f"律师_{index}",
+    }
+    stable_id = attorney.get("stable_id") or _build_stable_entity_id("attorneys", normalized)
+    normalized["stable_id"] = stable_id
+    return normalized
+
 def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, return_aliases: bool = False) -> List[Dict[str, Any]] | tuple[List[Dict[str, Any]], Dict[str, str]]:
     if not isinstance(items, list):
         return ([], {}) if return_aliases else []
@@ -957,6 +967,7 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, re
         "judgment_results": _normalize_judgment_result_item,
         "legal_provisions": _normalize_legal_provision_item,
         "legal_subjects": _normalize_legal_subject_item,
+        "attorneys": _normalize_attorney_item,
         "legal_provision_elements": lambda item, idx: {
             **item,
             "id": _normalize_relation_ref(item.get("id") or item.get("element_id") or item.get("node_id") or f"prov_elem_{idx}"),
@@ -994,7 +1005,7 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, re
             alias_map[alias] = canonical_id or alias
         normalized_items.append(normalized)
     if entity_type in {
-        "legal_provisions", "legal_provision_elements", "legal_subjects",
+        "legal_provisions", "legal_provision_elements", "legal_subjects", "attorneys",
         "litigation_claims", "procedural_opinions", "argument_points",
         "judicial_assessments"
     }:
@@ -1064,7 +1075,8 @@ def align_enhancement_payload(base_output: Dict[str, Any], payload: Dict[str, An
     entity_keys = (
         "facts", "dispute_focuses", "litigation_claims", "procedural_opinions",
         "argument_points", "judicial_assessments", "evidence",
-        "judgment_results", "legal_provisions", "legal_provision_elements"
+        "judgment_results", "legal_provisions", "legal_provision_elements",
+        "legal_subjects", "attorneys"
     )
     for key in entity_keys:
         if key not in aligned:
@@ -1153,6 +1165,10 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
     legal_subjects, subject_aliases = _normalize_entity_collection_for_payload("legal_subjects", output.get("legal_subjects") or output.get("parties") or [], return_aliases=True)
     output["legal_subjects"] = legal_subjects
     alias_map.update(subject_aliases)
+
+    attorneys, attorney_aliases = _normalize_entity_collection_for_payload("attorneys", output.get("attorneys") or [], return_aliases=True)
+    output["attorneys"] = attorneys
+    alias_map.update(attorney_aliases)
 
     legal_provisions, provision_aliases = _normalize_entity_collection_for_payload("legal_provisions", output.get("legal_provisions") or [], return_aliases=True)
     output["legal_provisions"] = legal_provisions
@@ -2003,6 +2019,59 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         elif court_cases:
             add_edge(first_cc_id, fid, "事实")
 
+    # ── SentencingCircumstance (量刑情节) ──────────────────────────────────
+    circumstances = output.get("sentencing_circumstances") or []
+    for i, sc in enumerate(circumstances):
+        sc_id = sc.get("id", f"circumstance_{i}")
+        content = str(sc.get("content") or "").strip()
+        label = content[:40]
+        add_node(sc_id, label, "SentencingCircumstance", "JudicialEntity", 1,
+                 (
+                     f"类型: {sc.get('circumstance_type', '')}<br>"
+                     f"案号: {sc.get('case_id', '')}<br>"
+                     f"内容: {content}"
+                 ),
+                 extra={
+                     "content": content,
+                     "fullLabel": content or label,
+                     "circumstanceType": sc.get("circumstance_type", ""),
+                     "entitySourceId": sc.get("id") or sc_id,
+                 })
+
+    # ── LegalInterpretation (法条解释) ─────────────────────────────────────
+    interpretations = output.get("legal_interpretations") or []
+    for i, li in enumerate(interpretations):
+        li_id = li.get("id", f"interpretation_{i}")
+        content = str(li.get("content") or "").strip()
+        label = content[:40]
+        add_node(li_id, label, "LegalInterpretation", "JudicialEntity", 1,
+                 (
+                     f"案号: {li.get('case_id', '')}<br>"
+                     f"内容: {content}"
+                 ),
+                 extra={
+                     "content": content,
+                     "fullLabel": content or label,
+                     "entitySourceId": li.get("id") or li_id,
+                 })
+
+    # ── EvidenceChain (证据链) ─────────────────────────────────────────────
+    evidence_chains = output.get("evidence_chains") or []
+    for i, ec in enumerate(evidence_chains):
+        ec_id = ec.get("id", f"evidence_chain_{i}")
+        name = str(ec.get("name") or "").strip()
+        label = name[:40]
+        add_node(ec_id, label, "EvidenceChain", "JudicialEntity", 1,
+                 (
+                     f"描述: {ec.get('description', '')}<br>"
+                     f"内容: {name}"
+                 ),
+                 extra={
+                     "content": name,
+                     "fullLabel": name or label,
+                     "entitySourceId": ec.get("id") or ec_id,
+                 })
+
     # ── DisputeFocuses ─────────────────────────────────────────────────────
     focuses = output.get("dispute_focuses") or []
     for i, df in enumerate(focuses):
@@ -2237,6 +2306,9 @@ ADMIN_SHAPES = {
     "CaseSummary": "box",
     "Fact": "ellipse",
     "DisputeFocus": "star",
+    "SentencingCircumstance": "ellipse",
+    "LegalInterpretation": "box",
+    "EvidenceChain": "database",
 }
 
 
@@ -2367,6 +2439,18 @@ ENHANCEMENT_TARGET_MAP = {
     "case_summary": {
         "aliases": ["case_summary", "摘要", "争议概括", "CaseSummary"],
         "label": "案件摘要",
+    },
+    "sentencing_circumstances": {
+        "aliases": ["sentencing_circumstances", "量刑情节", "酌定情节", "SentencingCircumstance"],
+        "label": "量刑情节",
+    },
+    "evidence_chains": {
+        "aliases": ["evidence_chains", "证据链", "EvidenceChain"],
+        "label": "证据链",
+    },
+    "legal_interpretations": {
+        "aliases": ["legal_interpretations", "法条解释", "LegalInterpretation"],
+        "label": "法条解释",
     },
 }
 

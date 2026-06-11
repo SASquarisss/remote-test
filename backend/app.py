@@ -7,13 +7,18 @@ import sys
 import os
 import urllib.error
 import urllib.request
+from dotenv import load_dotenv
+
+# Load environment variables from the project root .env file
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from datetime import datetime, timezone
 from functools import lru_cache
 import hashlib
 from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 
 # Ensure backend/ is on path
@@ -325,6 +330,10 @@ ENTITY_COLLECTION_KEYS = [
     "legal_provision_elements",
     "judges",
     "attorneys",
+    "litigation_claims",
+    "procedural_opinions",
+    "argument_points",
+    "judicial_assessments",
 ]
 
 ENTITY_NODE_TYPE_MAP = {
@@ -337,6 +346,10 @@ ENTITY_NODE_TYPE_MAP = {
     "legal_provision_elements": "LegalProvisionElement",
     "judges": "Judge",
     "attorneys": "Attorney",
+    "litigation_claims": "LitigationClaim",
+    "procedural_opinions": "ProceduralOpinion",
+    "argument_points": "ArgumentPoint",
+    "judicial_assessments": "JudicialAssessment",
     "case_summary": "CaseSummary",
 }
 
@@ -765,9 +778,7 @@ RETRIEVAL_RESULT_TYPE_LABELS = {
 
 def _retrieval_short_text(value: str | None, limit: int = 64) -> str:
     text = str(value or "").strip()
-    if len(text) <= limit:
-        return text
-    return text[: max(0, limit - 1)] + "…"
+    return text
 
 
 def _retrieval_slug(value: str | None) -> str:
@@ -803,13 +814,18 @@ def _retrieval_meta_header(output: dict, case_meta: dict, asset_view: str, view_
 
 
 def _retrieval_meta_lines(meta_header: dict) -> list[str]:
-    return [
-        f"案件类型：{meta_header.get('case_type') or '未标注'}",
-        f"一级案由：{meta_header.get('reason_level1') or '未标注'}",
-        f"二级案由：{meta_header.get('reason_level2') or '未标注'}",
-        f"三级案由：{meta_header.get('reason_level3') or '未标注'}",
-        f"审级：{meta_header.get('trial_level') or '未标注'}",
-    ]
+    lines = []
+    if meta_header.get('case_type'):
+        lines.append(f"案件类型：{meta_header['case_type']}")
+    if meta_header.get('reason_level1'):
+        lines.append(f"一级案由：{meta_header['reason_level1']}")
+    if meta_header.get('reason_level2'):
+        lines.append(f"二级案由：{meta_header['reason_level2']}")
+    if meta_header.get('reason_level3'):
+        lines.append(f"三级案由：{meta_header['reason_level3']}")
+    if meta_header.get('trial_level'):
+        lines.append(f"审级：{meta_header['trial_level']}")
+    return lines
 
 
 def _retrieval_relation_label(edge: dict | None) -> str:
@@ -918,7 +934,6 @@ def _retrieval_compose_text(view_label: str, meta_header: dict, graph_payload: d
     if not graph_payload.get("is_valid_chain"):
         return ""
     sentences = [
-        f"该检索资产采用{view_label}。",
         *[_retrieval_line_to_sentence(line) for line in _retrieval_meta_lines(meta_header)],
         str(graph_payload.get("chain_text") or "").strip(),
         *[_retrieval_line_to_sentence(line) for line in (lines or [])],
@@ -1275,6 +1290,10 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
     provision_elements = normalized_output.get("legal_provision_elements") or []
     subjects = normalized_output.get("legal_subjects") or []
     evidence_items = normalized_output.get("evidence") or []
+    opinions = normalized_output.get("procedural_opinions") or []
+    arguments = normalized_output.get("argument_points") or []
+    claims = normalized_output.get("litigation_claims") or []
+    assessments = normalized_output.get("judicial_assessments") or []
     relations = [*(normalized_output.get("relations") or []), *(normalized_output.get("derived_relations") or [])]
 
     facts_by_id = {str((item.get("id") or f"fact_{idx}")): item for idx, item in enumerate(facts)}
@@ -1283,6 +1302,10 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
     provisions_by_id = {str((item.get("id") or f"prov_{idx}")): item for idx, item in enumerate(provisions)}
     provision_elements_by_id = {str((item.get("id") or f"prov_elem_{idx}")): item for idx, item in enumerate(provision_elements)}
     evidence_by_id = {str((item.get("id") or f"evid_{idx}")): item for idx, item in enumerate(evidence_items)}
+    opinions_by_id = {str((item.get("id") or item.get("opinion_id") or f"opinion_{idx}")): item for idx, item in enumerate(opinions)}
+    arguments_by_id = {str((item.get("id") or item.get("argument_id") or f"arg_{idx}")): item for idx, item in enumerate(arguments)}
+    claims_by_id = {str((item.get("id") or item.get("claim_id") or f"claim_{idx}")): item for idx, item in enumerate(claims)}
+    assessments_by_id = {str((item.get("id") or item.get("assessment_id") or f"assessment_{idx}")): item for idx, item in enumerate(assessments)}
 
     def relation_src(rel):
         return str(rel.get("source_id") or rel.get("source") or "")
@@ -1384,22 +1407,22 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
         return candidate, None
 
     case_taxonomy = _retrieval_case_taxonomy(normalized_output, case_meta)
-    fact_summaries = [_retrieval_short_text(item.get("content"), 40) for item in facts[:4] if item.get("content")]
-    focus_summaries = [_retrieval_short_text(item.get("content") or item.get("focus") or item.get("issue"), 32) for item in focuses[:4] if (item.get("content") or item.get("focus") or item.get("issue"))]
-    judgment_summaries = [_retrieval_short_text(item.get("specific_judgment") or _retrieval_result_type_label(item.get("result_type")), 48) for item in judgments[:4]]
-    provision_summaries = _retrieval_provision_refs(provisions, limit=4)
-    subject_summaries = [_retrieval_short_text(item.get("name") or "", 18) for item in subjects[:5] if item.get("name")]
+    fact_summaries = [str(item.get("content")).strip() for item in facts if item.get("content")]
+    focus_summaries = [str(item.get("content") or item.get("focus") or item.get("issue")).strip() for item in focuses if (item.get("content") or item.get("focus") or item.get("issue"))]
+    judgment_summaries = [str(item.get("specific_judgment") or _retrieval_result_type_label(item.get("result_type"))).strip() for item in judgments]
+    provision_summaries = _retrieval_provision_refs(provisions)
+    subject_summaries = [str(item.get("name")).strip() for item in subjects if item.get("name")]
 
     meta_header = _retrieval_meta_header(normalized_output, case_meta, "case_profile", "整案画像视角")
     case_graph = _retrieval_graph_payload(
         "case_profile",
         [
             _retrieval_chain_node("CourtCase", case_name, "court_case"),
-            _retrieval_chain_node("LegalSubject", "、".join(subject_summaries[:3]) or "当事人", "subjects_group"),
-            _retrieval_chain_node("Fact", "；".join(fact_summaries[:2]) or "关键事实", "facts_group"),
-            _retrieval_chain_node("DisputeFocus", "；".join(focus_summaries[:2]) or "争点", "focus_group"),
-            _retrieval_chain_node("JudgmentResult", "；".join(judgment_summaries[:2]) or "裁判结果", "judgment_group"),
-            _retrieval_chain_node("LegalProvision", "；".join(provision_summaries[:2]) or "法条依据", "provision_group"),
+            _retrieval_chain_node("LegalSubject", "、".join(subject_summaries) or "当事人", "subjects_group"),
+            _retrieval_chain_node("Fact", "；".join(fact_summaries) or "关键事实", "facts_group"),
+            _retrieval_chain_node("DisputeFocus", "；".join(focus_summaries) or "争点", "focus_group"),
+            _retrieval_chain_node("JudgmentResult", "；".join(judgment_summaries) or "裁判结果", "judgment_group"),
+            _retrieval_chain_node("LegalProvision", "；".join(provision_summaries) or "法条依据", "provision_group"),
         ],
         [
             _retrieval_chain_edge("has_subject", "主体区"),
@@ -1462,11 +1485,17 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
         if judgment_item:
             chain_nodes.append(_retrieval_chain_node("JudgmentResult", judgment_item.get("specific_judgment") or _retrieval_result_type_label(judgment_item.get("result_type")) or "裁判结果", judgment_item.get("id") or ""))
             chain_edges.append(_retrieval_chain_edge((judgment_rel or {}).get("relation_type") or "leads_to", "影响裁判", _relation_identity(judgment_rel) if judgment_rel else "", verified=bool(judgment_rel)))
-        graph_payload = _retrieval_graph_payload("fact_chain_unit", chain_nodes, chain_edges, path_label="证据-事实-争点链", description="从事实出发，展示其证据支撑、争点归属和裁判影响。")
+        graph_payload = _retrieval_graph_payload(
+            "fact_chain_unit", 
+            chain_nodes, 
+            chain_edges, 
+            path_label="证据-事实-争点链", 
+            description=f"从事实「{_retrieval_short_text(content, 15)}」出发，展示其证据支撑、争点归属和裁判影响。"
+        )
         lines = [
             f"案件名称：{case_name}",
             f"事实内容：{content}",
-            f"事实类型：{fact.get('fact_type') or '未标注'}",
+            f"事实类型：{fact.get('fact_type')}" if fact.get('fact_type') else "",
             f"关联证据：{_retrieval_short_text((evidence_item or {}).get('content') or '', 60)}" if evidence_item else "",
             f"关联争点：{_retrieval_short_text((focus_item or {}).get('content') or (focus_item or {}).get('focus') or (focus_item or {}).get('issue') or '', 48)}" if focus_item else "",
             f"对应裁判：{_retrieval_short_text((judgment_item or {}).get('specific_judgment') or _retrieval_result_type_label((judgment_item or {}).get('result_type')), 56)}" if judgment_item else "",
@@ -1479,7 +1508,7 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
             title=_retrieval_short_text(content, 28),
             summary=f"从事实切入，查看证据支撑、争点归属和裁判影响。",
             retrieval_text=_retrieval_compose_text(view_label, meta_header, graph_payload, lines),
-            expanded_text=_retrieval_compose_text(view_label, meta_header, graph_payload, lines + [f"适用法条候选：{'；'.join(provision_summaries[:3])}" if provision_summaries else ""]),
+            expanded_text=_retrieval_compose_text(view_label, meta_header, graph_payload, lines + [f"适用法条候选：{'；'.join(provision_summaries)}" if provision_summaries else ""]),
             source_refs={"json_paths": [f"$.facts[{idx}]"], "entity_ids": [fact_id], "stable_ids": [fact.get("stable_id") or ""]},
             ontology_payload=_retrieval_ontology_payload("fact_chain_unit", view_label, graph_payload.get("entity_types"), graph_payload.get("relation_types"), ["Fact.content", "Fact.fact_type", "Evidence.content", "DisputeFocus.content", "JudgmentResult.specific_judgment"]),
             exact_payload={"entity_types": graph_payload.get("entity_types"), "relation_types": graph_payload.get("relation_types"), "result_types": [judgment_item.get("result_type")] if judgment_item and judgment_item.get("result_type") else [], "law_names": [item.get("statute") or item.get("law_name") for item in provisions if item.get("statute") or item.get("law_name")], "provision_refs": _retrieval_provision_refs(provisions), "scene_tags": ["fact_similarity"], "fact_types": [fact.get("fact_type")] if fact.get("fact_type") else [], **case_taxonomy},
@@ -1513,7 +1542,13 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
         if provision_item:
             chain_nodes.append(_retrieval_chain_node("LegalProvision", _retrieval_provision_ref(provision_item) or "法条", provision_item.get("id") or ""))
             chain_edges.append(_retrieval_chain_edge("judgment_cites", "适用法条", _relation_identity(provision_rel) if provision_rel else "", verified=bool(provision_rel)))
-        graph_payload = _retrieval_graph_payload("focus_unit", chain_nodes, chain_edges, path_label="事实-争点-裁判链", description="从争点出发查看其事实基础、裁判结果和法条依据。")
+        graph_payload = _retrieval_graph_payload(
+            "focus_unit", 
+            chain_nodes, 
+            chain_edges, 
+            path_label="事实-争点-裁判链", 
+            description=f"从争点「{_retrieval_short_text(content, 15)}」出发查看其事实基础、裁判结果和法条依据。"
+        )
         lines = [
             f"案件名称：{case_name}",
             f"争点内容：{content}",
@@ -1564,7 +1599,7 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
                 _retrieval_chain_edge("judgment_cites", "结果依据", _relation_identity(provision_rel) if provision_rel else "", verified=bool(provision_rel)),
             ],
             path_label="争点-裁判-法条链",
-            description="从单个裁判结果出发回看争点并连接法条依据。",
+            description=f"从裁判结果「{_retrieval_short_text(specific_judgment or result_type_label, 15)}」出发回看争点并连接法条依据。",
         )
         lines = [
             f"案件名称：{case_name}",
@@ -1609,7 +1644,7 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
                     _retrieval_chain_edge("judgment_cites", "法条支撑", _relation_identity(provision_rel) if provision_rel else "", verified=bool(provision_rel)),
                 ],
                 path_label="事实-争点-说理链",
-                description="从裁判理由出发，回看关键事实、争点和法条支持。",
+                description=f"从裁判理由出发，回看「{_retrieval_short_text(specific_judgment or result_type_label, 15)}」的关键事实、争点和法条支持。",
             )
             reasoning_lines = [
                 f"案件名称：{case_name}",
@@ -1666,7 +1701,13 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
         chain_nodes.append(_retrieval_chain_node("LegalProvision", _retrieval_provision_ref(provision_item) or "法条", provision_item.get("id") or ""))
         chain_nodes.append(_retrieval_chain_node("JudgmentResult", specific_judgment or result_type_label or "裁判结果", judgment.get("id") or ""))
         chain_edges.append(_retrieval_chain_edge("judgment_cites", "裁判适用", _relation_identity(provision_rel) if provision_rel else "", verified=bool(provision_rel)))
-        graph_payload = _retrieval_graph_payload("judgment_provision_chain", chain_nodes, chain_edges, path_label="事实-法条要件-法条-裁判链", description="从法条适用链路观察事实如何命中法条要件并导向裁判。")
+        graph_payload = _retrieval_graph_payload(
+            "judgment_provision_chain", 
+            chain_nodes, 
+            chain_edges, 
+            path_label="事实-法条要件-法条-裁判链", 
+            description=f"从「{_retrieval_provision_ref(provision_item) or '法条'}」适用链路观察事实如何命中法条要件并导向裁判。"
+        )
         lines = [
             f"案件名称：{case_name}",
             f"关键事实：{_retrieval_short_text((fact_item or {}).get('content') or '', 64)}" if fact_item else "",
@@ -1702,6 +1743,10 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
             continue
         role_text = _retrieval_subject_role_text(subject)
         subject_id = _retrieval_subject_identifier(subject, idx)
+        
+        # Determine if this subject is an appellant
+        is_appellant = "上诉人" in role_text
+        
         subject_fact_rel = next((rel for rel in relation_matches_all(source_id=subject_id, relation_types={"relates_to_fact"}) if relation_tgt(rel) in facts_by_id), None)
         fact_item = facts_by_id.get(relation_tgt(subject_fact_rel)) if subject_fact_rel else None
         subject_fact_verified = bool(subject_fact_rel)
@@ -1726,64 +1771,127 @@ def _build_retrieval_bundle(row_id: str, version_id: str, output: dict, *, case_
 
         judgment_provision_rel = next((rel for rel in relation_matches_all(source_id=(judgment_item or {}).get("id"), relation_types={"judgment_cites"}) if relation_tgt(rel) in provisions_by_id), None) if judgment_item else None
         provision_item = provisions_by_id.get(relation_tgt(judgment_provision_rel)) if judgment_provision_rel else None
-        view_label = "当事人视角"
-        meta_header = _retrieval_meta_header(normalized_output, case_meta, "party_view_unit", view_label)
-        chain_nodes = [_retrieval_chain_node("LegalSubject", subject_name, subject_id)]
-        chain_edges = []
-        if fact_item:
-            chain_nodes.append(_retrieval_chain_node("Fact", (fact_item or {}).get("content") or "关联事实", (fact_item or {}).get("id") or ""))
-            chain_edges.append(_retrieval_chain_edge((subject_fact_rel or {}).get("relation_type") or "relates_to_fact", "关联事实", _relation_identity(subject_fact_rel) if subject_fact_rel else "", verified=bool(subject_fact_rel)))
-        if focus_item:
-            chain_nodes.append(_retrieval_chain_node("DisputeFocus", (focus_item or {}).get("content") or (focus_item or {}).get("focus") or "关联争点", (focus_item or {}).get("id") or ""))
+        if is_appellant:
+            opinion_item = next((item for item in opinions if item.get("subject_name") == subject_name), None)
+            argument_item = next((item for item in arguments if item.get("subject_name") == subject_name), None)
+            claim_item = next((item for item in claims if item.get("subject_name") == subject_name), None)
+            assessment_item = assessments[0] if assessments else None
+
+            appellant_view_label = "上诉人视角"
+            appellant_meta_header = _retrieval_meta_header(normalized_output, case_meta, "appellant_view_unit", appellant_view_label)
+            app_chain_nodes = [_retrieval_chain_node("LegalSubject", subject_name, subject_id)]
+            app_chain_edges = []
+            
+            if opinion_item:
+                op_id = str(opinion_item.get("id") or opinion_item.get("opinion_id") or "")
+                app_chain_nodes.append(_retrieval_chain_node("ProceduralOpinion", opinion_item.get("content") or "程序意见", op_id))
+                app_chain_edges.append(_retrieval_chain_edge("proposes_opinion", "提出意见", verified=True))
+            if argument_item:
+                arg_id = str(argument_item.get("id") or argument_item.get("argument_id") or "")
+                app_chain_nodes.append(_retrieval_chain_node("ArgumentPoint", argument_item.get("argument_text") or "理由点", arg_id))
+                app_chain_edges.append(_retrieval_chain_edge("has_argument", "基于理由", verified=True))
+            if claim_item:
+                claim_id = str(claim_item.get("id") or claim_item.get("claim_id") or "")
+                app_chain_nodes.append(_retrieval_chain_node("LitigationClaim", claim_item.get("claim_text") or "诉讼请求", claim_id))
+                app_chain_edges.append(_retrieval_chain_edge("has_claim", "主张诉求", verified=True))
+            if assessment_item:
+                ass_id = str(assessment_item.get("id") or assessment_item.get("assessment_id") or "")
+                app_chain_nodes.append(_retrieval_chain_node("JudicialAssessment", assessment_item.get("assessment_text") or "法院评判", ass_id))
+                app_chain_edges.append(_retrieval_chain_edge("receives_assessment", "法院评判", verified=True))
+                
+            app_graph_payload = _retrieval_graph_payload(
+                "appellant_view_unit",
+                app_chain_nodes,
+                app_chain_edges,
+                path_label="上诉人主张与评判链",
+                description=f"梳理上诉人「{subject_name}」提出的程序意见、理由、诉求以及法院的最终评判。",
+            )
+            app_lines = [
+                f"案件名称：{case_name}",
+                f"上诉人：{subject_name}",
+                f"程序意见：{opinion_item.get('content')}" if opinion_item else "",
+                f"理由点：{argument_item.get('argument_text')}" if argument_item else "",
+                f"诉讼请求：{claim_item.get('claim_text')}" if claim_item else "",
+                f"法院评判：{assessment_item.get('assessment_text')}" if assessment_item else "",
+            ]
+            entries.append(_build_retrieval_entry(
+                bundle_id, row_id, version_id, case_name, normalized_output,
+                entry_type="appellant_view_unit",
+                scene_tags=["appellant_view"],
+                signature_payload={"type": "appellant_view_unit", "subject": subject_name},
+                title=f"上诉人视角｜{subject_name}",
+                summary="围绕上诉人查看其程序意见、理由点、诉讼请求与法院评判。",
+                retrieval_text=_retrieval_compose_text(appellant_view_label, appellant_meta_header, app_graph_payload, app_lines),
+                expanded_text="",
+                source_refs={"json_paths": [f"$.legal_subjects[{idx}]"], "entity_ids": [subject_id], "stable_ids": [subject.get("stable_id") or ""]},
+                ontology_payload=_retrieval_ontology_payload("appellant_view_unit", appellant_view_label, app_graph_payload.get("entity_types"), app_graph_payload.get("relation_types"), ["LegalSubject.roles", "ProceduralOpinion.content", "ArgumentPoint.argument_text", "LitigationClaim.claim_text", "JudicialAssessment.assessment_text"]),
+                exact_payload={"entity_types": app_graph_payload.get("entity_types"), "relation_types": app_graph_payload.get("relation_types"), "result_types": [], "law_names": [], "provision_refs": [], "scene_tags": ["appellant_view"], "subject_roles": [role.get("role_name") or role.get("role_code") for role in subject.get("roles") or []], **case_taxonomy},
+                graph_payload=app_graph_payload,
+                keywords=_retrieval_keywords(subject_name, "上诉人"),
+                priority=0.93,
+                meta_header=appellant_meta_header,
+                view_label=appellant_view_label,
+                primary_entity=_retrieval_primary_entity("LegalSubject", subject_name, subject_id),
+            ))
+
+        if not is_appellant:
+            view_label = "当事人视角"
+            meta_header = _retrieval_meta_header(normalized_output, case_meta, "party_view_unit", view_label)
+            chain_nodes = [_retrieval_chain_node("LegalSubject", subject_name, subject_id)]
+            chain_edges = []
             if fact_item:
-                chain_edges.append(_retrieval_chain_edge((fact_focus_rel or {}).get("relation_type") or "relates_to_focus", "触发争点", _relation_identity(fact_focus_rel) if fact_focus_rel else "", verified=bool(fact_focus_rel)))
-            else:
-                chain_edges.append(_retrieval_chain_edge((subject_focus_rel or {}).get("relation_type") or "concerns_focus", "关联争点", _relation_identity(subject_focus_rel) if subject_focus_rel else "", verified=bool(subject_focus_rel)))
-        if judgment_item:
-            chain_nodes.append(_retrieval_chain_node("JudgmentResult", (judgment_item or {}).get("specific_judgment") or _retrieval_result_type_label((judgment_item or {}).get("result_type")) or "裁判结果", (judgment_item or {}).get("id") or ""))
+                chain_nodes.append(_retrieval_chain_node("Fact", (fact_item or {}).get("content") or "关联事实", (fact_item or {}).get("id") or ""))
+                chain_edges.append(_retrieval_chain_edge((subject_fact_rel or {}).get("relation_type") or "relates_to_fact", "关联事实", _relation_identity(subject_fact_rel) if subject_fact_rel else "", verified=bool(subject_fact_rel)))
             if focus_item:
-                chain_edges.append(_retrieval_chain_edge((focus_judgment_rel or {}).get("relation_type") or "leads_to", "对应裁判", _relation_identity(focus_judgment_rel) if focus_judgment_rel else "", verified=bool(focus_judgment_rel and subject_judgment_verified)))
-            else:
-                chain_edges.append(_retrieval_chain_edge((subject_judgment_rel or {}).get("relation_type") or "receives_judgment", "对应裁判", _relation_identity(subject_judgment_rel) if subject_judgment_rel else "", verified=bool(subject_judgment_rel)))
-        if provision_item:
-            chain_nodes.append(_retrieval_chain_node("LegalProvision", _retrieval_provision_ref(provision_item) or "法条", (provision_item or {}).get("id") or ""))
-            chain_edges.append(_retrieval_chain_edge("judgment_cites", "对应法条", _relation_identity(judgment_provision_rel) if judgment_provision_rel else "", verified=bool(judgment_provision_rel)))
-        graph_payload = _retrieval_graph_payload(
-            "party_view_unit",
-            chain_nodes,
-            chain_edges,
-            path_label="当事人-事实-争点-裁判链",
-            description="围绕单个当事人组织其相关事实、争点、裁判结果和法条依据。",
-        )
-        lines = [
-            f"案件名称：{case_name}",
-            f"当事人：{subject_name}",
-            f"主体类型：{subject.get('subject_type') or '未标注'}",
-            f"角色：{role_text or '未标注'}",
-            f"相关事实：{_retrieval_short_text((fact_item or {}).get('content') or '', 64)}" if fact_item else "",
-            f"相关争点：{_retrieval_short_text((focus_item or {}).get('content') or (focus_item or {}).get('focus') or '', 64)}" if focus_item else "",
-            f"对应裁判：{_retrieval_short_text((judgment_item or {}).get('specific_judgment') or _retrieval_result_type_label((judgment_item or {}).get('result_type')), 64)}" if judgment_item else "",
-            f"对应法条：{_retrieval_provision_ref(provision_item, include_content=True, content_limit=48)}" if provision_item else "",
-        ]
-        entries.append(_build_retrieval_entry(
-            bundle_id, row_id, version_id, case_name, normalized_output,
-            entry_type="party_view_unit",
-            scene_tags=["party_view"],
-            signature_payload={"type": "party_view_unit", "subject": subject_name, "roles": role_text},
-            title=f"当事人视角｜{subject_name}",
-            summary="围绕单个当事人查看其角色、相关事实、争点与裁判结果。",
-            retrieval_text=_retrieval_compose_text(view_label, meta_header, graph_payload, lines),
-            expanded_text="",
-            source_refs={"json_paths": [f"$.legal_subjects[{idx}]"], "entity_ids": [subject_id], "stable_ids": [subject.get("stable_id") or ""]},
-            ontology_payload=_retrieval_ontology_payload("party_view_unit", view_label, graph_payload.get("entity_types"), graph_payload.get("relation_types"), ["LegalSubject.roles", "LegalSubject.subject_type", "Fact.content", "DisputeFocus.content", "JudgmentResult.specific_judgment"]),
-            exact_payload={"entity_types": graph_payload.get("entity_types"), "relation_types": graph_payload.get("relation_types"), "result_types": [judgment_item.get("result_type")] if judgment_item and judgment_item.get("result_type") else [], "law_names": [provision_item.get("statute") or provision_item.get("law_name")] if provision_item else [], "provision_refs": [_retrieval_provision_ref(provision_item)] if provision_item else [], "scene_tags": ["party_view"], "subject_roles": [role.get("role_name") or role.get("role_code") for role in subject.get("roles") or []], **case_taxonomy},
-            graph_payload=graph_payload,
-            keywords=_retrieval_keywords(subject_name, role_text, (judgment_item or {}).get("result_type")),
-            priority=0.92,
-            meta_header=meta_header,
-            view_label=view_label,
-            primary_entity=_retrieval_primary_entity("LegalSubject", subject_name, subject_id),
-        ))
+                chain_nodes.append(_retrieval_chain_node("DisputeFocus", (focus_item or {}).get("content") or (focus_item or {}).get("focus") or "关联争点", (focus_item or {}).get("id") or ""))
+                if fact_item:
+                    chain_edges.append(_retrieval_chain_edge((fact_focus_rel or {}).get("relation_type") or "relates_to_focus", "触发争点", _relation_identity(fact_focus_rel) if fact_focus_rel else "", verified=bool(fact_focus_rel)))
+                else:
+                    chain_edges.append(_retrieval_chain_edge((subject_focus_rel or {}).get("relation_type") or "concerns_focus", "关联争点", _relation_identity(subject_focus_rel) if subject_focus_rel else "", verified=bool(subject_focus_rel)))
+            if judgment_item:
+                chain_nodes.append(_retrieval_chain_node("JudgmentResult", (judgment_item or {}).get("specific_judgment") or _retrieval_result_type_label((judgment_item or {}).get("result_type")) or "裁判结果", (judgment_item or {}).get("id") or ""))
+                if focus_item:
+                    chain_edges.append(_retrieval_chain_edge((focus_judgment_rel or {}).get("relation_type") or "leads_to", "对应裁判", _relation_identity(focus_judgment_rel) if focus_judgment_rel else "", verified=bool(focus_judgment_rel and subject_judgment_verified)))
+                else:
+                    chain_edges.append(_retrieval_chain_edge((subject_judgment_rel or {}).get("relation_type") or "receives_judgment", "对应裁判", _relation_identity(subject_judgment_rel) if subject_judgment_rel else "", verified=bool(subject_judgment_rel)))
+            if provision_item:
+                chain_nodes.append(_retrieval_chain_node("LegalProvision", _retrieval_provision_ref(provision_item) or "法条", (provision_item or {}).get("id") or ""))
+                chain_edges.append(_retrieval_chain_edge("judgment_cites", "对应法条", _relation_identity(judgment_provision_rel) if judgment_provision_rel else "", verified=bool(judgment_provision_rel)))
+            graph_payload = _retrieval_graph_payload(
+                "party_view_unit",
+                chain_nodes,
+                chain_edges,
+                path_label="当事人-事实-争点-裁判链",
+                description=f"围绕当事人「{subject_name}」组织其相关事实、争点、裁判结果和法条依据。",
+            )
+            lines = [
+                f"案件名称：{case_name}",
+                f"当事人：{subject_name}",
+                f"角色：{role_text}" if role_text else "",
+                f"相关事实：{_retrieval_short_text((fact_item or {}).get('content') or '', 64)}" if fact_item else "",
+                f"相关争点：{_retrieval_short_text((focus_item or {}).get('content') or (focus_item or {}).get('focus') or '', 64)}" if focus_item else "",
+                f"对应裁判：{_retrieval_short_text((judgment_item or {}).get('specific_judgment') or _retrieval_result_type_label((judgment_item or {}).get('result_type')), 64)}" if judgment_item else "",
+                f"对应法条：{_retrieval_provision_ref(provision_item, include_content=True, content_limit=48)}" if provision_item else "",
+            ]
+            entries.append(_build_retrieval_entry(
+                bundle_id, row_id, version_id, case_name, normalized_output,
+                entry_type="party_view_unit",
+                scene_tags=["party_view"],
+                signature_payload={"type": "party_view_unit", "subject": subject_name, "roles": role_text},
+                title=f"当事人视角｜{subject_name}",
+                summary="围绕单个当事人查看其角色、相关事实、争点与裁判结果。",
+                retrieval_text=_retrieval_compose_text(view_label, meta_header, graph_payload, lines),
+                expanded_text="",
+                source_refs={"json_paths": [f"$.legal_subjects[{idx}]"], "entity_ids": [subject_id], "stable_ids": [subject.get("stable_id") or ""]},
+                ontology_payload=_retrieval_ontology_payload("party_view_unit", view_label, graph_payload.get("entity_types"), graph_payload.get("relation_types"), ["LegalSubject.roles", "LegalSubject.subject_type", "Fact.content", "DisputeFocus.content", "JudgmentResult.specific_judgment"]),
+                exact_payload={"entity_types": graph_payload.get("entity_types"), "relation_types": graph_payload.get("relation_types"), "result_types": [judgment_item.get("result_type")] if judgment_item and judgment_item.get("result_type") else [], "law_names": [provision_item.get("statute") or provision_item.get("law_name")] if provision_item else [], "provision_refs": [_retrieval_provision_ref(provision_item)] if provision_item else [], "scene_tags": ["party_view"], "subject_roles": [role.get("role_name") or role.get("role_code") for role in subject.get("roles") or []], **case_taxonomy},
+                graph_payload=graph_payload,
+                keywords=_retrieval_keywords(subject_name, role_text, (judgment_item or {}).get("result_type")),
+                priority=0.92,
+                meta_header=meta_header,
+                view_label=view_label,
+                primary_entity=_retrieval_primary_entity("LegalSubject", subject_name, subject_id),
+            ))
 
     bundle = {
         "bundle_id": bundle_id,
@@ -2622,6 +2730,241 @@ def api_preview_merge_enhancement():
         "apply_status": updated_run.get("apply_status"),
     })
 
+
+def _normalize_article_to_chinese(article_str: str) -> str:
+    import re
+    article_str = article_str.strip()
+    
+    # 提取阿拉伯数字
+    match = re.search(r'\d+', article_str)
+    if match:
+        num = int(match.group())
+        units = ['', '十', '百', '千']
+        digits = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+        s = str(num)
+        res = ""
+        for i, char in enumerate(s):
+            digit = int(char)
+            if digit != 0:
+                res += digits[digit] + units[len(s) - i - 1]
+            else:
+                if not res.endswith('零'):
+                    res += '零'
+        res = res.rstrip('零')
+        if res.startswith('一十'):
+            res = res[1:]
+        return f"第{res}条"
+        
+    # 如果已经是纯中文（如 "一百五十三"），确保有 "第" 和 "条"
+    if not article_str.startswith("第"):
+        article_str = "第" + article_str
+    if not article_str.endswith("条"):
+        article_str = article_str + "条"
+        
+    return article_str
+
+@app.route("/api/augment-provisions", methods=["POST"])
+def augment_provisions():
+    req = request.json
+    if not req or "graph_data" not in req:
+        return jsonify({"status": "error", "message": "Missing graph_data"}), 400
+    
+    graph_data = req["graph_data"]
+    if "legal_provisions" not in graph_data:
+        return jsonify({
+            "status": "success", 
+            "graph_data": graph_data, 
+            "logs": [{"type": "info", "msg": "未找到需要补充的法条数据。"}]
+        })
+        
+    provisions = graph_data.get("legal_provisions", [])
+    logs = []
+    
+    # 优先从环境变量加载，如果没有则使用硬编码的远端 Milvus 配置
+    milvus_host = os.environ.get("MILVUS_HOST")
+    if not milvus_host or milvus_host == "127.0.0.1" or milvus_host == "localhost":
+        milvus_host = "milvus.w.com"
+        
+    milvus_port = os.environ.get("MILVUS_PORT", "19530")
+    milvus_db = os.environ.get("MILVUS_DATABASE", "pengcheng")
+    collection_name = "legal_provisions_v1"
+    
+    import requests
+    
+    success_count = 0
+    fail_count = 0
+    
+    for prov in provisions:
+        # Extract name and article
+        statute = prov.get("statute") or prov.get("law_name") or ""
+        article = prov.get("article") or ""
+        prov_id = prov.get("id", "unknown")
+        
+        # Cleanup quotes and ensure '中华人民共和国' prefix if missing
+        statute = statute.replace("《", "").replace("》", "").strip()
+        article = _normalize_article_to_chinese(article)
+        
+        # Add common prefixes to match Milvus records exactly
+        if "刑法" in statute and not statute.startswith("中华"):
+            statute = "中华人民共和国刑法"
+        elif "刑事诉讼法" in statute and not statute.startswith("中华"):
+            statute = "中华人民共和国刑事诉讼法"
+            
+        if not statute or not article:
+            logs.append({"type": "warning", "msg": f"法条 [{prov_id}] 缺少法规名称或条文号，跳过。"})
+            fail_count += 1
+            continue
+            
+        # Try HTTP query
+        search_url = f"http://{milvus_host}:{milvus_port}/v2/vectordb/entities/query"
+        payload = {
+            "dbName": milvus_db,
+            "collectionName": collection_name,
+            "filter": f"legal_name like '{statute}%' and data_name == '{article}'",
+            "outputFields": ["content"],
+            "limit": 1
+        }
+        
+        try:
+            resp = requests.post(search_url, json=payload, headers={"Content-Type": "application/json"}, timeout=3)
+            resp.raise_for_status()
+            
+            raw_text = resp.text.strip()
+            if "}{" in raw_text:
+                raw_text = raw_text.split("}{")[0] + "}"
+                
+            res_data = json.loads(raw_text)
+            hits = res_data.get("data", [])
+            
+            if hits and len(hits) > 0 and hits[0].get("content"):
+                full_content = hits[0].get("content")
+                prov["content"] = full_content
+                prov["is_augmented"] = True # Mark as augmented
+                logs.append({"type": "success", "msg": f"成功补充法条: 《{statute}》{article}"})
+                success_count += 1
+            else:
+                logs.append({"type": "warning", "msg": f"向量库未找到法条: 《{statute}》{article}，保留原始内容。"})
+                fail_count += 1
+        except Exception as e:
+            logs.append({"type": "error", "msg": f"查询向量库失败 ({statute} {article}): {str(e)}，保留原始内容。"})
+            fail_count += 1
+            
+    logs.insert(0, {"type": "info", "msg": f"法条补充完成。成功: {success_count}，失败/未找到: {fail_count}。"})
+    
+    # Generate updated nodes and edges for the graph
+    try:
+        kg = kg_convert(graph_data)
+        nodes = kg.get("nodes", [])
+        edges = kg.get("edges", [])
+    except Exception as e:
+        print(f"kg_convert error after augmentation: {e}")
+        nodes, edges = [], []
+    
+    return jsonify({
+        "status": "success",
+        "graph_data": graph_data,
+        "nodes": nodes,
+        "edges": edges,
+        "logs": logs
+    })
+
+@app.route("/api/deep-think", methods=["POST"])
+def deep_think():
+    req = request.json
+    if not req or "graph_data" not in req or "think_type" not in req:
+        return jsonify({"status": "error", "message": "Missing graph_data or think_type"}), 400
+        
+    graph_data = req["graph_data"]
+    think_type = req["think_type"]
+    
+    # 延迟加载 openai 以免影响启动
+    from openai import OpenAI
+    
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    if not api_key:
+        return jsonify({"status": "error", "message": "DEEPSEEK_API_KEY not found in environment."}), 500
+        
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.deepseek.com"
+    )
+    
+    # 构造 Prompt
+    prompt_map = {
+        "法条适用分析": "请对提供的图谱进行法条适用分析。重点分析案件事实(Fact)是如何触发法条(LegalProvision)的，以及法庭评判(JudicialAssessment)的法律解释(LegalInterpretation)。",
+        "构成要件分析": "请对提供的图谱进行构成要件分析。将案件事实(Fact)与法条的构成要件(LegalProvisionElement)进行严格的涵摄映射。",
+        "证据采信分析": "请对提供的图谱进行证据采信分析。梳理证据(Evidence)之间的相互印证(corroborates)与矛盾(contradicts)关系，并形成证据链(EvidenceChain)。",
+        "裁判尺度分析": "请对提供的图谱进行裁判尺度与量刑分析。找出影响判决结果(JudgmentResult)的量刑情节(SentencingCircumstance)，区分从重(aggravates)和从轻(mitigates)。",
+        "诉求抗辩分析": "请对提供的图谱进行诉求抗辩对抗分析。提取诉求(LitigationClaim)与抗辩(ArgumentPoint)之间的对抗关系，并指向具体的争点(DisputeFocus)。"
+    }
+    
+    system_prompt = f"""你是一个资深的法官与法律知识图谱专家。
+【任务】：{prompt_map.get(think_type, "请对图谱进行深度逻辑分析。")}
+
+传入的上下文是一个 JSON 格式的案件解析数据。
+请先直接输出你的详细法律推演过程和结论（支持 Markdown 格式），不要把这部分放在 JSON 中。
+【重要要求】：你最后给出的“conclusion（核心结论）”必须**紧扣你当前正在进行的深度思考类型（即：{think_type}）**。例如，如果是证据采信分析，结论就应聚焦于证据链的完整性和证明力，而不是泛泛而谈被告人犯了什么罪。
+
+推演完成后，你必须在最后严格按照以下 JSON 格式输出你要对图谱进行补充的数据（即 `knowledge_discovery`），以此来反哺本体论。必须使用 ```json 代码块包裹，并且确保 JSON 结构完整。
+
+【输出示例格式】
+```json
+{{
+  "conclusion": "这里填写紧扣【{think_type}】的精炼结论摘要，字数控制在100字以内。",
+  "knowledge_discovery": {{
+    "new_nodes": [
+      {{ "id": "element_01", "type": "LegalProvisionElement", "content": "偷逃应缴税额巨大" }},
+      {{ "id": "circumstance_01", "type": "SentencingCircumstance", "content": "二审期间主动缴纳部分罚金（酌定从轻）" }},
+      {{ "id": "chain_01", "type": "EvidenceChain", "content": "走私资金流转证据链" }}
+    ],
+    "new_edges": [
+      {{ "id": "edge_new_01", "from": "fact_2", "to": "element_01", "label": "matches_element" }},
+      {{ "id": "edge_new_02", "from": "circumstance_01", "to": "jr_0", "label": "mitigates" }},
+      {{ "id": "edge_new_03", "from": "evidence_1", "to": "evidence_2", "label": "corroborates" }},
+      {{ "id": "edge_new_04", "from": "assessment_0", "to": "element_01", "label": "interprets" }}
+    ]
+  }}
+}}
+```
+
+请开始你的推演和输出：
+"""
+
+    context_str = json.dumps({
+        "facts": graph_data.get("facts", []),
+        "evidence": graph_data.get("evidence", []),
+        "legal_provisions": graph_data.get("legal_provisions", []),
+        "judicial_assessments": graph_data.get("judicial_assessments", []),
+        "judgment_results": graph_data.get("judgment_results", []),
+        "dispute_focuses": graph_data.get("dispute_focuses", []),
+        "relations": graph_data.get("relations", [])
+    }, ensure_ascii=False)
+
+    def generate():
+        try:
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"图谱数据:\n{context_str}"}
+                ],
+                stream=True,
+                temperature=0.3
+            )
+            
+            for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    # SSE format
+                    data = json.dumps({"chunk": content})
+                    yield f"data: {data}\n\n"
+                    
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            error_data = json.dumps({"error": str(e)})
+            yield f"data: {error_data}\n\n"
+
+    return Response(generate(), mimetype="text/event-stream")
 
 @app.route("/api/parse-enhancement/merge", methods=["POST"])
 def api_merge_enhancement():

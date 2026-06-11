@@ -25,7 +25,7 @@ const MAIN_LANE_Y = {
 
 const MAIN_LANE_SPACING = {
   caseLane: 280,
-  subjectLane: 145,
+  subjectLane: 110,
   evidenceLane: 150,
   factLane: 165,
   elementLane: 135,
@@ -1925,8 +1925,8 @@ export class ParseGraph {
     }
     if (['GuidingCase', 'CaseType', 'CourtCase'].includes(type)) return 'caseLane';
     if (['Judge', 'Attorney', 'LegalRole', 'LegalSubject', 'Person'].includes(type)) return 'subjectLane';
-    if (type === 'Evidence') return 'evidenceLane';
-    if (type === 'Fact') return 'factLane';
+    if (['Evidence', 'LitigationClaim', 'ProceduralOpinion'].includes(type)) return 'evidenceLane';
+    if (['Fact', 'ArgumentPoint', 'JudicialAssessment'].includes(type)) return 'factLane';
     if (type === 'LegalProvisionElement') return 'elementLane';
     if (['LegalProvision', 'Law', 'LegalNorm'].includes(type)) return 'lawLane';
     if (['DisputeFocus', 'JudgmentResult', 'CaseSummary'].includes(type)) return 'resultLane';
@@ -1981,6 +1981,14 @@ export class ParseGraph {
       const laneIndex = laneOrder.indexOf(laneKey);
       const bucket = laneBuckets[laneKey] || [];
       bucket.sort((a, b) => {
+        const typeA = this.getNodeType(a);
+        const typeB = this.getNodeType(b);
+        const isClaimA = ['LitigationClaim', 'ProceduralOpinion', 'ArgumentPoint', 'JudicialAssessment'].includes(typeA);
+        const isClaimB = ['LitigationClaim', 'ProceduralOpinion', 'ArgumentPoint', 'JudicialAssessment'].includes(typeB);
+        
+        if (isClaimA && !isClaimB) return 1;
+        if (!isClaimA && isClaimB) return -1;
+
         const scoreA = computeScore(a.id, laneIndex);
         const scoreB = computeScore(b.id, laneIndex);
         if (scoreA == null && scoreB == null) return 0;
@@ -2020,7 +2028,11 @@ export class ParseGraph {
       CourtCase: 2,
       AggregateGroup: 3,
       Evidence: 0,
+      LitigationClaim: 8,
+      ProceduralOpinion: 9,
       Fact: 0,
+      ArgumentPoint: 8,
+      JudicialAssessment: 9,
       LegalProvision: 0,
       LegalProvisionElement: 1,
       Law: 2,
@@ -2162,22 +2174,25 @@ export class ParseGraph {
     if (!host) return;
     
     let overlay = host.querySelector('.term-zone-overlay');
+    const bottomY = host.clientHeight > 100 ? host.clientHeight - 80 : 500;
+    const topY = 70; // 顶部偏下的安全位置，加大偏移量以避开黑色导航栏
     const zoneDefs = this.getLayoutMode() === 'focus_orbit'
       ? [
-          { key: 'factLane', title: '事实区', desc: '证据与事实上游', x: MAIN_LANE_X.factLane - 40, screenTop: 8 },
-          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 8 },
-          { key: 'focusCore', title: '争点核心', desc: 'DisputeFocus 中心', x: Math.round((MAIN_LANE_X.lawLane + MAIN_LANE_X.resultLane) / 2), screenTop: 8 },
-          { key: 'lawLane', title: '法条半环', desc: '法条与依据', x: MAIN_LANE_X.lawLane - 40, screenTop: 8 },
-          { key: 'resultLane', title: '裁判半环', desc: '裁判与结果', x: MAIN_LANE_X.resultLane, screenTop: 8 },
+          { key: 'factLane', title: '事实区', desc: '证据与事实上游', x: MAIN_LANE_X.factLane - 40, screenTop: topY },
+          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: topY },
+          { key: 'focusCore', title: '争点核心', desc: 'DisputeFocus 中心', x: Math.round((MAIN_LANE_X.lawLane + MAIN_LANE_X.resultLane) / 2), screenTop: topY },
+          { key: 'lawLane', title: '法条半环', desc: '法条与依据', x: MAIN_LANE_X.lawLane - 40, screenTop: topY },
+          { key: 'resultLane', title: '裁判半环', desc: '裁判与结果', x: MAIN_LANE_X.resultLane, screenTop: topY },
         ]
       : [
-          { key: 'caseLane', title: '案件区', desc: 'CourtCase 主轴', x: MAIN_LANE_X.caseLane, screenTop: 10 },
-          { key: 'subjectLane', title: '主体区', desc: '案件当事人', x: MAIN_LANE_X.subjectLane, screenTop: 10 },
-          { key: 'evidenceLane', title: '证据区', desc: '证据材料', x: MAIN_LANE_X.evidenceLane, screenTop: 10 },
-          { key: 'factLane', title: '事实区', desc: '案件事实', x: MAIN_LANE_X.factLane, screenTop: 10 },
-          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: 10 },
-          { key: 'lawLane', title: '法条区', desc: '法条依据', x: MAIN_LANE_X.lawLane, screenTop: 10 },
-          { key: 'resultLane', title: '裁判区', desc: '焦点与结果', x: MAIN_LANE_X.resultLane, screenTop: 10 },
+          { key: 'caseLane', title: '案件区', desc: 'CourtCase 主轴', x: MAIN_LANE_X.caseLane, screenTop: topY },
+          { key: 'subjectLane', title: '主体区', desc: '案件当事人', x: MAIN_LANE_X.subjectLane, screenTop: topY },
+          { key: 'evidenceLane', title: '证据区', desc: '证据材料', x: MAIN_LANE_X.evidenceLane, screenTop: topY },
+          { key: 'factLane', title: '事实区', desc: '案件事实', x: MAIN_LANE_X.factLane, screenTop: topY },
+          { key: 'claimLane', title: '诉求区', desc: '程序意见与诉求', x: Math.round((MAIN_LANE_X.evidenceLane + MAIN_LANE_X.factLane) / 2), screenTop: bottomY },
+          { key: 'elementLane', title: '法条元素区', desc: '法条构成要件', x: MAIN_LANE_X.elementLane, screenTop: topY },
+          { key: 'lawLane', title: '法条区', desc: '法条依据', x: MAIN_LANE_X.lawLane, screenTop: topY },
+          { key: 'resultLane', title: '裁判区', desc: '焦点与结果', x: MAIN_LANE_X.resultLane, screenTop: topY },
         ];
 
     if (!overlay) {
@@ -2185,20 +2200,33 @@ export class ParseGraph {
       overlay.className = 'term-zone-overlay';
       host.appendChild(overlay);
     }
+
+    // Completely remove the optimization logic for now. 
+    // If the elements exist but aren't showing, it might be because the browser 
+    // thinks they are static or detached. Let's just forcibly recreate them and 
+    // set absolute positions without relying on CSS class toggling for visibility.
     overlay.innerHTML = zoneDefs.map(zone => 
-      `<div class="term-zone-badge" data-zone="${zone.key}"><span class="term-zone-title">${zone.title}</span><span class="term-zone-desc">${zone.desc}</span></div>`
+      `<div class="term-zone-badge" data-zone="${zone.key}" style="display:none;"><span class="term-zone-title">${zone.title}</span><span class="term-zone-desc">${zone.desc}</span></div>`
     ).join('');
     
     zoneDefs.forEach(zone => {
       const badge = overlay.querySelector(`[data-zone="${zone.key}"]`);
       if (!badge) return;
       const domPos = this.network.canvasToDOM({ x: zone.x, y: 0 });
-      const top = zone.screenTop ?? 10;
-      const within = domPos && domPos.x >= 32 && domPos.x <= (host.clientWidth - 32) && top >= 0 && top <= (host.clientHeight - 28);
-      badge.classList.toggle('zone-hidden', !within);
+      const top = zone.screenTop ?? 24; 
+      
+      const within = domPos && domPos.x > -1500 && domPos.x < (host.clientWidth + 1500);
+      
       if (within) {
         badge.style.left = domPos.x + 'px';
         badge.style.top = `${top}px`;
+        badge.style.display = 'inline-flex';
+        badge.style.zIndex = '9999';
+        // Force opacity to 1 bypassing any .zone-hidden CSS rules
+        badge.style.opacity = '1';
+        badge.classList.remove('zone-hidden');
+      } else {
+        badge.style.display = 'none';
       }
     });
   }

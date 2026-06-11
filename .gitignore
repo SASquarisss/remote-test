@@ -9,3 +9,23 @@ node_modules
 *.xz
 node-*/
 test_*.py
+*.log
+
+# Environment variables
+.env
+
+# Python virtual environments
+ontology/bin/
+ontology/lib/
+ontology/lib64
+ontology/pyvenv.cfg
+venv/
+env/
+.venv/
+
+# Temporary debug/fix scripts
+visualization/ontology-refactored/check_braces.py
+visualization/ontology-refactored/check_dom.cjs
+visualization/ontology-refactored/fix.py
+visualization/ontology-refactored/patch_events.js
+visualization/ontology-refactored/temp_panel.js

@@ -755,6 +755,7 @@ def render_json_schema(ontology: OntologySchema) -> str:
     # legal_subjects
     lines.append('  "legal_subjects": [')
     lines.append('    {')
+    lines.append(f'      "id": "",')
     lines.append(f'      "name": "",')
     lines.append(f'      "subject_type": "natural_person{P}organization",')
     e_org = enums.get("Organization.org_type", {}).get("values", ["company", "government_agency"])
@@ -772,10 +773,10 @@ def render_json_schema(ontology: OntologySchema) -> str:
     lines.append('  ],')
 
     for arr_name, arr_fields in [
-        ("attorneys", [("name", '""'), ("law_firm", '""'), ("representation_for", '""'), ("case_number", '""')]),
-        ("judges", [("name", '""'), ("role", '"presiding_judge|judge|acting_judge|people_juror|clerk"'), ("case_number", '""')]),
-        ("prosecutors", [("name", '""'), ("role", '"public_prosecutor|procurator|protest_organ"'), ("unit", '""'), ("case_number", '""')]),
-        ("trial_organizations", [("case_number", '""'), ("members", "[]"), ("summary", '""')]),
+        ("attorneys", [("id", '""'), ("name", '""'), ("law_firm", '""'), ("representation_for", '""'), ("case_number", '""')]),
+        ("judges", [("id", '""'), ("name", '""'), ("role", '"presiding_judge|judge|acting_judge|people_juror|clerk"'), ("case_number", '""')]),
+        ("prosecutors", [("id", '""'), ("name", '""'), ("role", '"public_prosecutor|procurator|protest_organ"'), ("unit", '""'), ("case_number", '""')]),
+        ("trial_organizations", [("id", '""'), ("case_number", '""'), ("members", "[]"), ("summary", '""')]),
     ]:
         lines.append(f'  "{arr_name}": [')
         lines.append('    {')
