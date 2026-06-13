@@ -332,7 +332,7 @@ ontology_v2.2.html
 
 对应清理建议清单见：
 
-- `docs/archive_cleanup_candidates.md`
+- `docs/2026-05-20_archive_cleanup_candidates.md`
 
 ## 环境提示
 
