@@ -134,6 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
           issues: data.issues || [],
           row_id: data.row_id || null,
           case_name: data.case_name || '',
+          text_chunks: data.text_chunks || [],
+          source_alignment: data.source_alignment || {},
+          chunking_meta: data.chunking_meta || null,
+          alignment_stats: data.alignment_stats || null,
+          alignment_unmatched_items: data.alignment_unmatched_items || [],
         };
         
         // Inject to terminal and graph
@@ -142,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (terminalPanel.evalBtn) terminalPanel.evalBtn.disabled = false;
         if (terminalPanel.saveBtn) terminalPanel.saveBtn.disabled = false;
         if (terminalPanel.saveBtnBottom) terminalPanel.saveBtnBottom.disabled = false;
+        if (terminalPanel.neo4jWriteBtnBottom) terminalPanel.neo4jWriteBtnBottom.disabled = false;
         let targetTab = 'termVisContainer';
         if (data.active_tab === 'eval') targetTab = 'termEvalTabContent';
         else if (data.active_tab === 'issues') targetTab = 'termIssuesTabContent';
@@ -170,9 +176,20 @@ document.addEventListener('DOMContentLoaded', () => {
           retrievalWriteStatus: data.retrieval_bundle?.status?.write_status || 'idle',
           retrievalSourceParseVersionId: data.retrieval_bundle?.source_parse_version_id || null,
           retrievalWriteManifest: data.retrieval_write_manifest || null,
+          textChunks: data.text_chunks || [],
+          sourceAlignment: data.source_alignment || {},
+          chunkingMeta: data.chunking_meta || null,
+          alignmentStats: data.alignment_stats || null,
+          alignmentUnmatchedItems: data.alignment_unmatched_items || [],
+          neo4jStatus: null,
+          neo4jLastWriteSummary: null,
+          neo4jLastRunId: null,
+          neo4jDocId: null,
         });
         
         terminalPanel.switchTab(targetTab);
+        terminalPanel.renderNeo4jStatus(null);
+        terminalPanel.refreshNeo4jStatus();
         if (data.term_quality_result) {
           terminalPanel.lastQualityResult = data.term_quality_result;
           terminalPanel.renderQualityIssues(data.term_quality_result, store.getState().parseNodeData);
@@ -194,6 +211,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.retrieval_bundle && typeof terminalPanel.renderRetrievalBundle === 'function') {
           terminalPanel.lastRetrievalWriteManifest = data.retrieval_write_manifest || null;
           terminalPanel.renderRetrievalBundle(data.retrieval_bundle);
+        }
+        if (Array.isArray(data.discovery_history)) {
+          terminalPanel.discoveryHistory = data.discovery_history;
+          terminalPanel.activeDiscoveryIdx = data.discovery_history.length > 0 ? data.discovery_history.length - 1 : -1;
+          terminalPanel.saveDiscoveryHistory();
+          terminalPanel.renderDiscoveryHistoryTabs();
+          if (data.discovery_history.length > 0) {
+            terminalPanel.showDiscoveryResult(terminalPanel.activeDiscoveryIdx, false);
+          } else {
+            terminalPanel.resetDiscoveryUI();
+          }
         }
         
         terminalPanel.setStatus('测试数据已加载（含上次解析结果）', '#27ae60');

@@ -180,3 +180,50 @@ export async function loadRetrievalBundle(bundleId) {
   if (data.error) throw new Error(data.error);
   return data;
 }
+
+export async function writeNeo4jCase(payload) {
+  const response = await fetch(`${API_BASE}/api/neo4j/write-case`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+export async function getNeo4jCaseStatus(docId) {
+  const response = await fetch(`${API_BASE}/api/neo4j/case-status/${encodeURIComponent(docId)}`);
+  const data = await response.json();
+  if (!response.ok) {
+    if (response.status === 404 && data.exists === false) return data;
+    throw new Error(data.error || `Request failed: ${response.status}`);
+  }
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+export async function writeNeo4jRetrievalLayer(payload) {
+  const response = await fetch(`${API_BASE}/api/neo4j/write-retrieval-layer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  // #region debug-point D:retrieval-neo4j-response
+  fetch("http://127.0.0.1:7777/event",{method:"POST",body:JSON.stringify({sessionId:"retrieval-404-block",runId:"post-fix",hypothesisId:"D",location:"backend.js:writeNeo4jRetrievalLayer:response",msg:"[DEBUG] Retrieval Neo4j HTTP response received",data:{ok:response.ok,status:response.status,url:response.url},ts:Date.now()})}).catch(()=>{});
+  // #endregion
+  const data = await response.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+export async function writeNeo4jDiscoveryLayer(payload) {
+  const response = await fetch(`${API_BASE}/api/neo4j/write-discovery-layer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}

@@ -1,4 +1,4 @@
-import { fetchAdminStaticCase, fetchAdminStaticCases, fetchCasesIndex, fetchSavedCase } from './shared/api/backend.js';
+import { fetchAdminStaticCase, fetchAdminStaticCases, fetchCasesIndex, fetchNeo4jCaseDetail, fetchNeo4jCaseStatus, fetchSavedCase } from './shared/api/backend.js';
 import { databaseStore as store } from './shared/store/databaseStore.js';
 import { TopNavBar } from './shared/chrome/TopNavBar.js';
 import { ControlsPanel } from './shared/chrome/ControlsPanel.js';
@@ -7,7 +7,7 @@ import { DatabaseGraph } from './database/components/DatabaseGraph.js';
 import { DatabaseBottomPanel } from './database/components/DatabaseBottomPanel.js';
 import { DatabaseSchemaPanel } from './database/components/DatabaseSchemaPanel.js';
 import { DatabaseTopFilters } from './database/components/DatabaseTopFilters.js';
-import { decorateSavedCases, decorateStaticCases, getActiveCaseEntry, getFilteredCases, getVisibleCases, mergeCaseIndexes } from './database/model/selectors.js';
+import { decorateSavedCases, decorateStaticCases, getFilteredCases, getVisibleCases, mergeCaseIndexes } from './database/model/selectors.js';
 import { escapeHtml } from './shared/utils/formatter.js';
 
 function getCaseTypeText(meta = {}, fallbackType = '') {
@@ -212,6 +212,43 @@ async function hydrateSelectedCases(state) {
   }
 }
 
+async function hydrateNeo4jCase(state) {
+  const activeKey = state.selection.activeCaseKey;
+  if (!activeKey) return;
+  const entry = state.data.casesIndex.find(item => item.caseKey === activeKey);
+  if (!entry?.neo4j_doc_id) return;
+
+  const neo4jMap = state.data.neo4jCaseMap || {};
+  if (neo4jMap[activeKey]?.doc_id === entry.neo4j_doc_id) return;
+
+  try {
+    const [status, detail] = await Promise.all([
+      fetchNeo4jCaseStatus(entry.neo4j_doc_id),
+      fetchNeo4jCaseDetail(entry.neo4j_doc_id).catch(() => null)
+    ]);
+    store.update('data', {
+      neo4jCaseMap: {
+        ...store.getState().data.neo4jCaseMap,
+        [activeKey]: {
+          status,
+          detail
+        }
+      }
+    });
+  } catch (error) {
+    store.update('data', {
+      neo4jCaseMap: {
+        ...store.getState().data.neo4jCaseMap,
+        [activeKey]: {
+          status: null,
+          detail: null,
+          error: error.message
+        }
+      }
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const topNavBar = new TopNavBar({
     productName: 'legal_ontology_database',
@@ -290,6 +327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (signature && signature !== lastSelectedSignature) {
       lastSelectedSignature = signature;
       hydrateSelectedCases(state);
+      hydrateNeo4jCase(state);
     } else if (!signature) {
       lastSelectedSignature = '';
     }
@@ -303,6 +341,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.addEventListener('focus', () => {
     loadCaseIndexes({ silent: true });
+  });
+
+  window.addEventListener('database-case-deleted', () => {
+    loadCaseIndexes({ silent: true });
+  });
+
+  window.addEventListener('database-case-resynced', () => {
+    loadCaseIndexes({ silent: true });
+    hydrateNeo4jCase(store.getState());
   });
 
   window.addEventListener('resize', () => {

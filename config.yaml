@@ -9,9 +9,9 @@ project:
 graph_store:
   hot_layer:
     type: neo4j
-    uri: "bolt://localhost:7687"
+    uri: "bolt://10.1.5.3:7687"
     user: "neo4j"
-    password: "legalkg2026"
+    password: "legalgraph123"
     database: "neo4j"
   full_layer:
     type: nebulagraph

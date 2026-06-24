@@ -37,23 +37,137 @@
     <!-- Ontology Graph Container (Floating/Main toggle) -->
     <div id="ontologyContainer">
       <button id="ontologyRestoreFloat" class="ontology-restore-float" title="返回悬浮窗">返回悬浮窗</button>
+      <button id="ontologyMinimizedDock" class="ontology-minimized-dock" title="展开本体悬浮窗">
+        <span class="ontology-minimized-icon">本</span>
+      </button>
       <!-- Floating Header (visible only in mini-mode) -->
-      <div class="ontology-header" id="ontologyHeader" style="display: none; padding: 0 12px; background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; cursor: move; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; height: 35px;">
-        <div style="display: flex; gap: 16px; align-items: center; height: 100%; overflow: hidden;">
-          <div class="onto-tab active" data-target="ontologyNetworkHost" style="font-size: 13px; font-weight: 600; cursor: pointer; height: 100%; display: flex; align-items: center; border-bottom: 2px solid #3b82f6;">📋 本体图谱</div>
-          <div class="onto-tab" data-target="ontologyInheritanceTab" style="font-size: 13px; font-weight: 600; cursor: pointer; height: 100%; display: flex; align-items: center; border-bottom: 2px solid transparent; color: #94a3b8;">🌳 继承树</div>
-          <div class="onto-tab" data-target="ontologySubGraphHost" style="font-size: 13px; font-weight: 600; cursor: pointer; height: 100%; display: flex; align-items: center; border-bottom: 2px solid transparent; color: #94a3b8;">🔗 子图</div>
+      <div class="ontology-header" id="ontologyHeader">
+        <div class="ontology-header-top">
+          <div class="ontology-tab-row">
+            <div class="onto-tab active" data-target="ontologyOverviewTab">📋 本体总览</div>
+            <div class="onto-tab" data-target="ontologyInheritanceTab">🌳 继承树</div>
+            <div class="onto-tab" data-target="ontologySubGraphHost">🔗 运行时子图</div>
+          </div>
+          <div class="ontology-header-actions">
+            <div class="ontology-language-switch" id="ontologyLanguageToggle">
+              <button class="ontology-lang-btn active" data-lang="zh">中文</button>
+              <button class="ontology-lang-btn" data-lang="bilingual">双语</button>
+              <button class="ontology-lang-btn" data-lang="en">EN</button>
+            </div>
+            <button id="ohToggleFull" class="ontology-header-btn" title="切换全屏">⛶</button>
+            <button id="ohClose" class="ontology-header-btn" title="最小化本体悬浮窗">—</button>
+          </div>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <button id="ohToggleFull" style="background: none; border: none; color: #fff; cursor: pointer;">⛶</button>
-          <button id="ohClose" style="background: none; border: none; color: #fff; cursor: pointer;">✕</button>
+        <div class="ontology-header-bottom">
+          <div class="ontology-search-wrap">
+            <input id="ontologySearchInput" class="ontology-search-input" type="text" placeholder="搜索类型、关系或中文名" />
+          </div>
+          <div class="ontology-filter-row">
+            <label class="ontology-check-chip"><input id="ontologyHighlightCase" type="checkbox" checked /> 当前案件高亮</label>
+            <label class="ontology-check-chip"><input id="ontologyHighlightReasoning" type="checkbox" checked /> 当前推理高亮</label>
+            <label class="ontology-check-chip"><input id="ontologyHideUnused" type="checkbox" /> 隐藏无实例</label>
+          </div>
+          <div id="ontologyStatusText" class="ontology-status-text">等待案件映射数据</div>
         </div>
       </div>
-      <div id="ontologyNetworkHost" class="onto-tab-content active" style="width: 100%; height: 100%;"></div>
-      <div id="ontologyInheritanceTab" class="onto-tab-content" style="display: none; width: 100%; height: 100%; background: #fff; overflow-y: auto; padding: 16px;">
-        <div id="legendBody"></div>
+      <div id="ontologyOverviewTab" class="onto-tab-content active">
+        <div class="ontology-overview-shell">
+          <div id="ontologyNetworkHost" class="ontology-overview-canvas"></div>
+          <aside id="ontologyDetailHost" class="ontology-side-detail"></aside>
+        </div>
       </div>
-      <div id="ontologySubGraphHost" class="onto-tab-content" style="display: none; width: 100%; height: 100%; background: #fff; position: relative;"></div>
+      <div id="ontologyInheritanceTab" class="onto-tab-content">
+        <div class="ontology-tree-shell">
+          <div class="ontology-tree-toolbar">
+            <div class="ontology-segmented" id="ontologyTreeModeToggle">
+              <button class="ontology-segment-btn active" data-mode="technical">技术继承</button>
+              <button class="ontology-segment-btn" data-mode="business">业务分组</button>
+            </div>
+            <div class="ontology-tree-toolbar-actions">
+              <button id="ontologyExpandAll" class="ontology-ghost-btn">全部展开</button>
+              <button id="ontologyCollapseAll" class="ontology-ghost-btn">全部折叠</button>
+            </div>
+          </div>
+          <div class="ontology-tree-body">
+            <div id="legendBody" class="ontology-tree-panel"></div>
+            <aside id="ontologyTreeDetailHost" class="ontology-side-detail"></aside>
+          </div>
+        </div>
+      </div>
+      <div id="ontologySubGraphHost" class="onto-tab-content">
+        <div class="ontology-runtime-shell">
+          <div class="ontology-runtime-header">
+            <div class="ontology-runtime-title-group">
+              <span id="ontologyRuntimeSourceBadge" class="ontology-runtime-badge is-idle">过渡中</span>
+              <span id="ontologyRuntimeSourceText" class="ontology-runtime-source">当前来源：暂无运行时子图</span>
+            </div>
+            <div class="ontology-runtime-hint">迁移期容器：后续将逐步迁出到主工作区</div>
+          </div>
+          <div class="ontology-runtime-switcher">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="ontology-runtime-view-btn active" data-runtime-view="runtime">运行时子图</button>
+              <button class="ontology-runtime-view-btn" data-runtime-view="overview">全案映射</button>
+              <button class="ontology-runtime-view-btn" data-runtime-view="delta">增量映射</button>
+            </div>
+            <button class="ontology-primary-btn" data-runtime-open-workspace="true">在主工作区查看</button>
+          </div>
+          <div id="ontologyRuntimeView" class="ontology-runtime-view">
+            <div class="ontology-runtime-sourcebar">
+              <div id="ontologyRuntimeSourceTabs" class="ontology-runtime-source-tabs"></div>
+            </div>
+            <div class="ontology-runtime-body">
+              <div id="ontologyRuntimeCanvas" class="ontology-runtime-canvas">
+                <div class="ontology-runtime-empty">
+                  <div class="ontology-runtime-empty-title">暂无运行时子图</div>
+                  <div class="ontology-runtime-empty-desc">检索链路和知识发现子图目前仍会暂时渲染在这里，后续将迁移为独立工作区视图。</div>
+                  <button class="ontology-primary-btn" data-runtime-open-workspace="true">前往主工作区</button>
+                </div>
+              </div>
+              <aside id="ontologyRuntimeSummary" class="ontology-runtime-summary"></aside>
+            </div>
+          </div>
+          <div id="ontologyCaseOverviewView" class="ontology-case-mapping-view">
+            <div class="ontology-case-mapping-header">
+              <div class="ontology-runtime-title-group" style="justify-content:space-between; width:100%;">
+                <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                  <span class="ontology-runtime-badge is-discovery">全案映射</span>
+                  <span class="ontology-runtime-source">类型热力只看当前全案实例分布，不绑定检索链路或知识发现来源。</span>
+                </div>
+                <div class="ontology-segmented" id="ontologyOverviewMappingModeToggle">
+                  <button class="ontology-segment-btn active" data-overview-mode="type">类型热力</button>
+                  <button class="ontology-segment-btn" data-overview-mode="domain">业务域热力</button>
+                </div>
+              </div>
+            </div>
+            <div class="ontology-case-mapping-body">
+              <div id="ontologyCaseOverviewGrid" class="ontology-case-mapping-grid"></div>
+              <aside id="ontologyCaseOverviewDetail" class="ontology-side-detail"></aside>
+            </div>
+          </div>
+          <div id="ontologyCaseDeltaView" class="ontology-case-mapping-view is-hidden">
+            <div class="ontology-case-mapping-header">
+              <div class="ontology-runtime-title-group" style="justify-content:space-between; width:100%;">
+                <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                  <span class="ontology-runtime-badge is-retrieval">增量映射</span>
+                  <span class="ontology-runtime-source">只展示推理与版本变化带来的类型变化，不显示全案静态分布。</span>
+                </div>
+                <div class="ontology-segmented" id="ontologyDeltaMappingModeToggle">
+                  <button class="ontology-segment-btn active" data-delta-mode="reasoning">推理映射</button>
+                  <button class="ontology-segment-btn" data-delta-mode="version">版本变化</button>
+                </div>
+              </div>
+            </div>
+            <div class="ontology-case-mapping-body">
+              <div id="ontologyCaseDeltaGrid" class="ontology-case-mapping-grid"></div>
+              <aside id="ontologyCaseDeltaDetail" class="ontology-side-detail"></aside>
+            </div>
+          </div>
+          <div id="ontologyRuntimeFooter" class="ontology-runtime-footer">
+            <span id="ontologyRuntimeFooterText">说明：此视图展示的是运行时业务链路，不属于静态本体结构。</span>
+            <button id="ontologyRuntimeOpenWorkspace" class="ontology-primary-btn" data-runtime-open-workspace="true">在主工作区查看</button>
+          </div>
+        </div>
+      </div>
     </div>
     
     <!-- Detail Panel -->
@@ -129,6 +243,8 @@
         <option value="extracted_candidate">保存到 extracted_candidate</option>
       </select>
       <button class="btn-save" id="btnTermSaveBottom" disabled>💾 保存</button>
+      <button class="btn-save" id="btnTermNeo4jWriteBottom" disabled style="margin-left:8px; background:#16a34a;">🕸 写入 Neo4j</button>
+      <span id="termNeo4jStatus" class="term-footer-issues" style="margin-left:10px; color:#64748b;">Neo4j: 未写入</span>
       <span id="termScore" class="term-footer-score"></span>
       <span id="termIssues" class="term-footer-issues"></span>
     </div>

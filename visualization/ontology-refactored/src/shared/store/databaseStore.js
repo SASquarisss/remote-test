@@ -13,6 +13,7 @@ export const initialDatabaseState = {
   },
   filters: {
     sources: [],
+    neo4jSyncStates: [],
     caseCategories: [],
     caseReasons: [],
     trialLevels: [],
@@ -43,7 +44,10 @@ export const initialDatabaseState = {
   },
   data: {
     casesIndex: [],
-    caseDetailMap: {}
+    caseDetailMap: {},
+    neo4jCaseMap: {},
+    neo4jDiffMap: {},
+    neo4jSubgraphMap: {}
   },
   ui: {
     loading: false,

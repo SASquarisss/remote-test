@@ -16,7 +16,7 @@ function getSummaryLines(entry = {}) {
   return { trialLevels, judgmentYears, publicationYears };
 }
 
-import { deleteSavedCase } from '../../shared/api/backend.js';
+import { deleteSavedCase, diffNeo4jCase, fetchNeo4jCaseDetail, fetchNeo4jCaseSubgraph, resyncNeo4jCase } from '../../shared/api/backend.js';
 
 export class DatabaseBottomPanel {
   constructor({ store, containerId }) {
@@ -74,6 +74,7 @@ export class DatabaseBottomPanel {
                 <button type="button" class="db-terminal-tab" data-right-tab="summary">案例摘要</button>
                 <button type="button" class="db-terminal-tab" data-right-tab="versions">版本链</button>
                 <button type="button" class="db-terminal-tab" data-right-tab="thinking">类案思考</button>
+                <button type="button" class="db-terminal-tab" data-right-tab="graphdb">图数据库</button>
               </div>
               <div class="db-terminal-subtitle">右侧展示结构摘要与辅助信息</div>
             </div>
@@ -93,6 +94,106 @@ export class DatabaseBottomPanel {
     } catch (err) {
       console.error(err);
       alert('删除失败: ' + err.message);
+    } finally {
+      this.store.update('ui', { loading: false });
+    }
+  }
+
+  async reloadNeo4jCase() {
+    const state = this.store.getState();
+    const active = getActiveCaseEntry(state);
+    if (!active?.neo4j_doc_id) return;
+    try {
+      this.store.update('ui', { loading: true, statusText: '正在从图数据库重载摘要...' });
+      const detail = await fetchNeo4jCaseDetail(active.neo4j_doc_id);
+      this.store.update('data', {
+        neo4jCaseMap: {
+          ...state.data.neo4jCaseMap,
+          [active.caseKey]: {
+            ...(state.data.neo4jCaseMap?.[active.caseKey] || {}),
+            detail
+          }
+        }
+      });
+      this.store.update('ui', { statusText: `已从图数据库重载 ${active.row_id} 的摘要信息` });
+    } catch (err) {
+      this.store.update('ui', { error: err.message, statusText: `图数据库重载失败：${err.message}` });
+    } finally {
+      this.store.update('ui', { loading: false });
+    }
+  }
+
+  async diffNeo4jCase() {
+    const state = this.store.getState();
+    const active = getActiveCaseEntry(state);
+    if (!active?.row_id) return;
+    try {
+      this.store.update('ui', { loading: true, statusText: '正在生成本地数据与图数据库差异...' });
+      const diff = await diffNeo4jCase({
+        row_id: active.row_id,
+        record_source: active.recordSource,
+        doc_id: active.neo4j_doc_id || `CASE:${active.row_id}`
+      });
+      this.store.update('data', {
+        neo4jDiffMap: {
+          ...state.data.neo4jDiffMap,
+          [active.caseKey]: diff
+        }
+      });
+      this.store.update('ui', { statusText: `已生成 ${active.row_id} 的图层差异摘要` });
+    } catch (err) {
+      this.store.update('ui', { error: err.message, statusText: `图层差异生成失败：${err.message}` });
+    } finally {
+      this.store.update('ui', { loading: false });
+    }
+  }
+
+  async loadNeo4jSubgraph() {
+    const state = this.store.getState();
+    const active = getActiveCaseEntry(state);
+    if (!active?.neo4j_doc_id) return;
+    try {
+      this.store.update('ui', { loading: true, statusText: '正在读取图数据库子图摘要...' });
+      const subgraph = await fetchNeo4jCaseSubgraph(active.neo4j_doc_id, 'base', 120);
+      this.store.update('data', {
+        neo4jSubgraphMap: {
+          ...state.data.neo4jSubgraphMap,
+          [active.caseKey]: subgraph
+        }
+      });
+      this.store.update('ui', { statusText: `已读取 ${active.row_id} 的图数据库子图摘要` });
+    } catch (err) {
+      this.store.update('ui', { error: err.message, statusText: `图数据库子图读取失败：${err.message}` });
+    } finally {
+      this.store.update('ui', { loading: false });
+    }
+  }
+
+  async resyncNeo4jCase() {
+    const state = this.store.getState();
+    const active = getActiveCaseEntry(state);
+    if (!active?.row_id) return;
+    try {
+      this.store.update('ui', { loading: true, statusText: '正在按当前保存数据重同步到图数据库...' });
+      const result = await resyncNeo4jCase({
+        row_id: active.row_id,
+        record_source: active.recordSource,
+        doc_id: active.neo4j_doc_id || `CASE:${active.row_id}`,
+        include_layers: ['base', 'retrieval', 'discovery']
+      });
+      this.store.update('data', {
+        neo4jCaseMap: {
+          ...state.data.neo4jCaseMap,
+          [active.caseKey]: {
+            ...(state.data.neo4jCaseMap?.[active.caseKey] || {}),
+            status: { status: 'ok', exists: true, doc_id: result.doc_id, layers: result.neo4j_status || {} }
+          }
+        }
+      });
+      this.store.update('ui', { statusText: `已触发 ${active.row_id} 的图数据库重同步` });
+      window.dispatchEvent(new CustomEvent('database-case-resynced'));
+    } catch (err) {
+      this.store.update('ui', { error: err.message, statusText: `图数据库重同步失败：${err.message}` });
     } finally {
       this.store.update('ui', { loading: false });
     }
@@ -279,6 +380,16 @@ export class DatabaseBottomPanel {
         return;
       }
 
+      const neo4jAction = event.target.closest('[data-neo4j-action]');
+      if (neo4jAction) {
+        const action = neo4jAction.getAttribute('data-neo4j-action');
+        if (action === 'reload') this.reloadNeo4jCase();
+        if (action === 'resync') this.resyncNeo4jCase();
+        if (action === 'diff') this.diffNeo4jCase();
+        if (action === 'subgraph') this.loadNeo4jSubgraph();
+        return;
+      }
+
       const middleNavPill = event.target.closest('.db-middle-nav-pill');
       if (middleNavPill) {
         this.store.update('selection', { activeMiddleCaseKey: middleNavPill.getAttribute('data-case-key') });
@@ -327,6 +438,8 @@ export class DatabaseBottomPanel {
             </div>
             <div class="db-case-tags" style="margin-top:4px;">
               <span class="db-case-tag">${escapeHtml(meta.source || entry.source || '未知来源')}</span>
+              ${entry.neo4j_sync_status === 'written' ? `<span class="db-case-tag" style="background:#dcfce7;color:#166534;">图数据库已同步</span>` : ''}
+              ${entry.neo4j_sync_status === 'not_written' ? `<span class="db-case-tag" style="background:#f1f5f9;color:#64748b;">图数据库未同步</span>` : ''}
               ${entry.version > 1 ? `<span class="db-case-tag db-case-tag-version">v${escapeHtml(String(entry.version))}</span>` : ''}
               ${stats.facts ? `<span class="db-case-tag db-case-tag-metric">facts ${escapeHtml(String(stats.facts))}</span>` : ''}
               ${stats.relations ? `<span class="db-case-tag db-case-tag-metric">rels ${escapeHtml(String(stats.relations))}</span>` : ''}
@@ -377,15 +490,6 @@ export class DatabaseBottomPanel {
     const parseData = detail?.json_result || detail?.raw_record?.output || null;
     const parseEval = detail?.parse_eval || detail?.raw_record?.eval || null;
     const ontologyEval = detail?.ontology_eval || detail?.raw_record?.ontology_eval || null;
-    const rawRecord = detail?.raw_record || detail || {
-      row_id: active.row_id,
-      case_name: active.case_name,
-      case_type: active.case_type,
-      source: active.source,
-      version: active.version,
-      meta: active.meta
-    };
-
     let contentHtml = '';
 
     if (state.panels.middleTab === 'compare') {
@@ -499,7 +603,7 @@ export class DatabaseBottomPanel {
     `;
   }
 
-  renderThinkingPane(state) {
+  renderThinkingPane() {
     return `
       <div style="padding:16px; display:flex; flex-direction:column; gap:16px; height:100%; overflow:hidden;">
         <div style="font-weight:bold; color:#0f172a; font-size:14px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">类案思考视角配置</div>
@@ -533,6 +637,131 @@ export class DatabaseBottomPanel {
         </div>
 
         <button style="margin-top:auto; padding:10px; border:none; border-radius:6px; background:#2563eb; color:white; font-weight:bold; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05);">生成深度思考报告 (开发中)</button>
+      </div>
+    `;
+  }
+
+  renderGraphDbPane(state) {
+    const active = getActiveCaseEntry(state);
+    if (!active) {
+      return '<div class="db-empty">当前未选择案例</div>';
+    }
+
+    const neo4jState = state.data.neo4jCaseMap?.[active.caseKey] || {};
+    const neo4jStatus = neo4jState.status || { layers: active.neo4j_layers || {} };
+    const neo4jDetail = neo4jState.detail || null;
+    const neo4jDiff = state.data.neo4jDiffMap?.[active.caseKey] || null;
+    const neo4jSubgraph = state.data.neo4jSubgraphMap?.[active.caseKey] || null;
+    const layers = neo4jStatus.layers || active.neo4j_layers || {};
+    const localEntityCounts = neo4jDiff?.local_summary?.base?.entity_counts || {};
+    const baseConsistency = neo4jDiff?.diff?.base?.consistency || null;
+    const retrievalConsistency = neo4jDiff?.diff?.retrieval?.consistency || null;
+    const discoveryConsistency = neo4jDiff?.diff?.discovery?.consistency || null;
+    const renderLayer = (title, layerKey) => {
+      const layer = layers[layerKey] || {};
+      const detailLayer = neo4jDetail?.detail?.[layerKey] || {};
+      const labelCounts = layerKey === 'discovery'
+        ? (detailLayer.summary_counts || [])
+        : (detailLayer.label_counts || []);
+      const relationCounts = detailLayer.relation_type_counts || [];
+      const discoverySummaryText = layerKey === 'discovery'
+        ? `实体引用：${escapeHtml(String((labelCounts.find(item => item.label === '实体引用') || {}).count || 0))} · 文书级派生节点：${escapeHtml(String((labelCounts.find(item => item.label === '文书级派生节点') || {}).count || 0))} · 枚举锚点：${escapeHtml(String((labelCounts.find(item => item.label === '枚举锚点') || {}).count || 0))}`
+        : '';
+      return `
+        <div class="db-version-card" style="margin-bottom:12px;">
+          <div class="db-version-title">${escapeHtml(title)}</div>
+          <div class="db-version-meta">${layerKey === 'discovery'
+            ? `状态：${escapeHtml(layer.status || 'not_written')} · ${discoverySummaryText}`
+            : `状态：${escapeHtml(layer.status || 'not_written')} · 节点数：${escapeHtml(String(layer.entity_count || 0))}`}</div>
+          <div class="db-version-note">
+            最近写入：${escapeHtml(layer.updated_at || '-')}<br>
+            运行批次：${escapeHtml(layer.source_run_id || '-')}<br>
+            Chunk 数：${escapeHtml(String(detailLayer.chunk_count || 0))}
+          </div>
+          <div class="db-version-list">
+            ${(labelCounts.length ? labelCounts.slice(0, 4) : [{ label: '暂无标签统计', count: 0 }]).map(item => `
+              <div class="db-version-item"><span>${escapeHtml(item.label || 'label')}</span><span>${escapeHtml(String(item.count || 0))}</span></div>
+            `).join('')}
+          </div>
+          <div class="db-version-note" style="margin-top:8px;">关系统计：${escapeHtml((relationCounts.slice(0, 4).map(item => `${item.relation_type}:${item.count}`).join(' / ')) || '暂无')}</div>
+        </div>
+      `;
+    };
+
+    const diffHtml = neo4jDiff ? `
+      <div class="db-version-card" style="margin-top:12px;">
+        <div class="db-version-title">图层差异</div>
+        <div class="db-version-list">
+          <div class="db-version-item"><span>基础层</span><span>本地 ${escapeHtml(String(neo4jDiff.diff?.base?.local_entity_estimate || 0))} / 图库 ${escapeHtml(String(neo4jDiff.diff?.base?.neo4j_entity_count || 0))}</span></div>
+          <div class="db-version-item"><span>检索层</span><span>本地 ${escapeHtml(String(neo4jDiff.diff?.retrieval?.local_entity_estimate || 0))} / 图库 ${escapeHtml(String(neo4jDiff.diff?.retrieval?.neo4j_entity_count || 0))}</span></div>
+          <div class="db-version-item"><span>发现层</span><span>本地 ${escapeHtml(String(neo4jDiff.diff?.discovery?.local_entity_estimate || 0))} / 图库 ${escapeHtml(String(neo4jDiff.diff?.discovery?.neo4j_entity_count || 0))}</span></div>
+        </div>
+        <div class="db-version-note" style="margin-top:8px;">
+          本地基础层分项：${Object.keys(localEntityCounts).length
+            ? escapeHtml(Object.entries(localEntityCounts)
+              .filter(([, count]) => Number(count || 0) > 0)
+              .map(([key, count]) => `${key}:${count}`)
+              .join(' / '))
+            : '暂无'}
+        </div>
+        ${baseConsistency ? `
+          <div class="db-version-note" style="margin-top:8px;">
+            一致性：${baseConsistency.is_consistent ? '已对齐' : '存在差异'}<br>
+            图库缺失：${escapeHtml((baseConsistency.missing_in_neo4j || []).join(' / ') || '无')}<br>
+            仅图库存在：${escapeHtml((baseConsistency.missing_locally || []).join(' / ') || '无')}<br>
+            计数不一致：${escapeHtml(((baseConsistency.count_mismatches || []).map(item => `${item.label}:${item.local_count}/${item.neo4j_count}`).join(' / ')) || '无')}<br>
+            关系计数不一致：${escapeHtml(((baseConsistency.relation_count_mismatches || []).map(item => `${item.relation_type}:${item.local_count}/${item.neo4j_count}`).join(' / ')) || '无')}
+          </div>
+        ` : ''}
+        ${retrievalConsistency ? `
+          <div class="db-version-note" style="margin-top:8px;">
+            检索层一致性：${retrievalConsistency.is_consistent ? '已对齐' : '存在差异'}<br>
+            标签不一致：${escapeHtml(((retrievalConsistency.count_mismatches || []).map(item => `${item.label}:${item.local_count}/${item.neo4j_count}`).join(' / ')) || '无')}<br>
+            关系不一致：${escapeHtml(((retrievalConsistency.relation_count_mismatches || []).map(item => `${item.relation_type}:${item.local_count}/${item.neo4j_count}`).join(' / ')) || '无')}
+          </div>
+        ` : ''}
+        ${discoveryConsistency ? `
+          <div class="db-version-note" style="margin-top:8px;">
+            发现层一致性：${discoveryConsistency.is_consistent ? '已对齐' : '存在差异'}<br>
+            发现层口径：实体引用 + 文书级派生节点 + 枚举锚点<br>
+            标签不一致：${escapeHtml(((discoveryConsistency.count_mismatches || []).map(item => `${item.label}:${item.local_count}/${item.neo4j_count}`).join(' / ')) || '无')}<br>
+            关系不一致：${escapeHtml(((discoveryConsistency.relation_count_mismatches || []).map(item => `${item.relation_type}:${item.local_count}/${item.neo4j_count}`).join(' / ')) || '无')}
+          </div>
+        ` : ''}
+      </div>
+    ` : '';
+
+    return `
+      <div style="padding:16px; display:flex; flex-direction:column; gap:12px; height:100%; overflow:auto;">
+        <div class="db-version-card">
+          <div class="db-version-title">图数据库操作</div>
+          <div class="db-version-meta">当前案例 #${escapeHtml(active.row_id)} · ${escapeHtml(active.neo4j_doc_id || '未分配 doc_id')}</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+            <button type="button" data-neo4j-action="reload" style="padding:8px 12px; border:none; border-radius:8px; background:#2563eb; color:#fff; cursor:pointer;">从图数据库重载</button>
+            <button type="button" data-neo4j-action="resync" style="padding:8px 12px; border:none; border-radius:8px; background:#16a34a; color:#fff; cursor:pointer;">重新同步当前案例</button>
+            <button type="button" data-neo4j-action="diff" style="padding:8px 12px; border:none; border-radius:8px; background:#7c3aed; color:#fff; cursor:pointer;">查看图层差异</button>
+            <button type="button" data-neo4j-action="subgraph" style="padding:8px 12px; border:none; border-radius:8px; background:#0f766e; color:#fff; cursor:pointer;">查看子图摘要</button>
+          </div>
+          <div class="db-version-note" style="margin-top:12px;">
+            当前同步状态：${escapeHtml(active.neo4j_sync_status || 'unknown')}<br>
+            说明：重同步当前仅支持数据库页能取到的基础层与检索层；发现层若未持久化会标记为跳过。
+          </div>
+        </div>
+        ${renderLayer('基础层', 'base')}
+        ${renderLayer('检索层', 'retrieval')}
+        ${renderLayer('发现层', 'discovery')}
+        ${diffHtml}
+        ${neo4jSubgraph ? `
+          <div class="db-version-card" style="margin-top:12px;">
+            <div class="db-version-title">基础层子图摘要</div>
+            <div class="db-version-meta">节点 ${escapeHtml(String((neo4jSubgraph.nodes || []).length))} · 边 ${escapeHtml(String((neo4jSubgraph.edges || []).length))}</div>
+            <div class="db-version-list">
+              ${((neo4jSubgraph.nodes || []).slice(0, 6)).map(item => `
+                <div class="db-version-item"><span>${escapeHtml((item.labels || []).join('/') || 'Node')}</span><span>${escapeHtml(item.label || item.id || '')}</span></div>
+              `).join('') || '<div class="db-version-item"><span>暂无</span><span>尚未读取到子图节点</span></div>'}
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
   }
@@ -606,6 +835,8 @@ export class DatabaseBottomPanel {
         rightPane.innerHTML = this.renderThinkingPane(state);
       } else if (state.panels.rightTab === 'versions') {
         rightPane.innerHTML = this.renderVersions(state);
+      } else if (state.panels.rightTab === 'graphdb') {
+        rightPane.innerHTML = this.renderGraphDbPane(state);
       } else {
         rightPane.innerHTML = this.renderSummaryPane(state);
       }

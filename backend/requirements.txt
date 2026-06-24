@@ -8,3 +8,4 @@ openai>=1.0
 pyyaml>=6.0
 python-dotenv>=1.0
 gunicorn>=21.0
+neo4j>=5.18

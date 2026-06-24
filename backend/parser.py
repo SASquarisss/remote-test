@@ -13,6 +13,8 @@ from collections import Counter
 from typing import Any, Dict, List, Optional
 
 import yaml
+from alignment import align_output_to_chunks
+from chunking import segment_case_text
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
@@ -617,7 +619,7 @@ def _iter_entity_id_candidates(item: Dict[str, Any]) -> List[str]:
     for key in (
         "id", "stable_id", "node_id", "evidence_id", "fact_id", "focus_id",
         "claim_id", "opinion_id", "argument_id", "assessment_id", "result_id",
-        "provision_id", "element_id", "subject_id"
+        "provision_id", "element_id", "subject_id", "court_case_id", "judge_id"
     ):
         value = item.get(key)
         text = _normalize_relation_ref(str(value or "").strip())
@@ -728,16 +730,37 @@ def _entity_signature_payload(entity_type: str, item: Dict[str, Any]) -> Dict[st
             "content": _normalize_scalar_text(data.get("content") or data.get("name") or data.get("text")),
             "evidence_type": _normalize_scalar_text(data.get("evidence_type")),
             "submitted_by": _normalize_scalar_text(data.get("submitted_by")),
-            "admission_status": _normalize_scalar_text(data.get("admission_status")),
-            "admission_reason": _normalize_scalar_text(data.get("admission_reason")),
-            "probative_force": _normalize_scalar_text(data.get("probative_force")),
-            "case_number": _normalize_scalar_text(data.get("case_number")),
         },
         "judgment_results": lambda data: {
             "result_type": _normalize_scalar_text(data.get("result_type")),
             "specific_judgment": _normalize_scalar_text(data.get("specific_judgment") or data.get("content") or data.get("result")),
-            "reasoning": _normalize_scalar_text(data.get("reasoning")),
             "case_number": _normalize_scalar_text(data.get("case_number")),
+        },
+        "court_cases": lambda data: {
+            "case_number": _normalize_scalar_text(data.get("case_number")),
+            "trial_level": _normalize_scalar_text(data.get("trial_level") or data.get("trial_procedure")),
+            "trial_procedure": _normalize_scalar_text(data.get("trial_procedure")),
+            "filing_date": _normalize_scalar_text(data.get("filing_date")),
+            "judgment_date": _normalize_scalar_text(data.get("judgment_date")),
+            "status": _normalize_scalar_text(data.get("status")),
+            "cause_of_action": _normalize_scalar_text(data.get("cause_of_action")),
+            "court_name": _normalize_scalar_text((data.get("court") or {}).get("name") or data.get("court_name")),
+            "court_level": _normalize_scalar_text((data.get("court") or {}).get("court_level") or data.get("court_level")),
+        },
+        "trial_organizations": lambda data: {
+            "name": _normalize_scalar_text(data.get("name")),
+            "court_level": _normalize_scalar_text(data.get("court_level")),
+            "court_case_ids": sorted(
+                _normalize_relation_ref(str(ref))
+                for ref in (data.get("court_case_ids") or [])
+                if str(ref).strip()
+            ),
+        },
+        "judges": lambda data: {
+            "name": _normalize_scalar_text(data.get("name")),
+            "role": _normalize_scalar_text(data.get("role")),
+            "case_number": _normalize_scalar_text(data.get("case_number")),
+            "trial_org_id": _normalize_scalar_text(_normalize_relation_ref(str(data.get("trial_org_id") or ""))),
         },
         "legal_provisions": lambda data: {
             "statute": _normalize_scalar_text(data.get("statute") or data.get("law_name")),
@@ -766,12 +789,10 @@ def _entity_signature_payload(entity_type: str, item: Dict[str, Any]) -> Dict[st
             ),
         },
         "legal_provision_elements": lambda data: {
-            "provision_index": data.get("provision_index"),
             "statute": _normalize_scalar_text(data.get("statute")),
             "article": _normalize_scalar_text(data.get("article")),
             "element_type": _normalize_scalar_text(data.get("element_type")),
             "content": _normalize_scalar_text(data.get("content")),
-            "applicable_fact_pattern": _normalize_scalar_text(data.get("applicable_fact_pattern")),
         },
     }
     builder = builders.get(entity_type)
@@ -788,33 +809,108 @@ def _entity_signature_payload(entity_type: str, item: Dict[str, Any]) -> Dict[st
 
 
 def _normalize_evidence_item(evidence: Dict[str, Any], index: int) -> Dict[str, Any]:
+    raw_id = _normalize_relation_ref(evidence.get("id") or evidence.get("evidence_id") or evidence.get("node_id") or f"evid_{index}")
+    case_number = evidence.get("case_number") or evidence.get("related_case_number") or ""
     normalized = {
         **evidence,
-        "id": _normalize_relation_ref(evidence.get("id") or evidence.get("node_id") or f"evid_{index}"),
+        "id": raw_id,
         "content": evidence.get("content") or evidence.get("name") or evidence.get("text") or "",
         "evidence_type": evidence.get("evidence_type") or "",
         "submitted_by": evidence.get("submitted_by") or "",
         "admission_status": evidence.get("admission_status") or "",
         "admission_reason": evidence.get("admission_reason") or "",
         "probative_force": evidence.get("probative_force") or "",
-        "case_number": evidence.get("case_number") or evidence.get("related_case_number") or "",
+        "case_number": case_number,
+        "raw_item_ids": [raw_id] if raw_id else [],
+        "source_case_numbers": [case_number] if case_number else [],
     }
-    stable_id = evidence.get("stable_id") or evidence.get("evidence_id") or _build_stable_entity_id("evidence", normalized)
+    stable_id = _build_stable_entity_id("evidence", normalized)
     normalized["stable_id"] = stable_id
-    normalized["evidence_id"] = evidence.get("evidence_id") or stable_id
+    normalized["evidence_id"] = stable_id
+    normalized["id"] = stable_id
     return normalized
 
 
 def _normalize_judgment_result_item(result: Dict[str, Any], index: int) -> Dict[str, Any]:
+    raw_id = _normalize_relation_ref(result.get("id") or result.get("result_id") or result.get("node_id") or f"jr_{index}")
+    case_number = result.get("case_number") or ""
+    reasoning = result.get("reasoning") or ""
     normalized = {
         **result,
-        "id": _normalize_relation_ref(result.get("id") or result.get("result_id") or result.get("node_id") or f"jr_{index}"),
+        "id": raw_id,
         "result_type": result.get("result_type") or "",
         "specific_judgment": result.get("specific_judgment") or result.get("content") or "",
-        "reasoning": result.get("reasoning") or "",
-        "case_number": result.get("case_number") or "",
+        "reasoning": reasoning,
+        "case_number": case_number,
+        "raw_item_ids": [raw_id] if raw_id else [],
+        "source_case_numbers": [case_number] if case_number else [],
+        "source_reasonings": [reasoning] if reasoning else [],
     }
-    normalized["stable_id"] = result.get("stable_id") or _build_stable_entity_id("judgment_results", normalized)
+    normalized["stable_id"] = _build_stable_entity_id("judgment_results", normalized)
+    normalized["result_id"] = normalized["stable_id"]
+    normalized["id"] = normalized["stable_id"]
+    return normalized
+
+
+def _normalize_court_case_item(court_case: Dict[str, Any], index: int) -> Dict[str, Any]:
+    court = court_case.get("court") if isinstance(court_case.get("court"), dict) else {}
+    normalized_court = {
+        "name": court.get("name") or court_case.get("court_name") or "",
+        "court_level": court.get("court_level") or court_case.get("court_level") or "",
+    }
+    normalized = {
+        **court_case,
+        "id": _normalize_relation_ref(court_case.get("id") or court_case.get("court_case_id") or court_case.get("node_id") or f"court_case_{index}"),
+        "case_number": court_case.get("case_number") or "",
+        "cause_of_action": court_case.get("cause_of_action") or "",
+        "dispute_resolution_type": court_case.get("dispute_resolution_type") or "",
+        "filing_date": court_case.get("filing_date") or "",
+        "judgment_date": court_case.get("judgment_date") or "",
+        "status": court_case.get("status") or "",
+        "trial_level": court_case.get("trial_level") or "",
+        "trial_procedure": court_case.get("trial_procedure") or "",
+        "court": normalized_court,
+        "court_name": normalized_court["name"],
+        "court_level": normalized_court["court_level"],
+    }
+    stable_id = court_case.get("stable_id") or _build_stable_entity_id("court_cases", normalized)
+    normalized["stable_id"] = stable_id
+    normalized["court_case_id"] = court_case.get("court_case_id") or stable_id
+    normalized["id"] = stable_id
+    return normalized
+
+
+def _normalize_trial_organization_item(trial_org: Dict[str, Any], index: int) -> Dict[str, Any]:
+    normalized = {
+        **trial_org,
+        "id": _normalize_relation_ref(trial_org.get("id") or trial_org.get("trial_org_id") or trial_org.get("node_id") or f"trial_org_{index}"),
+        "name": trial_org.get("name") or trial_org.get("court_name") or "",
+        "court_level": trial_org.get("court_level") or "",
+        "court_case_ids": [
+            _normalize_relation_ref(ref) for ref in (trial_org.get("court_case_ids") or []) if _normalize_relation_ref(ref)
+        ],
+    }
+    stable_id = trial_org.get("stable_id") or _build_stable_entity_id("trial_organizations", normalized)
+    normalized["stable_id"] = stable_id
+    normalized["trial_org_id"] = trial_org.get("trial_org_id") or stable_id
+    normalized["id"] = stable_id
+    normalized["court_case_ids"] = _dedupe_preserve_order(normalized["court_case_ids"])
+    return normalized
+
+
+def _normalize_judge_item(judge: Dict[str, Any], index: int) -> Dict[str, Any]:
+    normalized = {
+        **judge,
+        "id": _normalize_relation_ref(judge.get("id") or judge.get("judge_id") or judge.get("node_id") or f"judge_{index}"),
+        "name": judge.get("name") or f"法官_{index}",
+        "role": judge.get("role") or "",
+        "case_number": judge.get("case_number") or "",
+        "trial_org_id": _normalize_relation_ref(judge.get("trial_org_id") or ""),
+    }
+    stable_id = judge.get("stable_id") or _build_stable_entity_id("judges", normalized)
+    normalized["stable_id"] = stable_id
+    normalized["judge_id"] = judge.get("judge_id") or stable_id
+    normalized["id"] = stable_id
     return normalized
 
 
@@ -834,6 +930,30 @@ def _normalize_legal_provision_item(provision: Dict[str, Any], index: int) -> Di
     stable_id = _build_stable_entity_id("legal_provisions", normalized)
     normalized["stable_id"] = stable_id
     normalized["provision_id"] = stable_id
+    normalized["id"] = stable_id
+    return normalized
+
+
+def _normalize_legal_provision_element_item(item: Dict[str, Any], index: int) -> Dict[str, Any]:
+    raw_id = _normalize_relation_ref(item.get("id") or item.get("element_id") or item.get("node_id") or f"prov_elem_{index}")
+    applicable_fact_pattern = item.get("applicable_fact_pattern") or ""
+    provision_index = item.get("provision_index")
+    normalized = {
+        **item,
+        "id": raw_id,
+        "provision_index": int(provision_index) if provision_index not in ("", None) and str(provision_index).isdigit() else (provision_index if isinstance(provision_index, int) else None),
+        "statute": item.get("statute") or "",
+        "article": item.get("article") or "",
+        "content": item.get("content") or "",
+        "element_type": item.get("element_type") or "",
+        "applicable_fact_pattern": applicable_fact_pattern,
+        "raw_item_ids": [raw_id] if raw_id else [],
+        "source_provision_indexes": [provision_index] if provision_index not in (None, "") else [],
+        "source_applicable_fact_patterns": [applicable_fact_pattern] if applicable_fact_pattern else [],
+    }
+    stable_id = _build_stable_entity_id("legal_provision_elements", normalized)
+    normalized["stable_id"] = stable_id
+    normalized["element_id"] = stable_id
     normalized["id"] = stable_id
     return normalized
 
@@ -965,19 +1085,13 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, re
         },
         "evidence": _normalize_evidence_item,
         "judgment_results": _normalize_judgment_result_item,
+        "court_cases": _normalize_court_case_item,
+        "trial_organizations": _normalize_trial_organization_item,
+        "judges": _normalize_judge_item,
         "legal_provisions": _normalize_legal_provision_item,
         "legal_subjects": _normalize_legal_subject_item,
         "attorneys": _normalize_attorney_item,
-        "legal_provision_elements": lambda item, idx: {
-            **item,
-            "id": _normalize_relation_ref(item.get("id") or item.get("element_id") or item.get("node_id") or f"prov_elem_{idx}"),
-            "provision_index": int(item.get("provision_index")) if item.get("provision_index") not in ("", None) and str(item.get("provision_index")).isdigit() else (item.get("provision_index") if isinstance(item.get("provision_index"), int) else None),
-            "statute": item.get("statute") or "",
-            "article": item.get("article") or "",
-            "content": item.get("content") or "",
-            "element_type": item.get("element_type") or "",
-            "applicable_fact_pattern": item.get("applicable_fact_pattern") or "",
-        },
+        "legal_provision_elements": _normalize_legal_provision_element_item,
     }
     normalizer = normalizers.get(entity_type)
     if not normalizer:
@@ -986,13 +1100,24 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, re
     normalized_items = []
     alias_map: Dict[str, str] = {}
     canonical_id_by_identity: Dict[str, str] = {}
+    stable_id_entity_types = {
+        "evidence",
+        "judgment_results",
+        "legal_provisions",
+        "legal_provision_elements",
+        "legal_subjects",
+        "court_cases",
+        "trial_organizations",
+        "judges",
+    }
     for idx, item in enumerate(items):
         if not isinstance(item, dict):
             continue
         normalized = normalizer(item, idx)
         normalized["stable_id"] = normalized.get("stable_id") or _build_stable_entity_id(entity_type, normalized)
         identity = _entity_identity(entity_type, normalized)
-        canonical_id = canonical_id_by_identity.get(identity) or str(normalized.get("id") or normalized.get("stable_id") or "")
+        preferred_id = normalized.get("stable_id") if entity_type in stable_id_entity_types else normalized.get("id")
+        canonical_id = canonical_id_by_identity.get(identity) or str(preferred_id or normalized.get("stable_id") or normalized.get("id") or "")
         if canonical_id:
             canonical_id_by_identity[identity] = canonical_id
         if entity_type == "legal_provisions" and canonical_id:
@@ -1001,16 +1126,66 @@ def _normalize_entity_collection_for_payload(entity_type: str, items: Any, *, re
         if entity_type == "legal_subjects" and canonical_id:
             normalized["id"] = canonical_id
             normalized["subject_id"] = canonical_id
+        if entity_type == "court_cases" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["court_case_id"] = canonical_id
+        if entity_type == "trial_organizations" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["trial_org_id"] = canonical_id
+        if entity_type == "judges" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["judge_id"] = canonical_id
+        if entity_type == "evidence" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["evidence_id"] = canonical_id
+        if entity_type == "judgment_results" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["result_id"] = canonical_id
+        if entity_type == "legal_provision_elements" and canonical_id:
+            normalized["id"] = canonical_id
+            normalized["element_id"] = canonical_id
         for alias in [*_iter_entity_id_candidates(item), *_iter_entity_id_candidates(normalized)]:
             alias_map[alias] = canonical_id or alias
         normalized_items.append(normalized)
     if entity_type in {
-        "legal_provisions", "legal_provision_elements", "legal_subjects", "attorneys",
+        "evidence", "judgment_results", "legal_provisions", "legal_provision_elements", "legal_subjects", "attorneys",
         "litigation_claims", "procedural_opinions", "argument_points",
-        "judicial_assessments"
+        "judicial_assessments", "court_cases", "trial_organizations", "judges"
     }:
         normalized_items = _merge_entity_list(entity_type, [], normalized_items)
     return (normalized_items, alias_map) if return_aliases else normalized_items
+
+
+def _build_trial_organizations_from_court_cases(court_cases: List[Dict[str, Any]]) -> tuple[List[Dict[str, Any]], Dict[str, str]]:
+    raw_items: List[Dict[str, Any]] = []
+    for index, court_case in enumerate(court_cases or []):
+        if not isinstance(court_case, dict):
+            continue
+        court = court_case.get("court") if isinstance(court_case.get("court"), dict) else {}
+        court_name = str(court.get("name") or court_case.get("court_name") or "").strip()
+        if not court_name:
+            continue
+        raw_items.append({
+            "id": f"trial_org_{index}",
+            "name": court_name,
+            "court_level": str(court.get("court_level") or court_case.get("court_level") or "").strip(),
+            "court_case_ids": [str(court_case.get("id") or court_case.get("court_case_id") or "").strip()],
+        })
+
+    normalized_items, alias_map = _normalize_entity_collection_for_payload(
+        "trial_organizations",
+        raw_items,
+        return_aliases=True,
+    )
+    for raw_item, normalized_item in zip(raw_items, normalized_items):
+        canonical_id = str(normalized_item.get("id") or "")
+        raw_placeholder = str(raw_item.get("id") or "")
+        if raw_placeholder and canonical_id:
+            alias_map[raw_placeholder] = canonical_id
+        court_name = str(raw_item.get("name") or "").strip()
+        if court_name and canonical_id:
+            alias_map[court_name] = canonical_id
+    return normalized_items, alias_map
 
 
 def _merge_entity_list(entity_type: str, old_items: List[Dict[str, Any]], new_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -1073,7 +1248,7 @@ def align_enhancement_payload(base_output: Dict[str, Any], payload: Dict[str, An
     normalized_base = normalize_graph_output(copy.deepcopy(base_output or {}))
 
     entity_keys = (
-        "facts", "dispute_focuses", "litigation_claims", "procedural_opinions",
+        "court_cases", "facts", "dispute_focuses", "litigation_claims", "procedural_opinions",
         "argument_points", "judicial_assessments", "evidence",
         "judgment_results", "legal_provisions", "legal_provision_elements",
         "legal_subjects", "attorneys"
@@ -1094,7 +1269,10 @@ def align_enhancement_payload(base_output: Dict[str, Any], payload: Dict[str, An
             existing = existing_lookup.get(identity)
             if existing:
                 kept = copy.deepcopy(item)
-                for ref_key in ("id", "stable_id", "evidence_id", "fact_id", "focus_id", "result_id", "provision_id", "element_id"):
+                for ref_key in (
+                    "id", "stable_id", "court_case_id", "trial_org_id",
+                    "evidence_id", "fact_id", "focus_id", "result_id", "provision_id", "element_id"
+                ):
                     if existing.get(ref_key):
                         kept[ref_key] = existing.get(ref_key)
                 result_items.append(kept)
@@ -1129,6 +1307,50 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
         return output
 
     alias_map: Dict[str, str] = {}
+
+    court_cases, court_case_aliases = _normalize_entity_collection_for_payload("court_cases", output.get("court_cases") or [], return_aliases=True)
+    output["court_cases"] = court_cases
+    alias_map.update(court_case_aliases)
+    for index, court_case in enumerate(court_cases):
+        if not isinstance(court_case, dict):
+            continue
+        canonical_id = str(court_case.get("id") or "")
+        case_number = _normalize_relation_ref(court_case.get("case_number", ""))
+        if canonical_id and case_number:
+            alias_map[case_number] = canonical_id
+        if canonical_id:
+            alias_map[f"cc_{index}"] = canonical_id
+            alias_map[f"court_cases_{index}"] = canonical_id
+
+    trial_organizations, trial_org_aliases = _build_trial_organizations_from_court_cases(court_cases)
+    output["trial_organizations"] = trial_organizations
+    alias_map.update(trial_org_aliases)
+
+    judges, judge_aliases = _normalize_entity_collection_for_payload("judges", output.get("judges") or [], return_aliases=True)
+    trial_org_by_case_number = {}
+    for court_case in court_cases:
+        if not isinstance(court_case, dict):
+            continue
+        case_number = str(court_case.get("case_number") or "").strip()
+        court_name = str((court_case.get("court") or {}).get("name") or court_case.get("court_name") or "").strip()
+        if not case_number or not court_name:
+            continue
+        trial_org_id = next(
+            (str(item.get("id") or "") for item in trial_organizations if str(item.get("name") or "").strip() == court_name),
+            "",
+        )
+        if trial_org_id:
+            trial_org_by_case_number[case_number] = trial_org_id
+    for judge in judges:
+        if not isinstance(judge, dict):
+            continue
+        if not judge.get("trial_org_id"):
+            case_number = str(judge.get("case_number") or "").strip()
+            if case_number and trial_org_by_case_number.get(case_number):
+                judge["trial_org_id"] = trial_org_by_case_number[case_number]
+    judges, judge_aliases = _normalize_entity_collection_for_payload("judges", judges, return_aliases=True)
+    output["judges"] = judges
+    alias_map.update(judge_aliases)
 
     facts, fact_aliases = _normalize_entity_collection_for_payload("facts", output.get("facts") or [], return_aliases=True)
     output["facts"] = facts
@@ -1196,6 +1418,20 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             point.get("related_provision_ids") or [],
             index_to_id=provision_index_to_id,
         )
+        point["related_provision_ids"] = [
+            alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+            for ref in point.get("related_provision_ids") or []
+            if alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+        ]
+
+    for fact in facts:
+        if not isinstance(fact, dict):
+            continue
+        fact["proven_by_evidence_ids"] = [
+            alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+            for ref in _normalize_relation_ref_list(fact.get("proven_by_evidence_ids") or [])
+            if alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+        ]
 
     for assessment in assessments:
         if not isinstance(assessment, dict):
@@ -1208,10 +1444,20 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             assessment.get("based_on_provision_ids") or [],
             index_to_id=provision_index_to_id,
         )
+        assessment["based_on_provision_ids"] = [
+            alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+            for ref in assessment.get("based_on_provision_ids") or []
+            if alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+        ]
         assessment["supports_judgment_result_ids"] = _normalize_relation_ref_list(
             assessment.get("supports_judgment_result_ids") or [],
             index_to_id=judgment_index_to_id,
         )
+        assessment["supports_judgment_result_ids"] = [
+            alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+            for ref in assessment.get("supports_judgment_result_ids") or []
+            if alias_map.get(_normalize_relation_ref(ref), _normalize_relation_ref(ref))
+        ]
 
     relations = output.get("relations") or []
     normalized_relations = []
@@ -1228,6 +1474,8 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
         src = alias_map.get(src, src)
         tgt = alias_map.get(tgt, tgt)
         rtype = (rel.get("relation_type") or "").strip()
+        if rtype in {"tried_by", "appeals_to", "has_summary"}:
+            continue
         if rtype in derived_relation_types:
             continue
         normalized_relations.append({
@@ -1237,7 +1485,66 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             "relation_type": rtype,
             "label": rel.get("label") or rtype,
         })
-    output["relations"] = normalized_relations
+
+    relation_keys = {
+        (
+            str(item.get("source_id") or ""),
+            str(item.get("target_id") or ""),
+            str(item.get("relation_type") or ""),
+        )
+        for item in normalized_relations
+        if isinstance(item, dict)
+    }
+
+    def add_structural_relation(source_id: str, target_id: str, relation_type: str, label: str) -> None:
+        src = alias_map.get(_normalize_relation_ref(source_id), _normalize_relation_ref(source_id))
+        tgt = alias_map.get(_normalize_relation_ref(target_id), _normalize_relation_ref(target_id))
+        if not src or not tgt:
+            return
+        key = (src, tgt, relation_type)
+        if key in relation_keys:
+            return
+        relation_keys.add(key)
+        normalized_relations.append({
+            "source_id": src,
+            "target_id": tgt,
+            "relation_type": relation_type,
+            "label": label,
+        })
+
+    trial_org_by_name = {
+        str(item.get("name") or "").strip(): str(item.get("id") or "")
+        for item in trial_organizations
+        if isinstance(item, dict) and item.get("name") and item.get("id")
+    }
+    for index, court_case in enumerate(court_cases):
+        if not isinstance(court_case, dict):
+            continue
+        court_case_id = str(court_case.get("id") or "")
+        if not court_case_id:
+            continue
+        court_name = str((court_case.get("court") or {}).get("name") or court_case.get("court_name") or "").strip()
+        trial_org_id = trial_org_by_name.get(court_name) or alias_map.get(f"trial_org_{index}")
+        if trial_org_id:
+            add_structural_relation(court_case_id, trial_org_id, "tried_by", "tried_by")
+    for judge in judges:
+        if not isinstance(judge, dict):
+            continue
+        judge_id = str(judge.get("id") or "")
+        case_number = str(judge.get("case_number") or "").strip()
+        trial_org_id = str(judge.get("trial_org_id") or "")
+        court_case_id = alias_map.get(_normalize_relation_ref(case_number), _normalize_relation_ref(case_number))
+        if judge_id and court_case_id:
+            add_structural_relation(judge_id, court_case_id, "undertakes", "undertakes")
+        if trial_org_id and judge_id:
+            add_structural_relation(trial_org_id, judge_id, "includes", "includes")
+    if len(court_cases) >= 2:
+        for index in range(len(court_cases) - 1):
+            source_id = str((court_cases[index + 1] or {}).get("id") or "")
+            target_id = str((court_cases[index] or {}).get("id") or "")
+            if source_id and target_id:
+                add_structural_relation(source_id, target_id, "appeals_to", "appeals_to")
+    output["relations"] = _merge_relation_list([], normalized_relations)
 
     derived_relations = output.get("derived_relations") or []
     normalized_derived_relations = []
@@ -1259,7 +1566,7 @@ def normalize_graph_output(output: Dict[str, Any]) -> Dict[str, Any]:
             "label": rel.get("label") or rtype,
             "is_derived": True,
         })
-    output["derived_relations"] = normalized_derived_relations
+    output["derived_relations"] = _merge_relation_list([], normalized_derived_relations)
     return output
 
 
@@ -1686,6 +1993,8 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         "rejected": "驳回",
     }
 
+    output = normalize_graph_output(copy.deepcopy(output or {}))
+
     def summarize_judgment_result(jr: Dict[str, Any], result_type_cn: str) -> str:
         specific = str(jr.get("specific_judgment") or "").strip()
         if specific:
@@ -1745,11 +2054,11 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
 
     # ── Build case_number → cc_id mapping ────────────────────────────────
     court_cases = output.get("court_cases") or []
-    cn_to_cc = {}  # "(2024)沪73知民初164号" -> "cc_0"
+    cn_to_cc = {}  # "(2024)沪73知民初164号" -> "court_case_sig_xxx"
     first_cc_id = None
     for i, cc in enumerate(court_cases):
         cn = cc.get("case_number", "")
-        nid = f"cc_{i}"
+        nid = str(cc.get("id") or f"court_case_{i}")
         if first_cc_id is None:
             first_cc_id = nid
         if cn:
@@ -1768,15 +2077,15 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
             add_node("gc_num", cn, "GuidingCase", "LegalNorm", 1)
             add_edge("gc", "gc_num", "案号")
 
-        # GuidingCase 关联边 — 如果有 trial_procedure="二审" 或无 case_number，关联到 cc_1
+        # GuidingCase 关联边 — 如果有 trial_procedure="二审" 或无 case_number，优先关联二审实例
         gc_cn = gc.get("guiding_case_number", "")
         gc_trial = gc.get("trial_procedure", "")
         gc_target = first_cc_id  # default to first cc
         if not gc_cn or gc_trial == "二审":
-            # 优先找二审案 (cc_1)
+            # 优先找二审案
             for i, cc in enumerate(court_cases):
                 if cc.get("trial_level") == "second_instance" or cc.get("trial_procedure") == "二审":
-                    gc_target = f"cc_{i}"
+                    gc_target = str(cc.get("id") or first_cc_id or "")
                     break
             if not gc_cn:
                 add_edge(gc_target, "gc", "关联")
@@ -1803,7 +2112,7 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     # ── CourtCases — 创建审级节点 ───────────────────────────────────────
     for i, cc in enumerate(court_cases):
         cn = cc.get("case_number", f"case_{i}")
-        nid = f"cc_{i}"
+        nid = str(cc.get("id") or f"court_case_{i}")
         label = cn[:60]
         add_node(nid, label, "CourtCase", "JudicialEntity", 0,
                  f"案号: {cn}<br>立案日期: {cc.get('filing_date', '')}")
@@ -1811,14 +2120,24 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
         if ct.get("category"):
             add_edge("ct", nid, "案由")
 
-    # ── 审级间关联边 ────────────────────────────────────────────────────
-    if len(court_cases) >= 2:
-        # 按 trial_level 排序：一审在前，二审在后
-        # 简单地按顺序连接：cc_0 → cc_1 → cc_2...
-        for i in range(len(court_cases) - 1):
-            fr = f"cc_{i}"
-            to = f"cc_{i+1}"
-            add_edge(fr, to, "上诉")
+    # ── TrialOrganizations ───────────────────────────────────────────────
+    for i, trial_org in enumerate(output.get("trial_organizations") or []):
+        if not isinstance(trial_org, dict):
+            continue
+        nid = str(trial_org.get("id") or f"trial_org_{i}")
+        name = str(trial_org.get("name") or f"审判组织_{i}")
+        add_node(
+            nid,
+            name[:60],
+            "TrialOrganization",
+            "JudicialEntity",
+            1,
+            f"名称: {name}<br>层级: {trial_org.get('court_level', '')}",
+            extra={
+                "entitySourceId": trial_org.get("id") or trial_org.get("trial_org_id") or nid,
+                "entityStableId": trial_org.get("stable_id") or "",
+            },
+        )
 
     # ── LegalSubjects — 按 role 中的 case_number 关联 ────────────────────
     subjects = output.get("legal_subjects") or output.get("parties") or []
@@ -1852,16 +2171,11 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
     judges = output.get("judges") or []
     for i, j in enumerate(judges):
         name = j.get("name", f"法官_{i}")
-        nid = f"judge_{i}"
+        nid = str(j.get("id") or j.get("judge_id") or f"judge_{i}")
         add_node(nid, name, "Judge", "LegalSubject", 1, extra={
             "entitySourceId": j.get("id") or j.get("node_id") or nid,
             "entityStableId": j.get("stable_id") or "",
         })
-        case_num = j.get("case_number", "")
-        if case_num and case_num in cn_to_cc:
-            add_edge(cn_to_cc[case_num], nid, "审判")
-        elif court_cases:
-            add_edge(first_cc_id, nid, "审判")
 
     # ── Attorneys — 按 case_number 关联 ─────────────────────────────────
     attorneys = output.get("attorneys") or []
@@ -2259,27 +2573,6 @@ def kg_convert(output: Dict[str, Any]) -> Dict[str, List[Dict]]:
                 "font": {"size": 10, "color": "#4338ca", "strokeWidth": 2, "strokeColor": "#fff"},
             })
 
-    # ── CaseSummary — 如果有多个审级，优先关联到终审案 ──────────────────
-    cs = output.get("case_summary") or {}
-    summary_text = cs.get("key_facts", cs.get("disputed_issues", "案件摘要"))
-    if summary_text:
-        if isinstance(summary_text, list):
-            summary_text = "; ".join(summary_text)
-        add_node("summary", summary_text[:60], "CaseSummary", "JudicialEntity", 1,
-                 summary_text)
-        if court_cases:
-            if len(court_cases) == 1:
-                add_edge(first_cc_id, "summary", "审理")
-            else:
-                # Multiple instances: try to find final (终审) instance
-                summary_target = first_cc_id
-                for i, cc in enumerate(court_cases):
-                    tl = cc.get("trial_level", "")
-                    if tl in ("second_instance", "retrial", "final"):
-                        summary_target = f"cc_{i}"
-                        break
-                add_edge(summary_target, "summary", "审理")
-
     return {"nodes": nodes, "edges": edges}
 
 
@@ -2666,7 +2959,11 @@ def build_enhancement_prompt(
 def normalize_enhancement_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(payload, dict):
         return {}
-    allowed = {"facts", "dispute_focuses", "evidence", "judgment_results", "legal_provisions", "legal_provision_elements", "relations", "case_summary"}
+    allowed = {
+        "court_cases", "facts", "dispute_focuses", "evidence",
+        "judgment_results", "legal_provisions", "legal_provision_elements",
+        "relations", "case_summary"
+    }
     normalized: Dict[str, Any] = {}
     for key in allowed:
         if key not in payload:
@@ -2898,6 +3195,9 @@ def parse_text(raw_text: str) -> Dict[str, Any]:
     Returns everything the frontend needs.
     """
     row = build_row_from_text(raw_text)
+    chunking_result = segment_case_text(raw_text, row)
+    text_chunks = chunking_result.get("chunks") or []
+    chunking_meta = chunking_result.get("meta") or {}
     prompt = load_prompt(row.get("case_type", ""))
     llm_input = build_llm_input(row)
 
@@ -2913,6 +3213,7 @@ def parse_text(raw_text: str) -> Dict[str, Any]:
     output = enforce_source_url(row, output)
     output = fill_empty_provision_content(output)
     output = enrich_graph_output(output)
+    alignment_result = align_output_to_chunks(output, text_chunks, row)
 
     case_name = extract_case_name(output)
     eval_result = evaluate_output(output, "manual")
@@ -2928,4 +3229,9 @@ def parse_text(raw_text: str) -> Dict[str, Any]:
         "score": eval_result["score"],
         "issues": eval_result["issues"],
         "case_name": case_name,
+        "text_chunks": text_chunks,
+        "source_alignment": alignment_result.get("source_alignment") or {},
+        "chunking_meta": chunking_meta,
+        "alignment_stats": alignment_result.get("stats") or {},
+        "alignment_unmatched_items": alignment_result.get("unmatched_items") or [],
     }

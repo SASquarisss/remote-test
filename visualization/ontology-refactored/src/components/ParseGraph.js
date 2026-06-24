@@ -3,6 +3,29 @@ import { DataSet } from 'vis-data';
 import { store } from '../store/index.js';
 import { bindCustomPan } from '../utils/pan.js';
 
+export const defaultStyles = {
+  CourtCase: { shape: 'box', color: '#FFA07A', border: '#E8875A', fontColor: '#000000' },
+  CaseType: { shape: 'box', color: '#fff7ed', border: '#fb923c', fontColor: '#9a3412' },
+  Person: { shape: 'square', color: '#90EE90', border: '#6BCE6B', fontColor: '#14532d' },
+  Judge: { shape: 'box', color: '#dbeafe', border: '#60a5fa', fontColor: '#1d4ed8' },
+  Attorney: { shape: 'box', color: '#ede9fe', border: '#8b5cf6', fontColor: '#6d28d9' },
+  LegalProvision: { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
+  LegalProvisionElement: { shape: 'box', color: '#eef2ff', border: '#7c8cff', fontColor: '#243b8f' },
+  Law: { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
+  LegalNorm: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', fontColor: '#1e293b' },
+  Evidence: { shape: 'box', color: '#f7e2bf', border: '#c9852b', fontColor: '#6b3f08' },
+  Fact: { shape: 'box', color: '#e0f2fe', border: '#0284c7', fontColor: '#0f172a' },
+  DisputeFocus: { shape: 'diamond', color: '#fef3c7', border: '#d97706', fontColor: '#92400e' },
+  JudgmentResult: { shape: 'box', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
+  LegalRole: { shape: 'diamond', color: '#FFA500', border: '#CC8400', fontColor: '#7c2d12' },
+  LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8', fontColor: '#1e293b' },
+  GuidingCase: { shape: 'star', color: '#4682B4', border: '#35608C', fontColor: '#eff6ff' },
+  AggregateGroup: { shape: 'box', color: '#f8fafc', border: '#94a3b8', fontColor: '#475569' },
+  LitigationClaim: { shape: 'box', color: '#fef3c7', border: '#f59e0b', fontColor: '#92400e' },
+  ProceduralOpinion: { shape: 'box', color: '#fce7f3', border: '#ec4899', fontColor: '#9d174d' },
+  JudicialAssessment: { shape: 'box', color: '#e0f2fe', border: '#0284c7', fontColor: '#0f172a' },
+};
+
 const MAIN_LANE_X = {
   caseLane: -1420,
   subjectLane: -1080,
@@ -36,7 +59,6 @@ const MAIN_LANE_SPACING = {
 const AUXILIARY_LANE_X_JITTER = {
   GuidingCase: -120,
   CaseType: 120,
-  CaseSummary: -80,
   JudgmentResult: 0,
   DisputeFocus: 0,
   Judge: -90,
@@ -56,10 +78,9 @@ const EDGE_PRIORITY_MAP = {
   has_fact: 'P2',
   has_dispute_focus: 'P2',
   submitted_for: 'P2',
-  has_summary: 'P2',
 };
 
-const STRUCTURAL_RELATION_TYPES = new Set(['has_fact', 'has_dispute_focus', 'submitted_for', 'has_summary']);
+const STRUCTURAL_RELATION_TYPES = new Set(['has_fact', 'has_dispute_focus', 'submitted_for']);
 
 const CASE_CONTEXT_RELATION_TYPES = new Set([
   '证据',
@@ -86,7 +107,6 @@ const CASE_CONTEXT_RELATION_TYPES = new Set([
 const AGGREGATE_GROUP_CONFIG = {
   DisputeFocus: { key: 'focuses', label: '焦点', lane: 'resultLane' },
   JudgmentResult: { key: 'judgments', label: '裁判', lane: 'resultLane' },
-  CaseSummary: { key: 'summary', label: '摘要', lane: 'resultLane' },
 };
 
 const ANALYSIS_MODE_META = {
@@ -135,6 +155,14 @@ const ANALYSIS_MODE_META = {
     theme: 'xray',
     summary: '突出孤立节点、无证据事实和潜在断链位置。',
   },
+};
+
+const DOMAIN_TYPE_MAP = {
+  legal_norm: ['Law', 'LegalProvision', 'LegalProvisionVersion', 'CaseType', 'GuidingCase', 'SentencingStandard', 'LegalProvisionElement'],
+  legal_subject: ['Judge', 'Attorney', 'Clerk', 'Prosecutor', 'Organization', 'Court', 'Procuratorate', 'LawFirm', 'ExpertInstitution', 'LegalRole', 'Person'],
+  case_core: ['CourtCase', 'TrialOrganization', 'ExecutionInfo', 'LegalDocument', 'District', 'CaseParticipant'],
+  reasoning: ['Evidence', 'Fact', 'LitigationClaim', 'ProceduralOpinion', 'ArgumentPoint', 'JudicialAssessment', 'DisputeFocus'],
+  judgment: ['JudgmentResult'],
 };
 
 export class ParseGraph {
@@ -222,6 +250,10 @@ export class ParseGraph {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible' || !this.lastRenderedData) return;
       this.scheduleRelayout({ fit: false, delay: 40, preserveView: true });
+    });
+    window.addEventListener('parse-analysis-mode-request', (event) => {
+      const mode = event?.detail?.mode || 'overview';
+      this.applyExternalAnalysisMode(mode, event?.detail?.scope || 'all', event?.detail?.typeKey || null);
     });
   }
 
@@ -368,13 +400,19 @@ export class ParseGraph {
       
       // Handle cross-graph linkage from Ontology Graph (click)
       if (state.selectedGraph === 'ontology' && state.selectedNodeId) {
-        this.focusNodesByType(state.selectedNodeId);
+        if (state.ontologySelectionKind === 'domain') {
+          this.focusNodesByDomain(state.selectedNodeId);
+        } else {
+          this.focusNodesByType(state.selectedNodeId, { scope: state.ontologySelectionScope || 'all' });
+        }
       } else if (!state.selectedNodeId && state.selectedGraph !== 'parse') {
         this.clearTypeFocus();
       }
       
       // Handle hover from Ontology Graph
-      if (state.hoverOntologyType) {
+      if (state.hoverOntologyDomain) {
+        this.previewNodesByDomain(state.hoverOntologyDomain);
+      } else if (state.hoverOntologyType) {
         this.previewNodesByType(state.hoverOntologyType);
       } else if (!state.hoverOntologyType && state.selectedGraph !== 'ontology') {
         this.clearTypeFocus();
@@ -718,7 +756,7 @@ export class ParseGraph {
   toggleSubgraphMode() {
     this.subgraphMode = !this.subgraphMode;
     if (this.subgraphMode) {
-      const coreTypes = ['Evidence', 'Fact', 'DisputeFocus', 'LegalProvision', 'JudgmentResult', 'CaseSummary'];
+      const coreTypes = ['Evidence', 'Fact', 'DisputeFocus', 'LegalProvision', 'JudgmentResult'];
       const nodes = this.nodesDs.get();
       const updates = nodes.map(n => {
         const type = n.nodeType || n.group;
@@ -734,8 +772,36 @@ export class ParseGraph {
     this.syncToolButtonStates();
   }
 
+  applyExternalAnalysisMode(mode = 'overview', scope = 'all', typeKey = null) {
+    if (!this.network || !this.lastRenderedData) return;
+    if (this.playbackInterval) {
+      clearInterval(this.playbackInterval);
+      this.playbackInterval = null;
+    }
+    this.xrayMode = false;
+    this.localFocusMode = false;
+    this.traceDirection = 'none';
+    if (this.subgraphMode) {
+      this.subgraphMode = false;
+      const nodes = this.nodesDs.get();
+      this.nodesDs.update(nodes.map((node) => ({ id: node.id, hidden: false })));
+    }
+    this.pathPreset = mode === 'evidence_chain' || mode === 'judgment_basis' ? mode : 'none';
+    this.syncToolButtonStates();
+    this.updateView();
+    if (typeKey) {
+      this.focusNodesByType(typeKey, { scope });
+    } else {
+      setTimeout(() => this.network?.fit({ animation: { duration: 420, easingFunction: 'easeInOutQuad' } }), 60);
+    }
+  }
+
   getLayoutMode(state = store.getState()) {
     return state.parseGraphLayoutMode || this.layoutMode || 'lane';
+  }
+
+  getGraphViewMode(state = store.getState()) {
+    return state.graphViewMode || 'global';
   }
 
   renderLayoutModeButton() {
@@ -1156,14 +1222,14 @@ export class ParseGraph {
   getPresetConfig(preset) {
     if (preset === 'evidence_chain') {
       return {
-        types: new Set(['CourtCase', 'AggregateGroup', 'Evidence', 'Fact', 'DisputeFocus', 'LegalProvisionElement', 'LegalProvision', 'JudgmentResult', 'CaseSummary']),
+        types: new Set(['CourtCase', 'AggregateGroup', 'Evidence', 'Fact', 'DisputeFocus', 'LegalProvisionElement', 'LegalProvision', 'JudgmentResult']),
         relations: new Set(['aggregate_link', 'proves_fact', 'matches_element', 'element_of_provision', 'judgment_cites', 'leads_to', 'resolved_by']),
       };
     }
 
     if (preset === 'judgment_basis') {
       return {
-        types: new Set(['CourtCase', 'AggregateGroup', 'Fact', 'DisputeFocus', 'LegalProvisionElement', 'LegalProvision', 'JudgmentResult', 'CaseSummary']),
+        types: new Set(['CourtCase', 'AggregateGroup', 'Fact', 'DisputeFocus', 'LegalProvisionElement', 'LegalProvision', 'JudgmentResult']),
         relations: new Set(['aggregate_link', 'matches_element', 'element_of_provision', 'judgment_cites', 'leads_to', 'resolved_by']),
       };
     }
@@ -1547,7 +1613,6 @@ export class ParseGraph {
         Person: 8,
         DisputeFocus: 8,
         JudgmentResult: 8,
-        CaseSummary: 8,
         LegalProvisionElement: 8,
         LegalProvision: 8,
         Law: 8,
@@ -1688,21 +1753,34 @@ export class ParseGraph {
     const updatedEdgeIds = new Set(highlight?.updatedEdgeIds || []);
     const addedDerivedEdgeIds = new Set(highlight?.addedDerivedEdgeIds || []);
     const updatedDerivedEdgeIds = new Set(highlight?.updatedDerivedEdgeIds || []);
-    return (edges || []).map(e => ({
-      ...e,
-      fullLabel: e.fullLabel || e.label || e.relationType || '',
-      label: this.getEdgeDisplayLabel(e, state),
-      smooth: e.smooth || this.getEdgeSmooth(e),
-      hidden: Boolean(e.hidden),
-      dashes: (
-        addedDerivedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
+
+    const viewMode = this.getGraphViewMode(state);
+    const isDeepThinkView = viewMode === 'deep_think';
+    const discoveryNodeIds = new Set();
+    if (isDeepThinkView && state.discoveryHistory) {
+      state.discoveryHistory.forEach(h => {
+        if (h.result?.knowledge_discovery?.new_nodes) {
+          h.result.knowledge_discovery.new_nodes.forEach(n => discoveryNodeIds.add(n.id));
+        }
+      });
+    }
+
+    return (edges || []).map(e => {
+      const isMergeFocus = addedEdgeIds.has(e.id) || updatedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id);
+      const isDiscovery = discoveryNodeIds.has(e.from) || discoveryNodeIds.has(e.to);
+      let opacity = 1;
+      
+      if (isDeepThinkView && !isDiscovery && !isMergeFocus) {
+         opacity = 0.1;
+      }
+      
+      const edgeDashes = addedDerivedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
           ? true
           : addedEdgeIds.has(e.id) || updatedEdgeIds.has(e.id)
             ? false
-            : e.dashes || e.isAggregateEdge || e.isCaseContextEdge || (e.edgePriority === 'P2') || (e.edgePriority === 'P1' && state.parseGraphDisplayMode === 'skeleton')
-      ),
-      color: (
-        addedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id)
+            : e.dashes || e.isAggregateEdge || e.isCaseContextEdge || (e.edgePriority === 'P2') || (e.edgePriority === 'P1' && state.parseGraphDisplayMode === 'skeleton');
+
+      let colorObj = addedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id)
           ? { color: '#0ea5e9', highlight: '#0284c7' }
           : updatedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
             ? { color: '#f59e0b', highlight: '#d97706' }
@@ -1725,9 +1803,13 @@ export class ParseGraph {
               : state.parseGraphDisplayMode === 'skeleton'
                 ? { color: 'rgba(99, 102, 241, 0.52)', highlight: '#4f46e5' }
                 : { color: '#6366f1', highlight: '#4f46e5' }
-      )),
-      width: (
-        addedEdgeIds.has(e.id) || updatedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
+      );
+      
+      if (opacity < 1) {
+          colorObj = { color: 'rgba(203, 213, 225, 0.2)', highlight: 'rgba(203, 213, 225, 0.4)' };
+      }
+
+      const edgeWidth = isMergeFocus
           ? (isPreview ? 4.1 : 3.3)
           : e.width || (
         e.isTraceEdge
@@ -1743,10 +1825,10 @@ export class ParseGraph {
               : state.parseGraphDisplayMode === 'skeleton'
                 ? 1.55
                 : 1.8
-      )),
-      font: {
-        size: state.parseGraphSemanticZoom === 'near' ? (e.edgePriority === 'P0' ? 11 : 10) : (e.edgePriority === 'P0' ? 10 : 9),
-        color: addedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id)
+      );
+
+      const fontColor = opacity < 1 ? 'rgba(203, 213, 225, 0.2)' : (
+         addedEdgeIds.has(e.id) || addedDerivedEdgeIds.has(e.id)
           ? '#0369a1'
           : updatedEdgeIds.has(e.id) || updatedDerivedEdgeIds.has(e.id)
             ? '#b45309'
@@ -1760,15 +1842,30 @@ export class ParseGraph {
             ? 'rgba(148, 163, 184, 0.82)'
             : state.parseGraphDisplayMode === 'skeleton'
               ? 'rgba(79, 70, 229, 0.82)'
-              : '#4f46e5',
-        align: 'horizontal',
-        strokeWidth: 2,
-        strokeColor: '#ffffff',
-        vadjust: e.isAggregateEdge ? -6 : 0,
-        multi: 'md',
-        ...(e.font || {})
-      }
-    }));
+              : '#4f46e5'
+      );
+
+      return {
+        ...e,
+        fullLabel: e.fullLabel || e.label || e.relationType || '',
+        label: this.getEdgeDisplayLabel(e, state),
+        smooth: e.smooth || this.getEdgeSmooth(e),
+        hidden: Boolean(e.hidden),
+        dashes: edgeDashes,
+        color: colorObj,
+        width: edgeWidth,
+        font: {
+          size: state.parseGraphSemanticZoom === 'near' ? (e.edgePriority === 'P0' ? 11 : 10) : (e.edgePriority === 'P0' ? 10 : 9),
+          color: fontColor,
+          align: 'horizontal',
+          strokeWidth: opacity < 1 ? 0 : 2,
+          strokeColor: '#ffffff',
+          vadjust: e.isAggregateEdge ? -6 : 0,
+          multi: 'md',
+          ...(e.font || {})
+        }
+      };
+    });
   }
 
   styleNodes(nodes, state = store.getState()) {
@@ -1776,34 +1873,29 @@ export class ParseGraph {
     const isPreview = Boolean(state.parseEnhancementPreviewActive && state.parseEnhancementPreviewPatch);
     const addedNodeIds = new Set(highlight?.addedNodeIds || []);
     const updatedNodeIds = new Set(highlight?.updatedNodeIds || []);
-    const defaultStyles = {
-      CourtCase:  { shape: 'box', color: '#FFA07A', border: '#E8875A' },
-      CaseType:   { shape: 'box', color: '#fff7ed', border: '#fb923c', fontColor: '#9a3412' },
-      Person:     { shape: 'square', color: '#90EE90', border: '#6BCE6B' },
-      Judge:      { shape: 'box', color: '#dbeafe', border: '#60a5fa', fontColor: '#1d4ed8' },
-      Attorney:   { shape: 'box', color: '#ede9fe', border: '#8b5cf6', fontColor: '#6d28d9' },
-      LegalProvision: { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
-      LegalProvisionElement: { shape: 'box', color: '#eef2ff', border: '#7c8cff', fontColor: '#243b8f' },
-      Law:        { shape: 'hexagon', color: '#d9ddff', border: '#5b6ee1', fontColor: '#1e2b6d' },
-      Evidence:   { shape: 'box', color: '#f7e2bf', border: '#c9852b', fontColor: '#6b3f08' },
-      Fact:       { shape: 'box', color: '#e0f2fe', border: '#0284c7', fontColor: '#0f172a' },
-      DisputeFocus: { shape: 'diamond', color: '#fef3c7', border: '#d97706', fontColor: '#92400e' },
-      LitigationClaim: { shape: 'diamond', color: '#fce7f3', border: '#db2777', fontColor: '#9d174d' },
-      ProceduralOpinion: { shape: 'box', color: '#ede9fe', border: '#7c3aed', fontColor: '#5b21b6' },
-      ArgumentPoint: { shape: 'box', color: '#fff7ed', border: '#ea580c', fontColor: '#9a3412' },
-      JudicialAssessment: { shape: 'star', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
-      JudgmentResult: { shape: 'box', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
-      LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400' },
-      CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428' },
-      LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
-      LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
-      GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C' },
-      AggregateGroup: { shape: 'box', color: '#f8fafc', border: '#94a3b8', fontColor: '#475569' },
-    };
+    
+    // View Mode Filter Logic
+    const viewMode = this.getGraphViewMode(state);
+    const isDeepThinkView = viewMode === 'deep_think';
+    const discoveryNodeIds = new Set();
+    if (isDeepThinkView && state.discoveryHistory) {
+      const activeIdx = state.activeDiscoveryIdx !== undefined && state.activeDiscoveryIdx >= 0 
+          ? state.activeDiscoveryIdx 
+          : state.discoveryHistory.length - 1;
+      const histories = state.discoveryHistory.slice(0, activeIdx + 1);
+      histories.forEach(h => {
+        if (h.result?.knowledge_discovery?.new_nodes) {
+          h.result.knowledge_discovery.new_nodes.forEach(n => discoveryNodeIds.add(n.id));
+        }
+      });
+    }
+
+    // Default styles override if not imported correctly in some scope
+    const useStyles = typeof defaultStyles !== 'undefined' ? defaultStyles : {};
 
     return nodes.map(n => {
       const type = n.nodeType || n.group || '';
-      const style = defaultStyles[type] || { shape: 'box', color: '#f8fafc', border: '#cbd5e1' };
+      const style = useStyles[type] || { shape: 'box', color: '#f8fafc', border: '#cbd5e1' };
       const aggregateExpanded = type === 'AggregateGroup' && state.parseGraphExpandedGroups?.[n.aggregateKey];
       const fullLabel = n.fullLabel || n.label || n.title || n.id;
       const baseLabel = this.getNodeDisplayLabel({ ...n, fullLabel }, state, type);
@@ -1825,6 +1917,10 @@ export class ParseGraph {
               : style.shape === 'hexagon'
                 ? 20
                 : 18;
+
+      const isDiscovery = discoveryNodeIds.has(n.id);
+      const isMergeFocus = addedNodeIds.has(n.id) || updatedNodeIds.has(n.id);
+      
       const traceColors = n.isTraceNode
         ? (n.isTraceFocus
             ? { background: '#fef3c7', border: '#d97706', font: '#7c2d12' }
@@ -1834,6 +1930,17 @@ export class ParseGraph {
                 ? { background: '#f8fafc', border: '#60a5fa', font: '#1e40af' }
                 : { background: '#f8fafc', border: '#cbd5e1', font: '#475569' })
         : null;
+
+      let opacity = 1;
+      let finalFontColor = traceColors?.font || (aggregateExpanded ? '#0f172a' : (style.fontColor || '#333'));
+      let finalBackground = traceColors?.background || (aggregateExpanded ? '#e0f2fe' : style.color);
+      let finalBorder = traceColors?.border || (aggregateExpanded ? '#0284c7' : style.border);
+      
+      if (isDeepThinkView && !isDiscovery && !isMergeFocus) {
+         opacity = 0.2; // Dim nodes not involved in deep think
+         finalFontColor = 'rgba(148, 163, 184, 0.4)';
+      }
+
       const mergeColors = addedNodeIds.has(n.id)
         ? {
             border: '#0ea5e9',
@@ -1849,10 +1956,16 @@ export class ParseGraph {
               borderDashes: [7, 5]
             }
           : null;
-      const fillColor = traceColors?.background || (aggregateExpanded ? '#e0f2fe' : style.color);
-      const borderColor = mergeColors?.border || traceColors?.border || (aggregateExpanded ? '#0284c7' : style.border);
-      const fontColor = traceColors?.font || (aggregateExpanded ? '#0f172a' : (style.fontColor || '#333'));
+
+      if (mergeColors) {
+         finalBorder = mergeColors.border;
+      }
       
+      if (opacity < 1) {
+          finalBackground = 'rgba(241, 245, 249, 0.3)';
+          finalBorder = 'rgba(226, 232, 240, 0.3)';
+      }
+
       return {
         ...n,
         fullLabel,
@@ -1863,16 +1976,16 @@ export class ParseGraph {
           ? this.buildLegalProvisionNodeImage({
               text: legalProvisionGlyph,
               statuteLabel: legalProvisionStatute,
-              background: fillColor,
-              border: borderColor,
-              fontColor,
+              background: finalBackground,
+              border: finalBorder,
+              fontColor: finalFontColor,
               borderWidth: mergeColors?.borderWidth || (n.isTraceFocus ? 3 : (n.isTraceNode ? 2.5 : 2)),
               borderDashes: mergeColors?.borderDashes || false,
             })
           : undefined,
         color: {
-          background: fillColor,
-          border: borderColor,
+          background: finalBackground,
+          border: finalBorder,
         },
         borderWidth: mergeColors?.borderWidth || (n.isTraceFocus ? 3 : (type === 'AggregateGroup' ? 1.5 : (n.isTraceNode ? 2.5 : 2))),
         shapeProperties: {
@@ -1894,15 +2007,15 @@ export class ParseGraph {
           ? { minimum: type === 'AggregateGroup' ? 34 : 38 }
           : undefined,
         shadow: n.isTraceNode
-          ? { enabled: true, color: n.isTraceFocus ? 'rgba(217,119,6,0.35)' : 'rgba(37,99,235,0.18)', size: n.isTraceFocus ? 18 : 10 }
-          : { enabled: true, color: mergeColors?.shadow || 'rgba(15,23,42,0.12)', size: mergeColors ? (isPreview ? 18 : 11) : 8, x: 0, y: 2 },
+          ? { enabled: opacity === 1, color: n.isTraceFocus ? 'rgba(217,119,6,0.35)' : 'rgba(37,99,235,0.18)', size: n.isTraceFocus ? 18 : 10 }
+          : { enabled: opacity === 1, color: mergeColors?.shadow || 'rgba(15,23,42,0.12)', size: mergeColors ? (isPreview ? 18 : 11) : 8, x: 0, y: 2 },
         font: {
           size: type === 'AggregateGroup'
             ? (state.parseGraphSemanticZoom === 'far' ? 12 : 13)
             : (state.parseGraphSemanticZoom === 'near' ? 16 : 15),
-          color: fontColor,
+          color: finalFontColor,
           face: 'Microsoft YaHei, PingFang SC, Helvetica Neue, Arial, sans-serif',
-          strokeWidth: 3,
+          strokeWidth: opacity < 1 ? 0 : 3,
           strokeColor: '#ffffff',
           vadjust: 0,
         }
@@ -1929,7 +2042,7 @@ export class ParseGraph {
     if (['Fact', 'ArgumentPoint', 'JudicialAssessment'].includes(type)) return 'factLane';
     if (type === 'LegalProvisionElement') return 'elementLane';
     if (['LegalProvision', 'Law', 'LegalNorm'].includes(type)) return 'lawLane';
-    if (['DisputeFocus', 'JudgmentResult', 'CaseSummary'].includes(type)) return 'resultLane';
+    if (['DisputeFocus', 'JudgmentResult'].includes(type)) return 'resultLane';
     return 'caseLane';
   }
 
@@ -2037,7 +2150,6 @@ export class ParseGraph {
       LegalProvisionElement: 1,
       Law: 2,
       LegalNorm: 3,
-      CaseSummary: 0,
       DisputeFocus: 1,
       JudgmentResult: 2,
       Judge: 0,
@@ -2086,7 +2198,6 @@ export class ParseGraph {
     const elementNodes = byType(['LegalProvisionElement']);
     const lawNodes = byType(['LegalProvision', 'Law', 'LegalNorm']);
     const judgmentNodes = byType(['JudgmentResult']);
-    const summaryNodes = byType(['CaseSummary']);
     const centerX = Math.round((MAIN_LANE_X.lawLane + MAIN_LANE_X.resultLane) / 2);
     const centerY = 520;
 
@@ -2123,10 +2234,8 @@ export class ParseGraph {
 
     const lawArcSpan = 140;
     const resultArcSpan = 140;
-    const summaryArcSpan = 110;
     const lawRadius = adaptiveRadius(lawNodes.length, 360, 92, lawArcSpan);
     const judgmentRadius = adaptiveRadius(judgmentNodes.length, 360, 92, resultArcSpan);
-    const summaryRadius = adaptiveRadius(summaryNodes.length, 445, 104, summaryArcSpan);
 
     // Keep provision elements in their original lane so the "法条元素区" remains stable.
     placeColumn(
@@ -2140,8 +2249,6 @@ export class ParseGraph {
     placeColumn(focusNodes, { x: centerX, spacing: 132, startY: centerY });
     placeArc(lawNodes, { radius: lawRadius, startDeg: 110, endDeg: 250 });
     placeArc(judgmentNodes, { radius: judgmentRadius, startDeg: -70, endDeg: 70 });
-    placeArc(summaryNodes, { radius: summaryRadius, startDeg: -55, endDeg: 55, yOffset: -12 });
-
     return Array.from(updatesById.values());
   }
 
@@ -2232,11 +2339,74 @@ export class ParseGraph {
   }
 
 
-  focusNodesByType(typeKey) {
+  getScopedTypeNodeIds(typeKey, scope = 'all', state = store.getState()) {
+    const matchedNodes = this.nodesDs.get().filter((item) => item.group === typeKey || item.nodeType === typeKey || item.label === typeKey);
+    const matchedIds = matchedNodes.map((node) => node.id);
+    if (scope === 'all') return matchedIds;
+
+    if (scope === 'reasoning') {
+      const history = state.discoveryHistory || [];
+      const activeIdx = typeof state.activeDiscoveryIdx === 'number' && state.activeDiscoveryIdx >= 0 ? state.activeDiscoveryIdx : history.length - 1;
+      const activeRecord = history[activeIdx];
+      const discoveryIds = new Set((activeRecord?.result?.knowledge_discovery?.new_nodes || []).map((node) => node.id));
+      const scoped = matchedIds.filter((id) => discoveryIds.has(id));
+      return scoped.length ? scoped : matchedIds;
+    }
+
+    if (scope === 'version') {
+      const highlight = this.getActiveMergeHighlight(state);
+      const changedIds = new Set([
+        ...(highlight?.addedNodeIds || []),
+        ...(highlight?.updatedNodeIds || []),
+      ]);
+      (state.discoveryHistory || []).forEach((record) => {
+        (record?.result?.knowledge_discovery?.new_nodes || []).forEach((node) => changedIds.add(node.id));
+      });
+      const scoped = matchedIds.filter((id) => changedIds.has(id));
+      return scoped.length ? scoped : matchedIds;
+    }
+
+    return matchedIds;
+  }
+
+  getDomainNodeIds(domainKey) {
+    const domainTypes = new Set(DOMAIN_TYPE_MAP[domainKey] || []);
+    if (!domainTypes.size) return [];
+    return this.nodesDs.get()
+      .filter((item) => domainTypes.has(item.group) || domainTypes.has(item.nodeType))
+      .map((item) => item.id);
+  }
+
+  focusNodesByDomain(domainKey) {
+    if (!this.network || !domainKey) return;
+    const nodes = this.nodesDs.get();
+    const targetIds = this.getDomainNodeIds(domainKey);
+    if (!targetIds.length) {
+      this.clearTypeFocus();
+      return;
+    }
+    this.network.selectNodes(targetIds, false);
+    this.nodesDs.update(nodes.map((node) => ({
+      id: node.id,
+      color: targetIds.includes(node.id) ? undefined : { background: '#f1f5f9', border: '#e2e8f0' },
+      font: { color: targetIds.includes(node.id) ? undefined : '#cbd5e1' }
+    })));
+    const edges = this.edgesDs.get();
+    this.edgesDs.update(edges.map((edge) => ({
+      id: edge.id,
+      color: targetIds.includes(edge.from) || targetIds.includes(edge.to) ? undefined : { color: '#e2e8f0' }
+    })));
+    this.network.fit({
+      nodes: targetIds,
+      animation: { duration: 420, easingFunction: 'easeInOutQuad' },
+      scale: 0.96
+    });
+  }
+
+  focusNodesByType(typeKey, { scope = 'all' } = {}) {
     if (!this.network || !typeKey) return;
     const nodes = this.nodesDs.get();
-    const matchedNodes = nodes.filter(item => item.group === typeKey || item.nodeType === typeKey || item.label === typeKey);
-    const targetIds = matchedNodes.map(n => n.id);
+    const targetIds = this.getScopedTypeNodeIds(typeKey, scope);
     
     if (targetIds.length > 0) {
       this.network.selectNodes(targetIds, false);
@@ -2291,6 +2461,22 @@ export class ParseGraph {
     }
   }
 
+  previewNodesByDomain(domainKey) {
+    if (!this.network || !domainKey) return;
+    const targetIds = new Set(this.getDomainNodeIds(domainKey));
+    if (!targetIds.size) return;
+    const matchedNodes = this.nodesDs.get({
+      filter: (item) => targetIds.has(item.id)
+    });
+    if (matchedNodes.length > 0) {
+      this.nodesDs.update(matchedNodes.map((node) => ({
+        id: node.id,
+        borderWidth: 4,
+        shadow: { enabled: true, size: 14, color: 'rgba(14,165,233,0.32)' }
+      })));
+    }
+  }
+
   clearTypeFocus() {
     if (!this.network) return;
     this.network.unselectAll();
@@ -2336,11 +2522,13 @@ export class ParseGraph {
         this.btnRelatedOnly.classList.remove('active-filter');
       }
 
-      this.updateView();
+      this.syncRenderedGraph();
+      this.apply2DLayout();
       this.syncToolButtonStates();
       this.lastMergeHighlight = state.parseMergeHighlight;
       this.lastPreviewPatch = state.parseEnhancementPreviewPatch;
       this.lastPreviewActive = state.parseEnhancementPreviewActive;
+      this.lastGraphViewMode = state.graphViewMode;
       this.scheduleRelayout({ fit: this.isMainView, delay: 40, preserveView: !this.isMainView });
       return;
     }
@@ -2348,11 +2536,19 @@ export class ParseGraph {
     const highlightChanged =
       state.parseMergeHighlight !== this.lastMergeHighlight
       || state.parseEnhancementPreviewPatch !== this.lastPreviewPatch
-      || state.parseEnhancementPreviewActive !== this.lastPreviewActive;
+      || state.parseEnhancementPreviewActive !== this.lastPreviewActive
+      || state.graphViewMode !== this.lastGraphViewMode
+      || state.activeDiscoveryIdx !== this.lastActiveDiscoveryIdx;
+
     if (state.parseGraphData && highlightChanged) {
       this.lastMergeHighlight = state.parseMergeHighlight;
       this.lastPreviewPatch = state.parseEnhancementPreviewPatch;
       this.lastPreviewActive = state.parseEnhancementPreviewActive;
+      this.lastGraphViewMode = state.graphViewMode;
+      this.lastActiveDiscoveryIdx = state.activeDiscoveryIdx;
+      
+      this.updateView();
+      this.renderChangeLegend(state);
       this.renderAnalysisModeState(state);
       this.syncRenderedGraph({ preservePositions: true });
       this.scheduleRelayout({ fit: false, delay: 20, preserveView: true });

@@ -149,6 +149,7 @@ function sortTrialLevels(values = []) {
 
 export function getFilterOptions(cases = []) {
   const sources = [];
+  const neo4jSyncStates = [];
   const caseCategories = [];
   const caseReasons = [];
   const trialLevels = [];
@@ -158,6 +159,7 @@ export function getFilterOptions(cases = []) {
   cases.forEach(item => {
     const meta = item.meta || {};
     if (meta.source) sources.push(meta.source);
+    if (item.neo4j_sync_status) neo4jSyncStates.push(item.neo4j_sync_status);
     (meta.case_categories || []).forEach(value => caseCategories.push(value));
     (meta.case_reasons || []).forEach(value => caseReasons.push(value));
     (meta.trial_levels || []).forEach(value => trialLevels.push(value));
@@ -167,6 +169,7 @@ export function getFilterOptions(cases = []) {
 
   return {
     sources: sortText(sources),
+    neo4jSyncStates: sortText(neo4jSyncStates),
     caseCategories: sortText(caseCategories),
     caseReasons: sortText(caseReasons),
     trialLevels: sortTrialLevels(trialLevels),
@@ -179,6 +182,7 @@ export function getFilteredCases(cases = [], filters = {}) {
   return cases.filter(item => {
     const meta = item.meta || {};
     if (filters.sources && filters.sources.length && !filters.sources.includes(meta.source)) return false;
+    if (filters.neo4jSyncStates && filters.neo4jSyncStates.length && !filters.neo4jSyncStates.includes(item.neo4j_sync_status || 'not_written')) return false;
     if (filters.caseCategories && filters.caseCategories.length && !(meta.case_categories || []).some(value => filters.caseCategories.includes(value))) return false;
     if (filters.caseReasons && filters.caseReasons.length && !(meta.case_reasons || []).some(value => filters.caseReasons.includes(value))) return false;
     if (filters.trialLevels && filters.trialLevels.length && !(meta.trial_levels || []).some(value => filters.trialLevels.includes(value))) return false;
@@ -347,7 +351,6 @@ const WORKSPACE_STYLES = {
   DisputeFocus: { shape: 'diamond', color: '#fef3c7', border: '#d97706', fontColor: '#92400e' },
   JudgmentResult: { shape: 'box', color: '#dcfce7', border: '#16a34a', fontColor: '#166534' },
   LegalRole:  { shape: 'diamond', color: '#FFA500', border: '#CC8400' },
-  CaseSummary: { shape: 'star', color: '#32CD32', border: '#28A428' },
   LegalSubject: { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
   LegalNorm:  { shape: 'triangle', color: '#B0C4DE', border: '#8DA3B8' },
   GuidingCase:  { shape: 'star', color: '#4682B4', border: '#35608C' },
@@ -607,18 +610,6 @@ export function buildStructuredGraphFromOutput(output = {}, ctx = {}) {
     addEdge(focus.case_number || firstCourtLocalId, focusLocal, '争议焦点');
   });
 
-  const summary = output.case_summary || {};
-  if (summary.disputed_issues) {
-    const issuesText = Array.isArray(summary.disputed_issues) ? summary.disputed_issues.join('；') : String(summary.disputed_issues);
-    addNode('summary', issuesText, 'CaseSummary', 1, nodeTitle([
-      '<b>案件摘要</b>',
-      summary.key_facts ? `关键事实: ${shortText(summary.key_facts, 120)}` : '',
-      issuesText ? `争议问题: ${shortText(issuesText, 180)}` : '',
-      summary.conclusion ? `结论: ${shortText(summary.conclusion, 120)}` : ''
-    ]), { size: 44 });
-    if (firstCourtLocalId) addEdge(firstCourtLocalId, 'summary', '审理');
-  }
-
   (output.relations || []).forEach(rel => {
     rel = rel || {};
     if (!rel.source_id || !rel.target_id) return;
@@ -782,7 +773,6 @@ export function buildMultiCaseGraph(state) {
 
     // 2. 解析其他实体 (与 buildStructuredGraphFromOutput 对齐)
     const entities = [
-      { key: 'case_summary', prefix: 'summary', type: 'CaseSummary' },
       { key: 'case_type', prefix: 'ct', type: 'CaseType' },
       { key: 'legal_subjects', prefix: 'subj', type: 'LegalSubject' },
       { key: 'evidence', prefix: 'evid', type: 'Evidence' },
@@ -809,7 +799,6 @@ export function buildMultiCaseGraph(state) {
         let label = '未知';
 
         // 提取 Label
-        if (type === 'CaseSummary') label = '案件摘要';
         if (type === 'CaseType') label = item.level2 || item.level1 || item.category || '案由';
         if (type === 'LegalSubject') label = item.name || '当事人';
         if (type === 'Evidence') label = item.name || item.content || '证据';

@@ -35,6 +35,17 @@ from parser import (
     _relation_identity,
     _stable_dump,
 )
+from neo4j_service import (
+    get_case_graph_detail,
+    get_case_subgraph,
+    get_case_status,
+    get_case_status_map,
+    neo4j_health,
+    write_case_graph,
+    write_discovery_layer,
+    write_retrieval_layer,
+)
+from neo4j_models import build_discovery_layer_payload, entity_id_for_item
 
 # ── Paths ───────────────────────────────────────────────────────────────────
 
@@ -225,6 +236,25 @@ def save_cases_index(index: list):
         json.dump(index, f, ensure_ascii=False, indent=2)
 
 
+def prune_cases_index(index: list, manual_records: dict, candidate_records: dict) -> tuple[list, bool]:
+    kept = []
+    changed = False
+    for item in index or []:
+        row_id = str(item.get("row_id") or "")
+        source = str(item.get("source") or "")
+        if not row_id:
+            changed = True
+            continue
+        if source == "manual" and row_id not in manual_records:
+            changed = True
+            continue
+        if source == "extracted_candidate" and row_id not in candidate_records:
+            changed = True
+            continue
+        kept.append(item)
+    return kept, changed
+
+
 def append_to_jsonl(record: dict):
     MANUAL_JSONL.parent.mkdir(parents=True, exist_ok=True)
     with open(MANUAL_JSONL, "a", encoding="utf-8") as f:
@@ -321,6 +351,8 @@ def build_save_meta(row_id: str, text: str, json_result: dict, case_name: str, t
 
 
 ENTITY_COLLECTION_KEYS = [
+    "court_cases",
+    "trial_organizations",
     "legal_subjects",
     "evidence",
     "facts",
@@ -337,6 +369,8 @@ ENTITY_COLLECTION_KEYS = [
 ]
 
 ENTITY_NODE_TYPE_MAP = {
+    "court_cases": "CourtCase",
+    "trial_organizations": "TrialOrganization",
     "legal_subjects": "LegalSubject",
     "evidence": "Evidence",
     "facts": "Fact",
@@ -350,7 +384,6 @@ ENTITY_NODE_TYPE_MAP = {
     "procedural_opinions": "ProceduralOpinion",
     "argument_points": "ArgumentPoint",
     "judicial_assessments": "JudicialAssessment",
-    "case_summary": "CaseSummary",
 }
 
 
@@ -381,6 +414,7 @@ def _coerce_change_summary(summary: dict | None) -> dict:
     return {
         "entity_added": summary.get("entity_added") or {},
         "entity_updated": summary.get("entity_updated") or {},
+        "attribute_updated": summary.get("attribute_updated") or {},
         "relation_added": summary.get("relation_added") or {},
         "relation_updated": summary.get("relation_updated") or {},
         "derived_relation_added": summary.get("derived_relation_added") or {},
@@ -536,6 +570,12 @@ def _entity_label_candidates(key: str, item: dict) -> list[str]:
     if key == "legal_subjects":
         name = str(item.get("name") or "").strip()
         return [name] if name else []
+    if key == "court_cases":
+        case_number = str(item.get("case_number") or "").strip()
+        return [case_number] if case_number else []
+    if key == "trial_organizations":
+        name = str(item.get("name") or "").strip()
+        return [name] if name else []
     if key == "judges":
         name = str(item.get("name") or "").strip()
         return [name] if name else []
@@ -599,8 +639,8 @@ def _find_graph_edge_ids(graph_payload: dict, relation: dict, *, is_derived: boo
 
 
 def _compute_highlight_patch(base_output: dict, next_output: dict, graph_payload: dict) -> tuple[dict, dict]:
-    base_output = base_output or {}
-    next_output = next_output or {}
+    base_output = _normalize_output_snapshot(base_output or {})
+    next_output = _normalize_output_snapshot(next_output or {})
     highlight = {
         "addedNodeIds": [],
         "updatedNodeIds": [],
@@ -613,6 +653,7 @@ def _compute_highlight_patch(base_output: dict, next_output: dict, graph_payload
     summary = {
         "entity_added": {},
         "entity_updated": {},
+        "attribute_updated": {},
         "relation_added": {},
         "relation_updated": {},
         "derived_relation_added": {},
@@ -644,11 +685,9 @@ def _compute_highlight_patch(base_output: dict, next_output: dict, graph_payload
         base_dump = _entity_payload_dump("case_summary", base_summary)
         next_dump = _entity_payload_dump("case_summary", next_summary)
         if not base_summary and next_summary:
-            summary["entity_added"]["case_summary"] = 1
-            highlight["addedNodeIds"].extend(_find_graph_node_ids(graph_payload, "case_summary", next_summary))
+            summary["attribute_updated"]["case_summary"] = 1
         elif base_dump != next_dump:
-            summary["entity_updated"]["case_summary"] = 1
-            highlight["updatedNodeIds"].extend(_find_graph_node_ids(graph_payload, "case_summary", next_summary))
+            summary["attribute_updated"]["case_summary"] = 1
 
     for key, is_derived, added_key, updated_key, added_target, updated_target in (
         ("relations", False, "relation_added", "relation_updated", "addedEdgeIds", "updatedEdgeIds"),
@@ -674,6 +713,7 @@ def _compute_highlight_patch(base_output: dict, next_output: dict, graph_payload
     changed_keys = set()
     changed_keys.update(summary["entity_added"].keys())
     changed_keys.update(summary["entity_updated"].keys())
+    changed_keys.update(summary["attribute_updated"].keys())
     if summary["relation_added"] or summary["relation_updated"]:
         changed_keys.add("relations")
     if summary["derived_relation_added"] or summary["derived_relation_updated"]:
@@ -2233,6 +2273,14 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route("/api/neo4j/health", methods=["GET"])
+def api_neo4j_health():
+    try:
+        return jsonify(neo4j_health())
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
 @app.route("/api/test-data", methods=["GET"])
 def api_get_test_data():
     """Return the last saved test data (text + parse result)."""
@@ -2260,6 +2308,12 @@ def api_save_test_data():
             "retrieval_bundle",
             "retrieval_write_manifest",
             "active_tab",
+            "text_chunks",
+            "source_alignment",
+            "chunking_meta",
+            "alignment_stats",
+            "alignment_unmatched_items",
+            "discovery_history",
         )
         if key in data
     }
@@ -2278,7 +2332,11 @@ def api_parse():
         result = parse_text(text)
         # 自动保存解析结果作为测试数据，刷新页面后依然可见
         _save_test_data(text, result.get("json_result", {}),
-                       extra={k: result.get(k) for k in ("nodes", "edges", "score", "issues", "case_name", "row_id")})
+                       extra={k: result.get(k) for k in (
+                           "nodes", "edges", "score", "issues", "case_name", "row_id",
+                           "text_chunks", "source_alignment", "chunking_meta",
+                           "alignment_stats", "alignment_unmatched_items", "discovery_history"
+                       )})
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -2300,6 +2358,12 @@ def api_save():
     active_version_id = data.get("active_version_id")
     retrieval_bundle = data.get("retrieval_bundle")
     retrieval_write_manifest = data.get("retrieval_write_manifest")
+    discovery_history = data.get("discovery_history")
+    text_chunks = data.get("text_chunks")
+    source_alignment = data.get("source_alignment")
+    chunking_meta = data.get("chunking_meta")
+    alignment_stats = data.get("alignment_stats")
+    alignment_unmatched_items = data.get("alignment_unmatched_items")
 
     if not row_id:
         return jsonify({"error": "row_id is required"}), 400
@@ -2334,6 +2398,18 @@ def api_save():
         record["retrieval_bundle"] = retrieval_bundle
     if retrieval_write_manifest:
         record["retrieval_write_manifest"] = retrieval_write_manifest
+    if discovery_history is not None:
+        record["discovery_history"] = discovery_history
+    if text_chunks is not None:
+        record["text_chunks"] = text_chunks
+    if source_alignment is not None:
+        record["source_alignment"] = source_alignment
+    if chunking_meta is not None:
+        record["chunking_meta"] = chunking_meta
+    if alignment_stats is not None:
+        record["alignment_stats"] = alignment_stats
+    if alignment_unmatched_items is not None:
+        record["alignment_unmatched_items"] = alignment_unmatched_items
     upsert_jsonl_record(target_path, "row_id", record)
 
     # Update cases_index
@@ -2358,6 +2434,521 @@ def api_save():
         "target_layer": target_layer,
         "merged_into": str(target_path.relative_to(REPO_ROOT)),
     })
+
+
+@app.route("/api/neo4j/write-case", methods=["POST"])
+def api_neo4j_write_case():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = write_case_graph(data)
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/neo4j/case-status/<path:doc_id>", methods=["GET"])
+def api_neo4j_case_status(doc_id):
+    try:
+        result = get_case_status(doc_id)
+        status_code = 200 if result.get("exists") else 404
+        return jsonify(result), status_code
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/neo4j/write-retrieval-layer", methods=["POST"])
+def api_neo4j_write_retrieval_layer():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = write_retrieval_layer(data)
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/neo4j/write-discovery-layer", methods=["POST"])
+def api_neo4j_write_discovery_layer():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = write_discovery_layer(data)
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+def _load_case_for_database_ops(row_id: str, record_source: str | None):
+    source = str(record_source or "saved")
+    if source == "static":
+        summary, record = _find_static_case_record(row_id, None)
+        if not summary or not record:
+            raise ValueError("case_not_found")
+        return {
+            "row_id": row_id,
+            "record_source": "static",
+            "case_name": summary.get("case_name", ""),
+            "source": summary.get("source", "static"),
+            "json_result": record.get("output", {}) or {},
+            "raw_text": ((record.get("input") or {}).get("text") or ""),
+            "parse_versions": [],
+            "active_version_id": "v0",
+            "text_chunks": record.get("text_chunks") or [],
+            "source_alignment": record.get("source_alignment") or {},
+            "retrieval_bundle": record.get("retrieval_bundle") or None,
+            "raw_record": record,
+        }
+
+    records = load_manual_records()
+    candidate_records = load_candidate_records()
+    rec = records.get(row_id) or candidate_records.get(row_id)
+    if not rec:
+        raise ValueError("case_not_found")
+    output = rec.get("output", {}) or {}
+    versions, active_version_id = _ensure_versions(rec, output)
+    active_version = _find_version(versions, active_version_id) or (versions[-1] if versions else {})
+    return {
+        "row_id": row_id,
+        "record_source": "saved",
+        "case_name": rec.get("case_name", ""),
+        "source": rec.get("source", "manual"),
+        "json_result": active_version.get("json_result") or output,
+        "raw_text": ((rec.get("input") or {}).get("text") or ""),
+        "parse_versions": versions,
+        "active_version_id": active_version.get("version_id") or active_version_id,
+        "text_chunks": rec.get("text_chunks") or [],
+        "source_alignment": rec.get("source_alignment") or {},
+        "retrieval_bundle": rec.get("retrieval_bundle") or None,
+        "discovery_history": rec.get("discovery_history") or [],
+        "raw_record": rec,
+    }
+
+
+def _database_local_summary(case_payload: dict, doc_id: str) -> dict:
+    json_result = case_payload.get("json_result") or {}
+    normalized_result = _normalize_output_snapshot(json_result)
+    meta = _extract_case_meta_from_output(normalized_result, case_payload.get("source") or "manual")
+    stats = meta.get("stats") or {}
+    entity_counts = {
+        key: len([item for item in (normalized_result.get(key) or []) if item])
+        for key in ENTITY_COLLECTION_KEYS
+    }
+    local_entity_count = sum(entity_counts.values())
+    retrieval_bundle = case_payload.get("retrieval_bundle") or {}
+    discovery_history = case_payload.get("discovery_history") or []
+    return {
+        "doc_id": doc_id,
+        "row_id": case_payload.get("row_id"),
+        "case_name": case_payload.get("case_name") or "",
+        "source": case_payload.get("source") or "",
+        "base": {
+            "top_level_keys": sorted(list(normalized_result.keys())),
+            "stats": stats,
+            "entity_counts": entity_counts,
+            "entity_count_estimate": local_entity_count,
+            "chunk_count": len(case_payload.get("text_chunks") or []),
+        },
+        "retrieval": _summarize_retrieval_bundle(retrieval_bundle),
+        "discovery": _summarize_discovery_history(
+            discovery_history,
+            doc_id=doc_id,
+            base_entity_lookup=_build_local_base_entity_lookup(normalized_result),
+        ),
+    }
+
+
+def _build_layer_consistency_summary(
+    *,
+    local_label_counts: dict,
+    neo4j_label_counts: list[dict],
+    local_relation_counts: dict | None = None,
+    neo4j_relation_counts: list[dict] | None = None,
+) -> dict:
+    neo4j_counts = {
+        str(item.get("label") or ""): int(item.get("count") or 0)
+        for item in (neo4j_label_counts or [])
+        if item.get("label")
+    }
+    neo4j_relation_map = {
+        str(item.get("relation_type") or ""): int(item.get("count") or 0)
+        for item in (neo4j_relation_counts or [])
+        if item.get("relation_type")
+    }
+    local_relation_map = {
+        str(key): int(value or 0)
+        for key, value in (local_relation_counts or {}).items()
+        if key
+    }
+
+    missing_in_neo4j = []
+    missing_locally = []
+    count_mismatches = []
+    relation_count_mismatches = []
+
+    for label, local_count in sorted(local_label_counts.items()):
+        neo4j_count = neo4j_counts.get(label, 0)
+        if local_count > 0 and neo4j_count == 0:
+            missing_in_neo4j.append(label)
+        elif local_count != neo4j_count:
+            count_mismatches.append({
+                "label": label,
+                "local_count": local_count,
+                "neo4j_count": neo4j_count,
+            })
+
+    for label, neo4j_count in sorted(neo4j_counts.items()):
+        local_count = local_label_counts.get(label, 0)
+        if neo4j_count > 0 and local_count == 0:
+            missing_locally.append(label)
+
+    for relation_type, local_count in sorted(local_relation_map.items()):
+        neo4j_count = neo4j_relation_map.get(relation_type, 0)
+        if local_count != neo4j_count:
+            relation_count_mismatches.append({
+                "relation_type": relation_type,
+                "local_count": local_count,
+                "neo4j_count": neo4j_count,
+            })
+
+    return {
+        "local_label_counts": local_label_counts,
+        "neo4j_label_counts": neo4j_counts,
+        "local_relation_counts": local_relation_map,
+        "neo4j_relation_counts": neo4j_relation_map,
+        "missing_in_neo4j": missing_in_neo4j,
+        "missing_locally": missing_locally,
+        "count_mismatches": count_mismatches,
+        "relation_count_mismatches": relation_count_mismatches,
+        "is_consistent": (
+            not missing_in_neo4j
+            and not missing_locally
+            and not count_mismatches
+            and not relation_count_mismatches
+        ),
+    }
+
+
+def _build_base_consistency_summary(local_entity_counts: dict, neo4j_label_counts: list[dict], neo4j_relation_counts: list[dict] | None = None) -> dict:
+    local_label_counts = {}
+    for key, count in (local_entity_counts or {}).items():
+        label = ENTITY_NODE_TYPE_MAP.get(key)
+        if not label:
+            continue
+        local_label_counts[label] = int(count or 0)
+    return _build_layer_consistency_summary(
+        local_label_counts=local_label_counts,
+        neo4j_label_counts=neo4j_label_counts,
+        neo4j_relation_counts=neo4j_relation_counts,
+    )
+
+
+def _summarize_retrieval_bundle(bundle: dict) -> dict:
+    entries = [item for item in ((bundle or {}).get("entries") or []) if isinstance(item, dict)]
+    label_counts = {"RetrievalEntry": len(entries), "RetrievalGraphNode": 0}
+    relation_counts: dict[str, int] = {}
+    for entry in entries:
+        graph_payload = entry.get("graph_payload") or {}
+        chain_nodes = [node for node in (graph_payload.get("chain_nodes") or []) if isinstance(node, dict) and node.get("label")]
+        chain_edges = [edge for edge in (graph_payload.get("chain_edges") or []) if isinstance(edge, dict) and (edge.get("relation_type") or edge.get("label"))]
+        label_counts["RetrievalGraphNode"] += len(chain_nodes)
+        relation_counts["includes_node"] = relation_counts.get("includes_node", 0) + len(chain_nodes)
+        for edge in chain_edges:
+            relation_type = str(edge.get("relation_type") or edge.get("label") or "").strip()
+            if not relation_type:
+                continue
+            relation_counts[relation_type] = relation_counts.get(relation_type, 0) + 1
+    return {
+        "available": bool(bundle),
+        "entry_count": len(entries),
+        "graph_node_count": label_counts["RetrievalGraphNode"],
+        "entity_count_estimate": sum(label_counts.values()),
+        "label_counts": {key: value for key, value in label_counts.items() if value > 0},
+        "relation_counts": relation_counts,
+        "source_parse_version_id": (bundle or {}).get("source_parse_version_id") if bundle else None,
+    }
+
+def _build_local_base_entity_lookup(normalized_result: dict) -> dict:
+    by_id: dict[str, str] = {}
+    by_label_text: dict[tuple[str, str], list[dict]] = {}
+    by_label: dict[str, list[str]] = {}
+
+    def _normalize_text(value) -> str:
+        text = str(value or "").strip().lower()
+        if not text:
+            return ""
+        text = re.sub(r"\s+", "", text)
+        text = re.sub(r"[，。；：、“”‘’（）()【】\\[\\]<>《》,.;:!?！？\\-—_]", "", text)
+        return text
+
+    for key in ENTITY_COLLECTION_KEYS:
+        label = ENTITY_NODE_TYPE_MAP.get(key)
+        if not label:
+            continue
+        for item in (normalized_result.get(key) or []):
+            if not isinstance(item, dict):
+                continue
+            entity_id = entity_id_for_item(item)
+            if not entity_id:
+                continue
+            by_id[entity_id] = label
+            by_label.setdefault(label, []).append(entity_id)
+            candidate_texts = [
+                item.get("preview_text"),
+                item.get("name"),
+                item.get("content"),
+                item.get("claim_text"),
+                item.get("argument_text"),
+                item.get("assessment_text"),
+                item.get("specific_judgment"),
+                item.get("case_number"),
+                item.get("article"),
+                item.get("statute"),
+            ]
+            statute = str(item.get("statute") or "").strip()
+            article = str(item.get("article") or "").strip()
+            if statute and article:
+                candidate_texts.append(f"《{statute}》第{article}条")
+            seen_texts: set[str] = set()
+            for value in candidate_texts:
+                normalized_text = _normalize_text(value)
+                if not normalized_text or normalized_text in seen_texts:
+                    continue
+                seen_texts.add(normalized_text)
+                by_label_text.setdefault((label, normalized_text), []).append({
+                    "id": entity_id,
+                    "label": label,
+                })
+    return {
+        "by_id": by_id,
+        "by_label_text": by_label_text,
+        "by_label": by_label,
+    }
+
+
+def _summarize_discovery_history(discovery_history: list, *, doc_id: str = "CASE:local_summary", base_entity_lookup: dict | None = None) -> dict:
+    records = [item for item in (discovery_history or []) if isinstance(item, dict)]
+    latest_record_id = (records[-1] or {}).get("id") if records else None
+    if not records:
+        return {
+            "available": False,
+            "record_count": 0,
+            "entity_count_estimate": 0,
+            "summary_entity_count": 0,
+            "summary_counts": {},
+            "label_counts": {},
+            "relation_counts": {},
+            "latest_record_id": latest_record_id,
+            "reason": "database_page_no_persisted_discovery_history",
+        }
+    mapped = build_discovery_layer_payload(
+        doc_id=doc_id,
+        discovery_history=records,
+        source_run_id="local_summary",
+        base_entity_index=(base_entity_lookup or {}).get("by_id") or {},
+        base_entity_lookup=base_entity_lookup or {},
+    )
+    relation_counts: dict[str, int] = {}
+    for rel in (mapped.get("relation_payloads") or []):
+        relation_type = str(((rel or {}).get("properties") or {}).get("relation_type") or "").strip()
+        if relation_type:
+            relation_counts[relation_type] = relation_counts.get(relation_type, 0) + 1
+    raw_label_counts: dict[str, int] = {"DiscoveryRecord": len(records)}
+    for item in (mapped.get("entity_payloads") or []):
+        label = str(item.get("label") or "").strip()
+        if label:
+            raw_label_counts[label] = raw_label_counts.get(label, 0) + 1
+    for item in (mapped.get("entity_reference_payloads") or []):
+        label = str(item.get("label") or "").strip()
+        if label:
+            raw_label_counts[label] = raw_label_counts.get(label, 0) + 1
+    entity_ref_count = len(mapped.get("entity_reference_payloads") or [])
+    document_derived_node_count = sum(
+        1
+        for item in (mapped.get("entity_payloads") or [])
+        if item.get("label") == "DiscoveryNode"
+        and str((item.get("properties") or {}).get("node_role") or "") == "document_canonical_derived"
+    )
+    enum_anchor_count = sum(
+        1
+        for item in (mapped.get("entity_payloads") or [])
+        if item.get("label") == "DiscoveryAnchor"
+        and str((item.get("properties") or {}).get("anchor_kind") or "") == "enum_value"
+    )
+    summary_counts = {
+        "实体引用": entity_ref_count,
+        "文书级派生节点": document_derived_node_count,
+        "枚举锚点": enum_anchor_count,
+    }
+    return {
+        "available": True,
+        "record_count": len(records),
+        "entity_count_estimate": sum(summary_counts.values()),
+        "summary_entity_count": sum(summary_counts.values()),
+        "summary_counts": {key: value for key, value in summary_counts.items() if value > 0},
+        "label_counts": {key: value for key, value in raw_label_counts.items() if value > 0},
+        "relation_counts": relation_counts,
+        "latest_record_id": latest_record_id,
+        "reason": None,
+    }
+
+
+@app.route("/api/neo4j/case/<path:doc_id>", methods=["GET"])
+def api_neo4j_case_detail(doc_id):
+    try:
+        result = get_case_graph_detail(doc_id)
+        status_code = 200 if result.get("exists") else 404
+        return jsonify(result), status_code
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/neo4j/case-subgraph/<path:doc_id>", methods=["GET"])
+def api_neo4j_case_subgraph(doc_id):
+    graph_layer = str(request.args.get("layer") or "base")
+    limit = int(request.args.get("limit") or 120)
+    try:
+        result = get_case_subgraph(doc_id, graph_layer=graph_layer, limit=limit)
+        status_code = 200 if result.get("exists") else 404
+        return jsonify(result), status_code
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/neo4j/diff-case", methods=["POST"])
+def api_neo4j_diff_case():
+    data = request.get_json(silent=True) or {}
+    row_id = str(data.get("row_id") or "")
+    record_source = data.get("record_source") or "saved"
+    if not row_id:
+        return jsonify({"error": "row_id is required"}), 400
+    doc_id = str(data.get("doc_id") or f"CASE:{row_id}")
+    try:
+        case_payload = _load_case_for_database_ops(row_id, record_source)
+        local_summary = _database_local_summary(case_payload, doc_id)
+        neo4j_detail = get_case_graph_detail(doc_id)
+        neo4j_layers = (neo4j_detail.get("layers") or {}) if neo4j_detail.get("exists") else {}
+        detail_layers = (neo4j_detail.get("detail") or {}) if neo4j_detail.get("exists") else {}
+        base_detail = detail_layers.get("base") or {}
+        retrieval_detail = detail_layers.get("retrieval") or {}
+        discovery_detail = detail_layers.get("discovery") or {}
+        base_consistency = _build_base_consistency_summary(
+            (local_summary.get("base") or {}).get("entity_counts") or {},
+            base_detail.get("label_counts") or [],
+            base_detail.get("relation_type_counts") or [],
+        )
+        retrieval_consistency = _build_layer_consistency_summary(
+            local_label_counts=(local_summary.get("retrieval") or {}).get("label_counts") or {},
+            neo4j_label_counts=retrieval_detail.get("label_counts") or [],
+            local_relation_counts=(local_summary.get("retrieval") or {}).get("relation_counts") or {},
+            neo4j_relation_counts=retrieval_detail.get("relation_type_counts") or [],
+        )
+        discovery_consistency = _build_layer_consistency_summary(
+            local_label_counts=(local_summary.get("discovery") or {}).get("summary_counts") or {},
+            neo4j_label_counts=discovery_detail.get("summary_counts") or [],
+            local_relation_counts=(local_summary.get("discovery") or {}).get("relation_counts") or {},
+            neo4j_relation_counts=discovery_detail.get("relation_type_counts") or [],
+        )
+        diff = {
+            "base": {
+                "local_entity_estimate": local_summary["base"]["entity_count_estimate"],
+                "neo4j_entity_count": int(((neo4j_layers.get("base") or {}).get("entity_count") or 0)),
+                "status": (neo4j_layers.get("base") or {}).get("status") or "not_written",
+                "consistency": base_consistency,
+            },
+            "retrieval": {
+                "local_entry_count": local_summary["retrieval"]["entry_count"],
+                "local_entity_estimate": int((local_summary["retrieval"].get("entity_count_estimate") or 0)),
+                "neo4j_entity_count": int(((neo4j_layers.get("retrieval") or {}).get("entity_count") or 0)),
+                "status": (neo4j_layers.get("retrieval") or {}).get("status") or "not_written",
+                "consistency": retrieval_consistency,
+            },
+            "discovery": {
+                "local_available": bool(local_summary["discovery"]["available"]),
+                "local_record_count": int(local_summary["discovery"].get("record_count") or 0),
+                "local_entity_estimate": int((local_summary["discovery"].get("summary_entity_count") or 0)),
+                "neo4j_entity_count": int((discovery_detail.get("summary_entity_count") or 0)),
+                "status": (neo4j_layers.get("discovery") or {}).get("status") or "not_written",
+                "consistency": discovery_consistency,
+            },
+        }
+        return jsonify({
+            "status": "ok",
+            "row_id": row_id,
+            "doc_id": doc_id,
+            "record_source": record_source,
+            "local_summary": local_summary,
+            "neo4j_detail": neo4j_detail,
+            "diff": diff,
+        })
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404 if str(exc) == "case_not_found" else 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/neo4j/resync-case", methods=["POST"])
+def api_neo4j_resync_case():
+    data = request.get_json(silent=True) or {}
+    row_id = str(data.get("row_id") or "")
+    record_source = data.get("record_source") or "saved"
+    include_layers = data.get("include_layers") or ["base", "retrieval"]
+    if not row_id:
+        return jsonify({"error": "row_id is required"}), 400
+    doc_id = str(data.get("doc_id") or f"CASE:{row_id}")
+    try:
+        case_payload = _load_case_for_database_ops(row_id, record_source)
+        layer_results = {}
+        if "base" in include_layers and case_payload.get("json_result"):
+            layer_results["base"] = write_case_graph({
+                "row_id": row_id,
+                "doc_id": doc_id,
+                "doc_type": "case",
+                "case_name": case_payload.get("case_name") or "",
+                "source": case_payload.get("source") or "manual",
+                "raw_text": case_payload.get("raw_text") or "",
+                "json_result": case_payload.get("json_result") or {},
+                "parse_versions": case_payload.get("parse_versions") or [],
+                "active_version_id": case_payload.get("active_version_id") or "v0",
+                "text_chunks": case_payload.get("text_chunks") or [],
+                "source_alignment": case_payload.get("source_alignment") or {},
+                "graph_layer": "base",
+            })
+        if "retrieval" in include_layers and case_payload.get("retrieval_bundle"):
+            layer_results["retrieval"] = write_retrieval_layer({
+                "row_id": row_id,
+                "doc_id": doc_id,
+                "case_name": case_payload.get("case_name") or "",
+                "bundle": case_payload.get("retrieval_bundle") or {},
+            })
+        if "discovery" in include_layers and (case_payload.get("discovery_history") or []):
+            layer_results["discovery"] = write_discovery_layer({
+                "row_id": row_id,
+                "doc_id": doc_id,
+                "case_name": case_payload.get("case_name") or "",
+                "discovery_history": case_payload.get("discovery_history") or [],
+            })
+        elif "discovery" in include_layers:
+            layer_results["discovery"] = {
+                "status": "skipped",
+                "reason": "database_page_no_persisted_discovery_history",
+            }
+        status = get_case_status(doc_id)
+        return jsonify({
+            "status": "ok",
+            "row_id": row_id,
+            "doc_id": doc_id,
+            "record_source": record_source,
+            "layer_results": layer_results,
+            "neo4j_status": status.get("layers") or {},
+        })
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404 if str(exc) == "case_not_found" else 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/api/retrieval/build", methods=["POST"])
@@ -2473,6 +3064,10 @@ def api_cases():
     index = load_cases_index()
     manual_records = load_manual_records()
     candidate_records = load_candidate_records()
+    include_neo4j = request.args.get("include_neo4j", "0") in {"1", "true", "yes"}
+    index, index_changed = prune_cases_index(index, manual_records, candidate_records)
+    if index_changed:
+        save_cases_index(index)
 
     for item in index:
         meta = item.get("meta") or {}
@@ -2490,6 +3085,28 @@ def api_cases():
             (rec.get("output") or {}),
             rec.get("source") or item.get("source") or "manual"
         )
+    if include_neo4j:
+        doc_ids = [
+            f"CASE:{str(item.get('row_id', ''))}"
+            for item in index
+            if item.get("source") != "static" and item.get("row_id")
+        ]
+        try:
+            status_map = get_case_status_map(doc_ids)
+        except Exception:
+            status_map = {}
+        for item in index:
+            if item.get("source") == "static" or not item.get("row_id"):
+                item["neo4j_doc_id"] = None
+                item["neo4j_sync_status"] = "not_supported"
+                item["neo4j_layers"] = {}
+                continue
+            doc_id = f"CASE:{str(item.get('row_id', ''))}"
+            status = status_map.get(doc_id) or {}
+            layers = status.get("layers") or {}
+            item["neo4j_doc_id"] = doc_id
+            item["neo4j_layers"] = layers
+            item["neo4j_sync_status"] = "written" if any((layer or {}).get("status") == "written" for layer in layers.values()) else "not_written"
     return jsonify(index)
 
 
@@ -2582,6 +3199,12 @@ def api_saved_case(row_id):
         "source": rec.get("source", "manual"),
         "meta": _extract_case_meta_from_output(output, rec.get("source", "manual")),
         "raw_record": rec,
+        "text_chunks": rec.get("text_chunks") or [],
+        "source_alignment": rec.get("source_alignment") or {},
+        "chunking_meta": rec.get("chunking_meta") or {},
+        "alignment_stats": rec.get("alignment_stats") or {},
+        "alignment_unmatched_items": rec.get("alignment_unmatched_items") or [],
+        "discovery_history": rec.get("discovery_history") or [],
         "_meta": rec.get("_meta") or {},
     })
 
@@ -2876,6 +3499,7 @@ def deep_think():
         
     graph_data = req["graph_data"]
     think_type = req["think_type"]
+    history_context = req.get("history_context", [])
     
     # 延迟加载 openai 以免影响启动
     from openai import OpenAI
@@ -2889,13 +3513,23 @@ def deep_think():
         base_url="https://api.deepseek.com"
     )
     
+    # Format history context
+    history_text = ""
+    if history_context:
+        history_text = "【前置推理结果（上下文）】\n"
+        for idx, h in enumerate(history_context):
+            history_text += f"步骤 {idx+1} - {h.get('type')}:\n"
+            history_text += f"核心结论: {h.get('conclusion')}\n"
+            history_text += f"补充图谱数据: {json.dumps(h.get('knowledge_discovery'), ensure_ascii=False)}\n\n"
+        history_text += "【重要提醒】：你在本次推理中如果需要引用上述前置步骤生成的节点或关系，必须使用它们原本的 ID，以保证知识图谱的链路嵌套一致性。\n\n"
+    
     # 构造 Prompt
     prompt_map = {
-        "法条适用分析": "请对提供的图谱进行法条适用分析。重点分析案件事实(Fact)是如何触发法条(LegalProvision)的，以及法庭评判(JudicialAssessment)的法律解释(LegalInterpretation)。",
-        "构成要件分析": "请对提供的图谱进行构成要件分析。将案件事实(Fact)与法条的构成要件(LegalProvisionElement)进行严格的涵摄映射。",
-        "证据采信分析": "请对提供的图谱进行证据采信分析。梳理证据(Evidence)之间的相互印证(corroborates)与矛盾(contradicts)关系，并形成证据链(EvidenceChain)。",
-        "裁判尺度分析": "请对提供的图谱进行裁判尺度与量刑分析。找出影响判决结果(JudgmentResult)的量刑情节(SentencingCircumstance)，区分从重(aggravates)和从轻(mitigates)。",
-        "诉求抗辩分析": "请对提供的图谱进行诉求抗辩对抗分析。提取诉求(LitigationClaim)与抗辩(ArgumentPoint)之间的对抗关系，并指向具体的争点(DisputeFocus)。"
+        "法条适用分析": "请对提供的图谱以及前置推理结论进行法条适用分析。寻找并匹配具体的法律条文 (LegalProvision)，并提供法官对该法条的特定解释 (LegalInterpretation)。注意引用前置事实或要件节点时保持ID一致。",
+        "构成要件分析": "请针对提取出的事实和焦点以及前置推理结论，分析其是否符合特定罪名/案由的构成要件（如：主体要件、主观要件、客观行为）。请引用前置生成的 Fact 和 EvidenceChain ID，来说明“某要件已满足”。输出LegalProvisionElement和matches_element关系。",
+        "证据采信分析": "请寻找证据与证据之间的关系（corroborates 印证 / contradicts 矛盾），梳理证据链条 (EvidenceChain)，判断证据是否被法庭采信 (JudicialAssessment)。必须且只能使用corroborates和contradicts边表示证据间关系。",
+        "裁判尺度分析": "请提取影响最终判决的法定/酌定量刑情节 (SentencingCircumstance)，并将这些情节与最终的裁判结果关联。输出SentencingCircumstance节点以及mitigates (减轻)/aggravates (加重)边。",
+        "诉求抗辩分析": "请将原告/公诉人的指控 (LitigationClaim) 与被告/辩护人的抗辩 (ArgumentPoint) 对应起来。结合前置证据链，指出各方的诉求/抗辩分别有什么证据支撑。归纳出本案的核心争议焦点 (DisputeFocus)。"
     }
     
     system_prompt = f"""你是一个资深的法官与法律知识图谱专家。
@@ -2946,7 +3580,7 @@ def deep_think():
                 model="deepseek-chat",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"图谱数据:\n{context_str}"}
+                    {"role": "user", "content": f"{history_text}图谱数据:\n{context_str}"}
                 ],
                 stream=True,
                 temperature=0.3

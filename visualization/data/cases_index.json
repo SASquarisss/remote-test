@@ -1,26 +1,5 @@
 [
   {
-    "row_id": "manual_1778579097",
-    "case_name": "甲方与乙方买卖合同纠纷案",
-    "case_type": "unknown",
-    "version": 1,
-    "source": "manual"
-  },
-  {
-    "row_id": "manual_1778581143",
-    "case_name": "江门市鲲鹏融资担保有限公司与蓬江某水生木业商行等追偿权纠纷执行案",
-    "case_type": "civil",
-    "version": 1,
-    "source": "manual"
-  },
-  {
-    "row_id": "manual_1778592452",
-    "case_name": "张某伟与上海某医学数据科技有限公司发明专利发明人署名权纠纷二审民事判决书",
-    "case_type": "civil",
-    "version": 1,
-    "source": "manual"
-  },
-  {
     "row_id": "manual_web_test_2478",
     "case_name": "宋某诉叶某、广州某计算机系统有限公司网络侵权责任纠纷案",
     "case_type": "civil",
@@ -47,34 +26,6 @@
     "case_type": "criminal",
     "version": 1,
     "source": "manual"
-  },
-  {
-    "row_id": "manual_1779034093",
-    "case_name": "吴某某等走私普通货物、物品罪二审判决书",
-    "case_type": "criminal",
-    "version": 1,
-    "source": "manual",
-    "meta": {
-      "source": "manual",
-      "types": [
-        "刑事",
-        "走私普通货物、物品"
-      ],
-      "years": [
-        "2024"
-      ],
-      "procedures": [
-        "一审",
-        "二审"
-      ],
-      "stats": {
-        "facts": 4,
-        "focuses": 1,
-        "relations": 33,
-        "evidence": 4,
-        "provisions": 9
-      }
-    }
   },
   {
     "row_id": "manual_1779440419",
@@ -120,6 +71,78 @@
         "relations": 31,
         "evidence": 8,
         "provisions": 12
+      }
+    }
+  },
+  {
+    "row_id": "manual_stage55_discovery",
+    "case_name": "阶段55发现历史持久化自测",
+    "case_type": "unknown",
+    "version": 1,
+    "source": "manual",
+    "meta": {
+      "source": "manual",
+      "case_categories": [],
+      "case_reasons": [],
+      "trial_levels": [],
+      "procedures": [],
+      "judgment_years": [],
+      "publication_years": [],
+      "types": [],
+      "years": [],
+      "stats": {
+        "facts": 1,
+        "focuses": 0,
+        "relations": 1,
+        "evidence": 1,
+        "provisions": 0
+      }
+    }
+  },
+  {
+    "row_id": "manual_1780383896",
+    "case_name": "吴某某等走私普通货物、物品罪二审判决书",
+    "case_type": "criminal",
+    "version": 1,
+    "source": "manual",
+    "meta": {
+      "source": "manual",
+      "case_categories": [
+        "刑事案件"
+      ],
+      "case_reasons": [
+        "刑事",
+        "走私普通货物、物品"
+      ],
+      "trial_levels": [
+        "first_instance",
+        "second_instance"
+      ],
+      "procedures": [
+        "二审",
+        "一审"
+      ],
+      "judgment_years": [
+        "2024"
+      ],
+      "publication_years": [
+        "2025"
+      ],
+      "types": [
+        "刑事",
+        "刑事案件",
+        "走私普通货物、物品"
+      ],
+      "years": [
+        "2025",
+        "2024"
+      ],
+      "stats": {
+        "facts": 4,
+        "focuses": 1,
+        "relations": 67,
+        "evidence": 4,
+        "provisions": 10
       }
     }
   }

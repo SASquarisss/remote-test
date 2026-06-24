@@ -3,6 +3,7 @@ import { DataSet } from 'vis-data';
 import { store } from '../store/index.js';
 import { safeGetElement } from '../utils/dom.js';
 import { escapeHtml } from '../utils/formatter.js';
+import { defaultStyles } from './ParseGraph.js';
 import {
   parseEnhancement,
   parseQuality,
@@ -15,6 +16,10 @@ import {
   reembedRetrievalBundle,
   writeRetrievalBundle,
   augmentProvisions,
+  writeNeo4jCase,
+  getNeo4jCaseStatus,
+  writeNeo4jRetrievalLayer,
+  writeNeo4jDiscoveryLayer,
 } from '../api/backend.js';
 
 export class TerminalPanel {
@@ -31,11 +36,13 @@ export class TerminalPanel {
     this.parseBtn = safeGetElement('btnTermParse');
     this.saveBtn = document.getElementById('btnTermSave');
     this.saveBtnBottom = safeGetElement('btnTermSaveBottom');
+    this.neo4jWriteBtnBottom = safeGetElement('btnTermNeo4jWriteBottom');
     this.clearBtn = safeGetElement('btnTermClear');
     this.evalBtn = safeGetElement('btnTermEvaluate');
     this.enhanceBtn = safeGetElement('btnTermEnhance');
     this.augmentBtn = safeGetElement('btnTermAugment');
     this.statusArea = safeGetElement('termStatusArea');
+    this.neo4jStatusArea = safeGetElement('termNeo4jStatus');
     
     this.lastResult = null;
     this.lastQualityResult = null;
@@ -44,6 +51,9 @@ export class TerminalPanel {
     this.lastEnhancementRuns = [];
     this.lastRetrievalBundle = null;
     this.lastRetrievalWriteManifest = null;
+    this.lastNeo4jStatus = null;
+    this.lastNeo4jWriteSummary = null;
+    this.lastNeo4jDocId = null;
     this.isEnhancing = false;
     this.lastTerminalLocateTimestamp = null;
     this.jsonChangedKeys = new Set();
@@ -52,6 +62,7 @@ export class TerminalPanel {
     this.syncLayoutState();
     
     // Listen for cross-graph focus to update issues view
+    let lastRowIdForDiscovery = null;
     store.subscribe(state => {
       if (state.selectedGraph === 'parse' && state.selectedNodeId && this.lastQualityResult) {
         // Rerender issues to update the focus section
@@ -65,7 +76,78 @@ export class TerminalPanel {
           this.highlightJsonKey(state.locateTarget.typeKey);
         }
       }
+
+      if (state.parseGraphData && state.parseGraphData.row_id && state.parseGraphData.row_id !== lastRowIdForDiscovery) {
+        lastRowIdForDiscovery = state.parseGraphData.row_id;
+        this.loadDiscoveryHistory();
+      }
+
+      this.syncGraphViewModeControls(state.graphViewMode);
     });
+  }
+
+  getDiscoveryStorageKey() {
+    const rowId = this.lastResult?.row_id || store.getState().parseGraphData?.row_id || 'default';
+    return `workspace:discovery-history:${rowId}`;
+  }
+
+  saveDiscoveryHistory() {
+    try {
+      window.localStorage.setItem(this.getDiscoveryStorageKey(), JSON.stringify(this.discoveryHistory || []));
+      this.syncDiscoveryStateToStore();
+    } catch (e) {
+      console.error('Failed to save discovery history', e);
+    }
+  }
+
+  syncDiscoveryStateToStore() {
+    store.setState({
+      discoveryHistory: this.discoveryHistory || [],
+      activeDiscoveryIdx: typeof this.activeDiscoveryIdx === 'number' ? this.activeDiscoveryIdx : -1,
+    });
+  }
+
+  syncGraphViewModeControls(mode = store.getState().graphViewMode || 'global') {
+    const radios = document.querySelectorAll('input[name="graphViewMode"]');
+    radios.forEach((radio) => {
+      radio.checked = radio.value === mode;
+    });
+  }
+
+  loadDiscoveryHistory() {
+    try {
+      const stored = window.localStorage.getItem(this.getDiscoveryStorageKey());
+      if (stored) {
+        this.discoveryHistory = JSON.parse(stored);
+        if (this.discoveryHistory && this.discoveryHistory.length > 0) {
+          this.activeDiscoveryIdx = this.discoveryHistory.length - 1;
+          this.renderDiscoveryHistoryTabs();
+          this.showDiscoveryResult(this.activeDiscoveryIdx, false);
+        } else {
+          this.discoveryHistory = [];
+          this.activeDiscoveryIdx = -1;
+          this.renderDiscoveryHistoryTabs();
+          this.resetDiscoveryUI();
+        }
+      } else {
+        this.discoveryHistory = [];
+        this.activeDiscoveryIdx = -1;
+        this.renderDiscoveryHistoryTabs();
+        this.resetDiscoveryUI();
+      }
+      this.syncDiscoveryStateToStore();
+    } catch (e) {
+      console.error('Failed to load discovery history', e);
+    }
+  }
+
+  resetDiscoveryUI() {
+    const placeholder = document.getElementById('termDiscoveryPlaceholder');
+    const contentLeft = document.getElementById('termDiscoveryContentLeft');
+    const contentRight = document.getElementById('termDiscoveryContentRight');
+    if (placeholder) placeholder.style.display = 'block';
+    if (contentLeft) contentLeft.style.display = 'none';
+    if (contentRight) contentRight.style.display = 'none';
   }
 
   ensureTerminalUI() {
@@ -189,7 +271,7 @@ export class TerminalPanel {
                   <span class="term-tab-label">🤔 深度思考</span>
                 </span>
                 <span class="term-tab" data-target="termSubGraphTabContent">
-                  <span class="term-tab-label">🔗 子图</span>
+                  <span class="term-tab-label">🔗 检索链路</span>
                 </span>
                 <span class="term-tab" data-target="termIssuesTabContent">
                   <span class="term-tab-label">⚠ 问题</span>
@@ -205,27 +287,69 @@ export class TerminalPanel {
             <div class="term-graph-mode-bar" id="termGraphModeBar">
               <span class="term-graph-mode-badge" id="termGraphModeBadge">全貌模式</span>
               <span class="term-graph-mode-summary" id="termGraphModeSummary">查看案件整体结构，默认保留全量实体并对结构边降噪。</span>
+              
+              <!-- 视图过滤开关 -->
+              <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <span style="font-size: 12px; color: #64748b; font-weight: bold; margin-right: 4px;">视界过滤:</span>
+                <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="radio" name="graphViewMode" value="global" checked />
+                  🌐 全貌
+                </label>
+                <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="radio" name="graphViewMode" value="deep_think" />
+                  🧠 纯净推演
+                </label>
+              </div>
             </div>
             
             <div id="termWorkspaceContent" style="flex: 1; position: relative; overflow: hidden;">
               <!-- VisContainer moved here dynamically -->
               
               <div id="termDeepThinkingTabContent" class="term-content-pane term-deep-thinking-area" style="display: none; position: absolute; inset: 0; background: #fff;">
-                <div id="termDeepThinkingContainer" style="width: 100%; height: 100%; display: flex; align-items: flex-start; padding: 16px; color: #334155; flex-direction: column; gap: 12px; overflow: auto;">
-                  <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">预设深度思考能力矩阵</div>
-                  <button class="dt-preset-btn" data-think-type="法条适用分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">🔍 法条适用分析</button>
-                  <button class="dt-preset-btn" data-think-type="构成要件分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">⚖️ 构成要件分析</button>
-                  <button class="dt-preset-btn" data-think-type="证据采信分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">📝 证据采信分析</button>
-                  <button class="dt-preset-btn" data-think-type="裁判尺度分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">📐 裁判尺度分析</button>
-                  <button class="dt-preset-btn" data-think-type="诉求抗辩分析" style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; cursor: pointer;">⚔️ 诉求抗辩分析</button>
-                  <div style="font-size: 12px; color: #94a3b8; margin-top: 16px;">* 点击上方按钮发起分析，结果将在中间「知识发现」面板中展示。</div>
+                <div id="termDeepThinkingContainer" style="width: 100%; height: 100%; display: flex; align-items: stretch; padding: 16px; color: #334155; gap: 16px; overflow: auto;">
+                  
+                  <!-- Left Column: Current Chain -->
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; border-right: 1px dashed #e2e8f0; padding-right: 16px;">
+                    <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                      <span>全案深度思考链</span>
+                      <button id="btnChainReasoning" style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        🧠 开始链式思考
+                      </button>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; position: relative;">
+                      <!-- Sequence representation -->
+                      <button class="dt-preset-btn" disabled style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; cursor: not-allowed; opacity: 0.8;">1. 📝 证据采信分析</button>
+                      <div style="width: 2px; height: 10px; background: #cbd5e1; margin: 0 auto;"></div>
+                      <button class="dt-preset-btn" disabled style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; cursor: not-allowed; opacity: 0.8;">2. ⚔️ 诉求抗辩分析</button>
+                      <div style="width: 2px; height: 10px; background: #cbd5e1; margin: 0 auto;"></div>
+                      <button class="dt-preset-btn" disabled style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; cursor: not-allowed; opacity: 0.8;">3. ⚖️ 构成要件分析</button>
+                      <div style="width: 2px; height: 10px; background: #cbd5e1; margin: 0 auto;"></div>
+                      <button class="dt-preset-btn" disabled style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; cursor: not-allowed; opacity: 0.8;">4. 🔍 法条适用分析</button>
+                      <div style="width: 2px; height: 10px; background: #cbd5e1; margin: 0 auto;"></div>
+                      <button class="dt-preset-btn" disabled style="width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; cursor: not-allowed; opacity: 0.8;">5. 📐 裁判尺度分析</button>
+                    </div>
+                    
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: auto;">* 点击上方按钮发起链式推演，大模型将接力执行上述分析，结果将在中间「知识发现」面板中依次展示。</div>
+                  </div>
+
+                  <!-- Right Column: Future space -->
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+                    <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #cbd5e1;">未来探索</div>
+                    <div style="flex: 1; border: 2px dashed #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; text-align: center; padding: 16px;">
+                      预留用于其他类型的<br/>深度思考链路
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
               <div id="termSubGraphTabContent" class="term-content-pane term-subgraph-area" style="display: none; position: absolute; inset: 0; background: #fff;">
                 <div id="termSubGraphContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #94a3b8; flex-direction: column;">
-                  <div style="font-size: 14px;">暂无子图数据</div>
-                  <div style="font-size: 12px; margin-top: 8px;">请在检索资产列表中点击条目进行查看</div>
+                  <div id="termSubGraphPlaceholder">
+                    暂无子图数据<br/>
+                    <span style="font-size: 10px; margin-top: 4px; display: inline-block;">请在终端左侧的检索资产列表中点击条目</span>
+                  </div>
                 </div>
               </div>
 
@@ -455,6 +579,9 @@ export class TerminalPanel {
     if (this.saveBtnBottom) {
       this.saveBtnBottom.addEventListener('click', () => this.handleSave());
     }
+    if (this.neo4jWriteBtnBottom) {
+      this.neo4jWriteBtnBottom.addEventListener('click', () => this.handleWriteNeo4jBase());
+    }
 
     if (this.evalBtn) {
       this.evalBtn.addEventListener('click', () => this.handleEvaluate());
@@ -515,6 +642,23 @@ export class TerminalPanel {
         }
       });
     }
+
+    window.addEventListener('ontology-open-runtime-workspace', (event) => {
+      const suggestedTab = event?.detail?.suggestedTab || 'termSubGraphTabContent';
+      this.switchTab(suggestedTab);
+    });
+
+    window.addEventListener('ontology-runtime-select', (event) => {
+      const kind = event?.detail?.kind;
+      if (kind === 'retrieval') {
+        this.renderSubGraph(this.getActiveRetrievalEntry());
+        return;
+      }
+      if (kind === 'discovery') {
+        const activeRecord = (this.discoveryHistory || [])[this.activeDiscoveryIdx] || null;
+        this.renderDiscoverySubGraph(activeRecord?.result?.knowledge_discovery || null);
+      }
+    });
     
     // Delegated event for tree toggle in issues
     const issuesTab = document.getElementById('termIssuesTabContent');
@@ -545,6 +689,7 @@ export class TerminalPanel {
           if (type === 'save-entry') this.handleSaveRetrievalEntry();
           if (type === 'reembed') this.handleReembedRetrieval();
           if (type === 'write') this.handleWriteRetrieval();
+          if (type === 'write-neo4j') this.handleWriteRetrievalLayer();
           if (type === 'preview-mode') {
             const mode = action.getAttribute('data-preview-mode');
             if (mode && this.lastRetrievalBundle) {
@@ -626,10 +771,27 @@ export class TerminalPanel {
       });
     }
 
+    const btnChainReasoning = document.getElementById('btnChainReasoning');
+    if (btnChainReasoning) {
+      btnChainReasoning.addEventListener('click', () => {
+        this.handleChainReasoning();
+      });
+    }
+
     const btnMergeDiscovery = document.getElementById('btnMergeDiscovery');
     if (btnMergeDiscovery) {
       btnMergeDiscovery.addEventListener('click', () => this.handleMergeDiscovery());
     }
+
+    const graphViewRadios = document.querySelectorAll('input[name="graphViewMode"]');
+    graphViewRadios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (radio.checked) {
+          store.setState({ graphViewMode: radio.value });
+        }
+      });
+    });
+    this.syncGraphViewModeControls();
   }
 
   applyMainViewHeight(heightPx) {
@@ -731,6 +893,7 @@ export class TerminalPanel {
           const summary = version?.change_summary || {};
           const entityCount = Object.values(summary.entity_added || {}).reduce((sum, value) => sum + Number(value || 0), 0)
             + Object.values(summary.entity_updated || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+          const attributeCount = Object.values(summary.attribute_updated || {}).reduce((sum, value) => sum + Number(value || 0), 0);
           const relationCount = Object.values(summary.relation_added || {}).reduce((sum, value) => sum + Number(value || 0), 0)
             + Object.values(summary.relation_updated || {}).reduce((sum, value) => sum + Number(value || 0), 0);
           const derivedCount = Object.values(summary.derived_relation_added || {}).reduce((sum, value) => sum + Number(value || 0), 0)
@@ -743,7 +906,7 @@ export class TerminalPanel {
                 <span style="position:absolute; left:-18px; top:12px; width:10px; height:10px; border-radius:999px; background:${active ? '#2563eb' : '#cbd5e1'}; border:2px solid #fff;"></span>
                 <div style="font-size:12px; font-weight:700; color:#0f172a;">${escapeHtml(version?.label || version?.version_id || '')}</div>
                 <div style="margin-top:4px; font-size:11px; color:#64748b;">${escapeHtml(version?.created_at || '')}</div>
-                <div style="margin-top:6px; font-size:11px; color:#475569;">+${entityCount} 实体 / +${relationCount} 显式关系 / +${derivedCount} 派生关系</div>
+                <div style="margin-top:6px; font-size:11px; color:#475569;">+${entityCount} 实体 / +${attributeCount} 属性 / +${relationCount} 显式关系 / +${derivedCount} 派生关系</div>
               </div>
             </div>
           `;
@@ -1008,6 +1171,229 @@ export class TerminalPanel {
     }
   }
 
+  inferNeo4jDocId() {
+    const rowId = this.lastResult?.row_id || store.getState().parseGraphData?.row_id || '';
+    if (!rowId) return null;
+    return `CASE:${rowId}`;
+  }
+
+  renderNeo4jStatus(statusPayload = null) {
+    this.lastNeo4jStatus = statusPayload || null;
+    const layers = statusPayload?.layers || {};
+    const base = statusPayload?.layers?.base;
+    const retrieval = statusPayload?.layers?.retrieval;
+    const discovery = statusPayload?.layers?.discovery;
+    const formatLayer = (name, layer) => `${name}${layer?.status === 'written' ? '已写入' : '未写入'}`;
+    const label = `Neo4j: ${formatLayer('基础', layers.base)} / ${formatLayer('检索', layers.retrieval)} / ${formatLayer('发现', layers.discovery)}`;
+    const color = base?.status === 'written' || retrieval?.status === 'written' || discovery?.status === 'written' ? '#16a34a' : '#64748b';
+    if (this.neo4jStatusArea) {
+      this.neo4jStatusArea.textContent = label;
+      this.neo4jStatusArea.style.color = color;
+    }
+    if (this.neo4jWriteBtnBottom) {
+      this.neo4jWriteBtnBottom.textContent = base?.status === 'written' ? '✅ 已写入 Neo4j' : '🕸 写入 Neo4j';
+      this.neo4jWriteBtnBottom.disabled = !this.lastResult?.json_result;
+    }
+  }
+
+  async refreshNeo4jStatus(docId = this.inferNeo4jDocId()) {
+    this.lastNeo4jDocId = docId || null;
+    if (!docId) {
+      this.renderNeo4jStatus(null);
+      store.setState({ neo4jStatus: null, neo4jLastRunId: null, neo4jDocId: null });
+      return null;
+    }
+    try {
+      const result = await getNeo4jCaseStatus(docId);
+      this.renderNeo4jStatus(result);
+      store.setState({
+        neo4jStatus: result.layers || null,
+        neo4jLastRunId: result.layers?.discovery?.source_run_id || result.layers?.retrieval?.source_run_id || result.layers?.base?.source_run_id || null,
+        neo4jDocId: result.doc_id || docId,
+      });
+      return result;
+    } catch (err) {
+      this.renderNeo4jStatus(null);
+      store.setState({ neo4jStatus: null, neo4jLastRunId: null, neo4jDocId: docId });
+      return null;
+    }
+  }
+
+  buildNeo4jWritePayload() {
+    const state = store.getState();
+    const docId = this.inferNeo4jDocId();
+    return {
+      doc_context: {
+        row_id: this.lastResult?.row_id || '',
+        doc_id: docId,
+        doc_type: 'case',
+        external_id: this.lastResult?.row_id || '',
+        case_name: this.lastResult?.case_name || '',
+        source: document.getElementById('termSaveTarget')?.value || 'manual',
+      },
+      workspace_context: {
+        workspace_id: 'workspace_default',
+        active_tab: state.activeTab || 'termJsonArea',
+        selected_graph: state.selectedGraph || 'parse',
+        parse_active_version_id: state.parseActiveVersionId || 'v0',
+        operator: 'user',
+      },
+      data: {
+        raw_text: this.inputArea ? this.inputArea.value : '',
+        json_result: this.lastResult?.json_result || {},
+        parse_versions: state.parseVersions || [],
+        active_version_id: state.parseActiveVersionId || 'v0',
+        text_chunks: this.lastResult?.text_chunks || state.textChunks || [],
+        source_alignment: this.lastResult?.source_alignment || state.sourceAlignment || {},
+      },
+      write_options: {
+        graph_layer: 'base',
+        include_chunks: true,
+        overwrite_scope: 'doc_layer',
+        create_run: true,
+        force_reingest: false,
+        write_mode: 'manual_click',
+      },
+    };
+  }
+
+  async handleWriteNeo4jBase() {
+    if (!this.lastResult?.json_result) {
+      this.setStatus('请先完成解析，再写入 Neo4j', '#ef4444');
+      return;
+    }
+    if (this.neo4jWriteBtnBottom) {
+      this.neo4jWriteBtnBottom.disabled = true;
+      this.neo4jWriteBtnBottom.textContent = '写入中...';
+    }
+    this.setStatus('正在写入 Neo4j 基础层...', '#16a34a');
+    try {
+      const result = await writeNeo4jCase(this.buildNeo4jWritePayload());
+      this.lastNeo4jWriteSummary = result.write_summary || null;
+      this.lastNeo4jDocId = result.doc_id || this.inferNeo4jDocId();
+      this.renderNeo4jStatus({ layers: result.neo4j_status || {}, doc_id: this.lastNeo4jDocId });
+      store.setState({
+        neo4jStatus: result.neo4j_status || null,
+        neo4jLastWriteSummary: result.write_summary || null,
+        neo4jLastRunId: result.source_run_id || null,
+        neo4jDocId: result.doc_id || this.lastNeo4jDocId,
+      });
+      this.setStatus(`Neo4j 写入成功 (${result.doc_id || this.lastNeo4jDocId})`, '#16a34a');
+      if (this.neo4jWriteBtnBottom) {
+        this.neo4jWriteBtnBottom.textContent = '✅ 已写入 Neo4j';
+      }
+    } catch (err) {
+      this.setStatus(`Neo4j 写入失败: ${err.message}`, '#e74c3c');
+      if (this.neo4jWriteBtnBottom) {
+        this.neo4jWriteBtnBottom.textContent = '🕸 写入 Neo4j';
+        this.neo4jWriteBtnBottom.disabled = false;
+      }
+      return;
+    }
+    if (this.neo4jWriteBtnBottom) {
+      this.neo4jWriteBtnBottom.disabled = false;
+    }
+  }
+
+  async handleWriteRetrievalLayer() {
+    if (!this.lastRetrievalBundle) {
+      this.setStatus('请先生成检索资产，再写入检索层', '#ef4444');
+      return;
+    }
+    const issues = this.buildRetrievalValidation(this.lastRetrievalBundle);
+    const blockingIssues = issues.filter((item) => item.level === 'error');
+    const compatibilityPlan = this.buildRetrievalCompatibilityPlan(this.lastRetrievalBundle);
+    // #region debug-point A:retrieval-neo4j-validation
+    fetch("http://127.0.0.1:7777/event",{method:"POST",body:JSON.stringify({sessionId:"retrieval-404-block",runId:"post-fix",hypothesisId:"A",location:"TerminalPanel.js:handleWriteRetrievalLayer:validation",msg:"[DEBUG] Retrieval Neo4j write validation evaluated",data:{issueCount:issues.length,blockingCount:blockingIssues.length,writableEntryCount:compatibilityPlan.writableEntries.length,skippedEntryCount:compatibilityPlan.skippedEntries.length,sample:blockingIssues.slice(0,3).map((item)=>({level:item.level,label:item.label,message:item.message}))},ts:Date.now()})}).catch(()=>{});
+    // #endregion
+    if (blockingIssues.length && !compatibilityPlan.writableEntries.length) {
+      // #region debug-point A:retrieval-neo4j-blocked
+      fetch("http://127.0.0.1:7777/event",{method:"POST",body:JSON.stringify({sessionId:"retrieval-404-block",runId:"post-fix",hypothesisId:"A",location:"TerminalPanel.js:handleWriteRetrievalLayer:blocked",msg:"[DEBUG] Retrieval Neo4j write blocked before request",data:{blockingCount:blockingIssues.length,writableEntryCount:compatibilityPlan.writableEntries.length,containsPending:blockingIssues.some((item)=>String(item.message||"").includes("pending")),containsStale:blockingIssues.some((item)=>String(item.message||"").includes("stale")),containsFailed:blockingIssues.some((item)=>String(item.message||"").includes("failed"))},ts:Date.now()})}).catch(()=>{});
+      // #endregion
+      this.setStatus(`检索层写入前仍有 ${blockingIssues.length} 项阻塞问题，且当前没有可兼容写入的检索资产`, '#d97706');
+      return;
+    }
+    const writeMode = compatibilityPlan.skippedEntries.length ? 'compatible' : 'strict';
+    const bundleToWrite = compatibilityPlan.skippedEntries.length
+      ? { ...this.lastRetrievalBundle, entries: compatibilityPlan.writableEntries }
+      : this.lastRetrievalBundle;
+    this.setStatus(
+      compatibilityPlan.skippedEntries.length
+        ? `正在以兼容模式写入 Neo4j 检索层，将跳过 ${compatibilityPlan.skippedEntries.length} 条阻塞资产...`
+        : '正在写入 Neo4j 检索层...',
+      '#16a34a'
+    );
+    try {
+      // #region debug-point B:retrieval-neo4j-request
+      fetch("http://127.0.0.1:7777/event",{method:"POST",body:JSON.stringify({sessionId:"retrieval-404-block",runId:"post-fix",hypothesisId:"B",location:"TerminalPanel.js:handleWriteRetrievalLayer:before-fetch",msg:"[DEBUG] Retrieval Neo4j write request about to start",data:{rowId:this.lastResult?.row_id||"manual_case",docId:this.inferNeo4jDocId(),writeMode,entryCount:(bundleToWrite?.entries||[]).length,skippedEntryCount:compatibilityPlan.skippedEntries.length},ts:Date.now()})}).catch(()=>{});
+      // #endregion
+      const result = await writeNeo4jRetrievalLayer({
+        row_id: this.lastResult?.row_id || 'manual_case',
+        doc_id: this.inferNeo4jDocId(),
+        case_name: this.lastResult?.case_name || '',
+        bundle: bundleToWrite,
+        write_mode: writeMode,
+        skipped_entries: compatibilityPlan.skippedEntries,
+      });
+      this.lastNeo4jDocId = result.doc_id || this.inferNeo4jDocId();
+      // #region debug-point C:retrieval-neo4j-success
+      fetch("http://127.0.0.1:7777/event",{method:"POST",body:JSON.stringify({sessionId:"retrieval-404-block",runId:"post-fix",hypothesisId:"C",location:"TerminalPanel.js:handleWriteRetrievalLayer:success",msg:"[DEBUG] Retrieval Neo4j write returned success",data:{docId:result.doc_id||this.lastNeo4jDocId,summary:result.write_summary||null},ts:Date.now()})}).catch(()=>{});
+      // #endregion
+      store.setState({
+        neo4jStatus: result.neo4j_status || null,
+        neo4jLastWriteSummary: {
+          ...(store.getState().neo4jLastWriteSummary || {}),
+          retrieval: result.write_summary || null,
+        },
+        neo4jLastRunId: result.source_run_id || store.getState().neo4jLastRunId || null,
+        neo4jDocId: result.doc_id || this.lastNeo4jDocId,
+      });
+      this.renderNeo4jStatus({ layers: result.neo4j_status || {}, doc_id: this.lastNeo4jDocId });
+      this.setStatus(
+        compatibilityPlan.skippedEntries.length
+          ? `Neo4j 检索层已兼容写入 (${result.doc_id || this.lastNeo4jDocId})，跳过 ${compatibilityPlan.skippedEntries.length} 条阻塞资产`
+          : `Neo4j 检索层写入成功 (${result.doc_id || this.lastNeo4jDocId})`,
+        compatibilityPlan.skippedEntries.length ? '#d97706' : '#16a34a'
+      );
+    } catch (err) {
+      // #region debug-point C:retrieval-neo4j-failed
+      fetch("http://127.0.0.1:7777/event",{method:"POST",body:JSON.stringify({sessionId:"retrieval-404-block",runId:"post-fix",hypothesisId:"C",location:"TerminalPanel.js:handleWriteRetrievalLayer:failed",msg:"[DEBUG] Retrieval Neo4j write failed in UI",data:{message:err?.message||String(err||""),name:err?.name||"",stack:err?.stack||""},ts:Date.now()})}).catch(()=>{});
+      // #endregion
+      this.setStatus(`Neo4j 检索层写入失败: ${err.message}`, '#ef4444');
+    }
+  }
+
+  async handleWriteDiscoveryLayer() {
+    const record = (this.discoveryHistory || [])[this.activeDiscoveryIdx] || null;
+    if (!record?.result?.knowledge_discovery) {
+      this.setStatus('请先生成知识发现结果，再写入发现层', '#ef4444');
+      return;
+    }
+    this.setStatus('正在写入 Neo4j 发现层...', '#16a34a');
+    try {
+      const result = await writeNeo4jDiscoveryLayer({
+        row_id: this.lastResult?.row_id || 'manual_case',
+        doc_id: this.inferNeo4jDocId(),
+        case_name: this.lastResult?.case_name || '',
+        discovery_history: this.discoveryHistory || [],
+      });
+      this.lastNeo4jDocId = result.doc_id || this.inferNeo4jDocId();
+      store.setState({
+        neo4jStatus: result.neo4j_status || null,
+        neo4jLastWriteSummary: {
+          ...(store.getState().neo4jLastWriteSummary || {}),
+          discovery: result.write_summary || null,
+        },
+        neo4jLastRunId: result.source_run_id || store.getState().neo4jLastRunId || null,
+        neo4jDocId: result.doc_id || this.lastNeo4jDocId,
+      });
+      this.renderNeo4jStatus({ layers: result.neo4j_status || {}, doc_id: this.lastNeo4jDocId });
+      this.setStatus(`Neo4j 发现层写入成功，已同步 ${result.write_summary?.record_count || 0} 条发现记录 (${result.doc_id || this.lastNeo4jDocId})`, '#16a34a');
+    } catch (err) {
+      this.setStatus(`Neo4j 发现层写入失败: ${err.message}`, '#ef4444');
+    }
+  }
+
   updateEnhanceButtonState() {
     if (this.enhanceBtn) {
       const ready = Boolean(this.lastEvalResult && !this.isEnhancing);
@@ -1127,6 +1513,7 @@ export class TerminalPanel {
       if (this.evalBtn) this.evalBtn.disabled = false;
       if (this.saveBtn) this.saveBtn.disabled = false;
       if (this.saveBtnBottom) this.saveBtnBottom.disabled = false;
+      if (this.neo4jWriteBtnBottom) this.neo4jWriteBtnBottom.disabled = false;
 
       if (result.json_result) {
         const baseVersion = {
@@ -1149,8 +1536,19 @@ export class TerminalPanel {
           parseVersions: [baseVersion],
           parseActiveVersionId: 'v0',
           parseMergeHighlight: null,
+          textChunks: result.text_chunks || [],
+          sourceAlignment: result.source_alignment || {},
+          chunkingMeta: result.chunking_meta || null,
+          alignmentStats: result.alignment_stats || null,
+          alignmentUnmatchedItems: result.alignment_unmatched_items || [],
+          neo4jStatus: null,
+          neo4jLastWriteSummary: null,
+          neo4jLastRunId: null,
+          neo4jDocId: null,
         });
         this.renderVersionRail([baseVersion], 'v0');
+        this.renderNeo4jStatus(null);
+        await this.refreshNeo4jStatus(this.inferNeo4jDocId());
         
         // Auto-run quality analysis, but do not downgrade a successful parse into a parse failure.
         this.switchTab('termIssuesTabContent');
@@ -1470,6 +1868,11 @@ export class TerminalPanel {
         score: this.lastResult.score,
         issues: this.lastResult.issues,
         text: this.inputArea ? this.inputArea.value : '',
+        text_chunks: this.lastResult.text_chunks || [],
+        source_alignment: this.lastResult.source_alignment || {},
+        chunking_meta: this.lastResult.chunking_meta || null,
+        alignment_stats: this.lastResult.alignment_stats || null,
+        alignment_unmatched_items: this.lastResult.alignment_unmatched_items || [],
         ontology_eval: this.lastEvalResult,
         quality_result: this.lastQualityResult,
         enhancement_result: this.lastEnhancementResult,
@@ -1478,6 +1881,7 @@ export class TerminalPanel {
         active_version_id: store.getState().parseActiveVersionId || 'v0',
         retrieval_bundle: this.lastRetrievalBundle,
         retrieval_write_manifest: this.lastRetrievalWriteManifest,
+        discovery_history: this.discoveryHistory || [],
         target_layer: targetLayer,
       });
       
@@ -1604,6 +2008,42 @@ export class TerminalPanel {
       }
     }
     return issues;
+  }
+
+  getRetrievalEntryBlockingReasons(entry) {
+    const reasons = [];
+    const graphPayload = entry?.graph_payload || {};
+    if (!graphPayload?.is_valid_chain) {
+      reasons.push(graphPayload?.warning_text || '未形成有效实体关系链，不能生成主检索正文');
+    }
+    if (!String(entry?.retrieval_text || '').trim()) {
+      reasons.push('检索正文为空');
+    }
+    return reasons;
+  }
+
+  buildRetrievalCompatibilityPlan(bundle) {
+    const entries = bundle?.entries || [];
+    const writableEntries = [];
+    const skippedEntries = [];
+    for (const entry of entries) {
+      const reasons = this.getRetrievalEntryBlockingReasons(entry);
+      if (reasons.length) {
+        skippedEntries.push({
+          entry_id: entry?.entry_id || '',
+          entry_type: entry?.entry_type || '',
+          title: entry?.primary_entity?.label || entry?.title || entry?.entry_id || '未命名条目',
+          reasons,
+        });
+      } else {
+        writableEntries.push(entry);
+      }
+    }
+    return {
+      totalEntries: entries.length,
+      writableEntries,
+      skippedEntries,
+    };
   }
 
   getRetrievalPreviewDoc(mode, bundle, activeEntry) {
@@ -1777,6 +2217,7 @@ export class TerminalPanel {
             <button data-retrieval-action="save-entry" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;cursor:pointer;">保存编辑</button>
             <button data-retrieval-action="reembed" style="padding:7px 12px;border:none;border-radius:8px;background:#7c3aed;color:#fff;cursor:pointer;">重新向量化</button>
             <button data-retrieval-action="write" style="padding:7px 12px;border:none;border-radius:8px;background:#16a34a;color:#fff;cursor:pointer;">确认写入</button>
+            <button data-retrieval-action="write-neo4j" style="padding:7px 12px;border:none;border-radius:8px;background:#059669;color:#fff;cursor:pointer;">写入检索层</button>
             <span style="font-size:12px;color:#64748b;">筛选：</span>
             <input id="retrievalSearchInput" value="${escapeHtml(filters.search || '')}" placeholder="搜索标题、摘要、关键词、场景" style="min-width:220px;flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;" />
             <select id="retrievalFilterType" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;background:#fff;">
@@ -1808,6 +2249,7 @@ export class TerminalPanel {
           <div style="font-size:12px;color:#64748b;min-width:260px;line-height:1.7;">
             <div>当前工作态：${escapeHtml(hasWritten ? '已写入稿，可继续编辑并再次写出' : '内存草稿，需确认写入后落盘')}</div>
             <div>最近写出：${escapeHtml(writeSummary.writtenAt || '-')}</div>
+            <div>Neo4j 检索层：${escapeHtml(store.getState().neo4jStatus?.retrieval?.status === 'written' ? '已写入' : '未写入')}</div>
           </div>
         </div>
         ${versionMismatch ? `
@@ -1954,23 +2396,78 @@ export class TerminalPanel {
     });
   }
 
+  updateOntologyRuntimeMeta(meta = {}) {
+    const badge = document.getElementById('ontologyRuntimeSourceBadge');
+    const text = document.getElementById('ontologyRuntimeSourceText');
+    const footer = document.getElementById('ontologyRuntimeFooter');
+    const sourceType = meta.type || 'idle';
+    const sourceText = meta.label || '当前来源：暂无运行时子图';
+    const footerText = meta.footer || '说明：此视图展示的是运行时业务链路，不属于静态本体结构。';
+
+    if (badge) {
+      badge.className = `ontology-runtime-badge is-${sourceType}`;
+      badge.textContent = sourceType === 'retrieval' ? '检索链路' : sourceType === 'discovery' ? '知识发现' : '过渡中';
+    }
+    if (text) text.textContent = sourceText;
+    if (footer) footer.textContent = footerText;
+
+    window.dispatchEvent(new CustomEvent('ontology-runtime-meta', {
+      detail: {
+        type: sourceType,
+        label: sourceText,
+        footer: footerText,
+        nodeCount: meta.nodeCount || 0,
+        edgeCount: meta.edgeCount || 0,
+        workspaceTarget: meta.workspaceTarget || (sourceType === 'retrieval' ? 'termSubGraphTabContent' : sourceType === 'discovery' ? 'termDiscoveryTabContent' : 'termRetrievalTabContent'),
+        summary: meta.summary || '',
+      }
+    }));
+  }
+
   renderSubGraph(activeEntry) {
     const container = document.getElementById('termSubGraphContainer');
+    const runtimeContainer = document.getElementById('ontologyRuntimeCanvas') || document.getElementById('ontologySubGraphHost');
     if (!container) return;
 
     if (!activeEntry || !activeEntry.graph_payload || !activeEntry.graph_payload.chain_nodes || !activeEntry.graph_payload.chain_edges) {
-      container.innerHTML = `
-        <div style="font-size: 14px;">暂无子图数据</div>
-        <div style="font-size: 12px; margin-top: 8px;">该检索资产不包含子图结构信息</div>
-      `;
+      container.innerHTML = `<div id="termSubGraphPlaceholder">
+        暂无子图数据<br/>
+        <span style="font-size: 10px; margin-top: 4px; display: inline-block;">请在终端左侧的检索资产列表中点击条目</span>
+      </div>`;
       if (this.subNetwork) {
         this.subNetwork.destroy();
         this.subNetwork = null;
       }
+      if (this.runtimeSubNetwork) {
+        this.runtimeSubNetwork.destroy();
+        this.runtimeSubNetwork = null;
+      }
+      if (runtimeContainer) {
+        runtimeContainer.innerHTML = `
+          <div class="ontology-runtime-empty">
+            <div class="ontology-runtime-empty-title">暂无运行时子图</div>
+            <div class="ontology-runtime-empty-desc">请在终端左侧的检索资产列表中点击条目，或在知识发现里选择一条推理结果。</div>
+          </div>`;
+      }
+      this.updateOntologyRuntimeMeta({
+        type: 'idle',
+        label: '当前来源：暂无运行时子图',
+        summary: '等待检索资产链路或知识发现结果生成动态图。',
+      });
       return;
     }
 
     container.innerHTML = ''; // clear
+    if (runtimeContainer) runtimeContainer.innerHTML = '';
+    this.updateOntologyRuntimeMeta({
+      type: 'retrieval',
+      label: `当前来源：检索资产 · ${activeEntry?.title || activeEntry?.entry_id || '未命名条目'}`,
+      footer: '迁移提示：检索链路子图当前仍在本体悬浮窗过渡展示，后续将迁回主工作区的独立链路视图。',
+      nodeCount: activeEntry?.graph_payload?.chain_nodes?.length || 0,
+      edgeCount: activeEntry?.graph_payload?.chain_edges?.length || 0,
+      workspaceTarget: 'termSubGraphTabContent',
+      summary: `当前链路围绕「${activeEntry?.title || activeEntry?.entry_id || '未命名条目'}」展开，可在这里统一查看链路结构，并跳回主工作区继续编辑检索资产。`,
+    });
 
     const wrapText = (text, maxLen = 30) => {
       if (!text || text.length <= maxLen) return text;
@@ -1981,18 +2478,23 @@ export class TerminalPanel {
       return result.trim();
     };
 
-    const nodes = activeEntry.graph_payload.chain_nodes.map(n => ({
-      id: n.id,
-      label: wrapText(n.label, 30),
-      shape: 'box',
-      color: {
-        background: '#eef2ff',
-        border: '#4338ca'
-      },
-      font: { color: '#334155' }
-    }));
+    const nodesArray = activeEntry.graph_payload.chain_nodes.map(n => {
+      const style = defaultStyles[n.type] || { shape: 'box', color: '#eef2ff', border: '#4338ca', fontColor: '#334155' };
+      const displayLabel = `*${n.type || 'Unknown'}*\n${wrapText(n.label, 30)}`;
+      return {
+        id: n.id,
+        nodeType: n.type,
+        content: n.label,
+        label: displayLabel,
+        shape: style.shape,
+        color: { background: style.color, border: style.border },
+        font: { color: style.fontColor || '#334155', size: 12, multi: 'md' },
+        borderWidth: 2,
+        shadow: { enabled: true, size: 3 }
+      };
+    });
 
-    const edges = activeEntry.graph_payload.chain_edges.map((e, index) => {
+    const edgesArray = activeEntry.graph_payload.chain_edges.map((e, index) => {
       // In chain structure, edge[i] connects node[i] to node[i+1]
       const fromNode = activeEntry.graph_payload.chain_nodes[index];
       const toNode = activeEntry.graph_payload.chain_nodes[index + 1];
@@ -2003,37 +2505,77 @@ export class TerminalPanel {
         to: toNode?.id,
         label: e.label || e.relation_type,
         arrows: 'to',
-        font: { align: 'horizontal', size: 10, color: '#64748b' },
-        color: { color: '#cbd5e1' }
+        font: { align: 'horizontal', size: 10, color: '#64748b', strokeWidth: 2, strokeColor: '#ffffff' },
+        color: { color: '#cbd5e1' },
+        smooth: { type: 'curvedCW', roundness: 0.1 }
       };
     }).filter(e => e.from && e.to); // ensure valid edges
 
     const data = {
-      nodes: new DataSet(nodes),
-      edges: new DataSet(edges)
+      nodes: new DataSet(nodesArray),
+      edges: new DataSet(edgesArray)
     };
 
     const options = {
-      layout: {
-        hierarchical: {
-          direction: 'UD',
-          sortMethod: 'directed',
-          levelSeparation: 120,
-          nodeSpacing: 150
-        }
+      physics: {
+        enabled: true,
+        forceAtlas2Based: { gravitationalConstant: -50, centralGravity: 0.01, springLength: 100 },
+        solver: 'forceAtlas2Based'
       },
-      physics: false,
-      interaction: {
-        dragNodes: true,
-        dragView: true,
-        zoomView: true
-      }
+      interaction: { dragNodes: true, dragView: true, zoomView: true, hover: true },
+      layout: { randomSeed: 42 }
     };
 
     if (this.subNetwork) {
       this.subNetwork.destroy();
     }
-    this.subNetwork = new Network(container, data, options);
+    if (this.runtimeSubNetwork) {
+      this.runtimeSubNetwork.destroy();
+      this.runtimeSubNetwork = null;
+    }
+    
+    // We must ensure it's visible before rendering or redraw afterwards
+    setTimeout(() => {
+      this.subNetwork = new Network(container, data, options);
+      
+      this.subNetwork.on('click', (params) => {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const nodeData = data.nodes.get(nodeId);
+          store.setState({
+            selectedNodeId: nodeId,
+            selectedEdgeId: null,
+            selectedGraph: 'parse',
+            isPanelOpen: true,
+            parseNodeData: {
+              id: nodeData.id,
+              nodeType: nodeData.nodeType,
+              content: nodeData.content,
+              isVirtual: true // Mark as virtual/discovery node
+            }
+          });
+        } else if (params.edges.length > 0) {
+          const edgeId = params.edges[0];
+          store.setState({
+            selectedNodeId: null,
+            selectedEdgeId: edgeId,
+            selectedGraph: 'parse',
+            isPanelOpen: true,
+            parseEdgeData: data.edges.get(edgeId)
+          });
+        }
+      });
+      
+      this.subNetwork.fit();
+
+      if (runtimeContainer) {
+        this.runtimeSubNetwork = new Network(runtimeContainer, {
+          nodes: new DataSet(nodesArray),
+          edges: new DataSet(edgesArray)
+        }, options);
+        this.runtimeSubNetwork.fit();
+      }
+    }, 50);
   }
 
   async handleBuildRetrieval(force = false) {
@@ -2140,7 +2682,7 @@ export class TerminalPanel {
   async handleWriteRetrieval() {
     if (!this.lastRetrievalBundle) return;
     const issues = this.buildRetrievalValidation(this.lastRetrievalBundle);
-    const blockingIssues = issues.filter((item) => item.level === 'error' || item.message.includes('pending') || item.message.includes('stale') || item.message.includes('failed'));
+    const blockingIssues = issues.filter((item) => item.level === 'error');
     if (blockingIssues.length) {
       const preview = blockingIssues.slice(0, 5).map((item) => `${item.label}：${item.message}`).join('\n');
       window.alert(`当前仍有 ${blockingIssues.length} 项阻塞问题，暂不能写入：\n\n${preview}${blockingIssues.length > 5 ? `\n\n其余 ${blockingIssues.length - 5} 项请在右侧写入前校验中查看。` : ''}`);
@@ -2556,14 +3098,26 @@ export class TerminalPanel {
     graphArea.innerHTML = '<span style="color:#94a3b8; padding: 16px;">等待推理完成生成 JSON 数据...</span>';
     
     try {
+      const version = this.getActiveVersion() || this.lastResult;
       const graphData = typeof version.json_result === 'string' ? JSON.parse(version.json_result) : version.json_result;
       
+      // Inject previous discovery history to prompt contextual continuation (Relay Reasoning)
+      let historyContext = [];
+      if (this.discoveryHistory && this.discoveryHistory.length > 0) {
+        historyContext = this.discoveryHistory.map(h => ({
+          type: h.type,
+          conclusion: h.result?.conclusion,
+          knowledge_discovery: h.result?.knowledge_discovery
+        }));
+      }
+
       const response = await fetch('/api/deep-think', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           think_type: thinkType,
-          graph_data: graphData
+          graph_data: graphData,
+          history_context: historyContext // New parameter for relay reasoning
         })
       });
       
@@ -2634,18 +3188,73 @@ export class TerminalPanel {
             reasoning: reasoningText
           });
           
+          this.saveDiscoveryHistory();
+          this.syncDiscoveryStateToStore();
           this.renderDiscoveryHistoryTabs();
           this.showDiscoveryResult(this.discoveryHistory.length - 1);
-          
+          return true;
         } else {
           throw new Error("无法从输出中解析有效 JSON 结构");
         }
       } catch (e) {
         conclusionArea.innerHTML = `<span style="color:red">解析结果失败: ${e.message}</span>`;
+        return false;
       }
       
     } catch (e) {
       reasoningArea.innerHTML = `<span style="color:#dc2626">请求失败: ${e.message}</span>`;
+      return false;
+    }
+  }
+
+  async handleChainReasoning() {
+    const chainTypes = [
+      '证据采信分析',
+      '诉求抗辩分析',
+      '构成要件分析',
+      '法条适用分析',
+      '裁判尺度分析'
+    ];
+    
+    // Clear history before starting a new chain
+    this.discoveryHistory = [];
+    this.activeDiscoveryIdx = -1;
+    this.saveDiscoveryHistory();
+    this.syncDiscoveryStateToStore();
+    this.renderDiscoveryHistoryTabs();
+    this.resetDiscoveryUI();
+    
+    // Force switch graph mode to 'deep_think'
+    store.setState({ graphViewMode: 'deep_think' });
+    this.syncGraphViewModeControls('deep_think');
+
+    const btn = document.getElementById('btnChainReasoning');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '🔄 链式思考执行中...';
+      btn.style.opacity = '0.7';
+      btn.style.cursor = 'wait';
+    }
+
+    try {
+      for (let i = 0; i < chainTypes.length; i++) {
+        const type = chainTypes[i];
+        if (btn) {
+          btn.innerHTML = `🔄 执行中 (${i + 1}/${chainTypes.length}): ${type}`;
+        }
+        const success = await this.handleDeepThink(type);
+        if (!success) {
+          console.warn(`链式思考在 ${type} 处中断`);
+          break;
+        }
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '🧠 开始链式思考';
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      }
     }
   }
 
@@ -2676,10 +3285,11 @@ export class TerminalPanel {
     });
   }
 
-  showDiscoveryResult(idx) {
+  showDiscoveryResult(idx, autoSwitchTab = true) {
     if (!this.discoveryHistory || !this.discoveryHistory[idx]) return;
     this.activeDiscoveryIdx = idx;
     this.renderDiscoveryHistoryTabs();
+    this.syncDiscoveryStateToStore();
     
     const record = this.discoveryHistory[idx];
     this.lastDiscoveryResult = record.result;
@@ -2698,132 +3308,265 @@ export class TerminalPanel {
     reasoningArea.innerHTML = escapeHtml(record.reasoning || '无推理过程').replace(/\n/g, '<br/>');
     conclusionArea.innerHTML = escapeHtml(record.result.conclusion || '无结论').replace(/\n/g, '<br/>');
     
-    // Also show the JSON data in the right column of discovery tab with better formatting
+    // Keep Discovery tab lightweight: only show JSON supplement here
     try {
       const renderjson = window.renderjson;
+      graphArea.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; flex-shrink: 0; background:#fff;">
+          <span style="font-weight: 700;">图谱补充数据（JSON）</span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button id="btnOpenRuntimeMirror" style="padding: 6px 12px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700;">在运行时子图查看图谱</button>
+            <button id="btnWriteDiscoveryNeo4j" style="padding: 6px 12px; background: #059669; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🕸 写入发现层</button>
+            <button id="btnMergeDiscoveryDynamic" style="padding: 6px 12px; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🔄 合并至主图谱</button>
+          </div>
+        </div>
+        <div id="discoveryJsonContent" style="flex: 1; overflow: auto; padding: 12px; position: relative; background:${renderjson ? '#fff' : '#1e1e1e'};"></div>`;
+
+      const jsonContent = document.getElementById('discoveryJsonContent');
       if (renderjson) {
         renderjson.set_show_to_level(3);
         renderjson.set_icons('+', '-');
-        
-        graphArea.innerHTML = `<div style="padding: 12px; font-weight: 600; border-bottom: 1px solid #e2e8f0; color: #1e293b; flex-shrink: 0;">图谱补充数据 (JSON)</div>
-          <div id="discoveryJsonContent" style="flex: 1; overflow: auto; padding: 12px; position: relative;">
-          </div>
-          <div style="padding: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; flex-shrink: 0;">
-            <button id="btnMergeDiscoveryDynamic" style="padding: 6px 12px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              🔄 合并至主图谱
-            </button>
-          </div>`;
-          
-        const jsonContent = document.getElementById('discoveryJsonContent');
         const rendered = renderjson(record.result.knowledge_discovery);
         rendered.style.whiteSpace = 'pre';
-        rendered.style.fontFamily = "monospace";
-        rendered.style.fontSize = "12px";
+        rendered.style.fontFamily = 'monospace';
+        rendered.style.fontSize = '12px';
         jsonContent.appendChild(rendered);
-        
-        // Bind the dynamic merge button
-        setTimeout(() => {
-          const btn = document.getElementById('btnMergeDiscoveryDynamic');
-          if (btn) btn.addEventListener('click', () => {
-            this.handleMergeDiscovery();
-            this.switchTab('termJsonArea'); // switch back to main JSON view after merge
-          });
-        }, 0);
       } else {
-        throw new Error("renderjson not found");
+        jsonContent.innerHTML = `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; color: #d4d4d4;">${escapeHtml(JSON.stringify(record.result.knowledge_discovery, null, 2))}</pre>`;
       }
-    } catch(e) {
-      // Fallback if renderjson is not available
-      graphArea.innerHTML = `<div style="padding: 12px; font-weight: 600; border-bottom: 1px solid #e2e8f0; color: #1e293b; flex-shrink: 0;">图谱补充数据 (JSON)</div>
-        <div style="flex: 1; overflow: auto; padding: 12px; position: relative; background: #1e1e1e;">
-          <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; margin: 0; color: #d4d4d4;">${escapeHtml(JSON.stringify(record.result.knowledge_discovery, null, 2))}</pre>
-        </div>
-        <div style="padding: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; flex-shrink: 0;">
-          <button id="btnMergeDiscoveryDynamic" style="padding: 6px 12px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            🔄 合并至主图谱
-          </button>
-        </div>`;
-        
-      // Bind the dynamic merge button
+
       setTimeout(() => {
         const btn = document.getElementById('btnMergeDiscoveryDynamic');
         if (btn) btn.addEventListener('click', () => {
           this.handleMergeDiscovery();
-          this.switchTab('termJsonArea'); // switch back to main JSON view after merge
+          this.switchTab('termJsonArea');
+        });
+        const writeNeo4jBtn = document.getElementById('btnWriteDiscoveryNeo4j');
+        if (writeNeo4jBtn) writeNeo4jBtn.addEventListener('click', () => this.handleWriteDiscoveryLayer());
+        const mirrorBtn = document.getElementById('btnOpenRuntimeMirror');
+        if (mirrorBtn) mirrorBtn.addEventListener('click', () => {
+          const subGraphTab = document.querySelector('.onto-tab[data-target="ontologySubGraphHost"]');
+          const subGraphHost = document.getElementById('ontologySubGraphHost');
+          document.querySelectorAll('.onto-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('#ontologyContainer .onto-tab-content').forEach(c => c.classList.remove('active'));
+          if (subGraphTab) subGraphTab.classList.add('active');
+          if (subGraphHost) subGraphHost.classList.add('active');
         });
       }, 0);
+    } catch (e) {
+      graphArea.innerHTML = `<div style="padding:16px; color:#dc2626;">知识发现右侧面板渲染失败: ${escapeHtml(e.message)}</div>`;
     }
     
-    // Auto switch to right subgraph tab
-    const rightTabs = document.querySelectorAll('.onto-tab');
-    const rightContents = document.querySelectorAll('.onto-tab-content');
-    
-    rightTabs.forEach(t => t.classList.remove('active'));
-    rightContents.forEach(c => c.style.display = 'none');
-    
-    const subGraphTab = document.querySelector('.onto-tab[data-target="ontologySubGraphHost"]');
-    const subGraphHost = document.getElementById('ontologySubGraphHost');
-    
-    if (subGraphTab) subGraphTab.classList.add('active');
-    if (subGraphHost) {
-      subGraphHost.style.display = 'block';
-      // 保证容器真正可见后，延迟渲染/重绘，避免画布 0x0
-      setTimeout(() => {
+    if (autoSwitchTab) {
+      // Auto switch to right subgraph tab
+      const rightTabs = document.querySelectorAll('.onto-tab');
+      const rightContents = document.querySelectorAll('.onto-tab-content');
+      
+      rightTabs.forEach(t => t.classList.remove('active'));
+      rightContents.forEach(c => c.classList.remove('active'));
+      
+      const subGraphTab = document.querySelector('.onto-tab[data-target="ontologySubGraphHost"]');
+      const subGraphHost = document.getElementById('ontologySubGraphHost');
+      
+      if (subGraphTab) subGraphTab.classList.add('active');
+      if (subGraphHost) {
+        subGraphHost.classList.add('active');
+        // 保证容器真正可见后，延迟渲染/重绘，避免画布 0x0
+        setTimeout(() => {
+          this.renderDiscoverySubGraph(record.result.knowledge_discovery);
+        }, 50);
+      } else {
         this.renderDiscoverySubGraph(record.result.knowledge_discovery);
-      }, 50);
+      }
     } else {
       this.renderDiscoverySubGraph(record.result.knowledge_discovery);
     }
   }
 
+  buildDiscoverySubGraphModel(discoveryData) {
+    const parseGraphData = store.getState().parseGraphData || {};
+    const parseNodes = parseGraphData.nodes || [];
+    const parseEdges = parseGraphData.edges || [];
+    const discoveryNodes = discoveryData?.new_nodes || [];
+    const discoveryEdges = discoveryData?.new_edges || [];
+    const parseNodeMap = new Map(parseNodes.map((node) => [node.id, node]));
+    const discoveryNodeMap = new Map(discoveryNodes.map((node) => [node.id, node]));
+    const includedNodeIds = new Set(discoveryNodes.map((node) => node.id));
+
+    discoveryEdges.forEach((edge) => {
+      if (edge?.from) includedNodeIds.add(edge.from);
+      if (edge?.to) includedNodeIds.add(edge.to);
+    });
+
+    const wrapText = (text, maxLen = 20) => {
+      if (!text || text.length <= maxLen) return text || '';
+      const chunks = [];
+      for (let i = 0; i < text.length; i += maxLen) {
+        chunks.push(text.slice(i, i + maxLen));
+      }
+      return chunks.join('\n');
+    };
+
+    const formatNode = (rawNode, isDiscoveryNode) => {
+      const type = rawNode?.type || rawNode?.nodeType || rawNode?.group || 'Unknown';
+      const labelText = rawNode?.content || rawNode?.label || rawNode?.title || rawNode?.id || '';
+      const style = defaultStyles[type] || { shape: 'box', color: '#f8fafc', border: '#cbd5e1', fontColor: '#1e293b' };
+      return {
+        id: rawNode.id,
+        nodeType: type,
+        content: rawNode?.content || rawNode?.fullLabel || rawNode?.label || rawNode?.title || '',
+        label: `*${type}*\n${wrapText(labelText, isDiscoveryNode ? 20 : 24)}`,
+        shape: type === 'LegalProvision' ? 'box' : style.shape,
+        color: isDiscoveryNode
+          ? { background: style.color, border: style.border }
+          : { background: '#f8fafc', border: style.border },
+        font: { color: style.fontColor || '#1e293b', size: 12, multi: 'md' },
+        borderWidth: isDiscoveryNode ? 2.5 : 1.6,
+        shadow: { enabled: isDiscoveryNode, size: isDiscoveryNode ? 4 : 0 },
+        opacity: isDiscoveryNode ? 1 : 0.82,
+        isVirtual: isDiscoveryNode,
+      };
+    };
+
+    const nodesArray = Array.from(includedNodeIds)
+      .map((nodeId) => {
+        const discoveryNode = discoveryNodeMap.get(nodeId);
+        if (discoveryNode) return formatNode(discoveryNode, true);
+        const parseNode = parseNodeMap.get(nodeId);
+        if (!parseNode) return null;
+        return formatNode(parseNode, false);
+      })
+      .filter(Boolean);
+
+    const discoveryEdgeIds = new Set();
+    const edgesArray = [];
+    discoveryEdges.forEach((edge, index) => {
+      const edgeId = edge.id || `discovery_edge_${index}`;
+      discoveryEdgeIds.add(edgeId);
+      edgesArray.push({
+        id: edgeId,
+        from: edge.from,
+        to: edge.to,
+        label: edge.label || edge.type || '',
+        arrows: 'to',
+        color: { color: '#64748b' },
+        width: 2,
+        font: { size: 10, align: 'horizontal', color: '#64748b', strokeWidth: 2, strokeColor: '#ffffff' },
+        smooth: { type: 'curvedCW', roundness: 0.1 }
+      });
+    });
+
+    parseEdges.forEach((edge, index) => {
+      if (!includedNodeIds.has(edge.from) || !includedNodeIds.has(edge.to)) return;
+      const touchesDiscovery = discoveryNodeMap.has(edge.from) || discoveryNodeMap.has(edge.to);
+      if (!touchesDiscovery) return;
+      const edgeId = edge.id || `parse_edge_${index}`;
+      if (discoveryEdgeIds.has(edgeId)) return;
+      edgesArray.push({
+        id: edgeId,
+        from: edge.from,
+        to: edge.to,
+        label: edge.label || edge.relationType || '',
+        arrows: 'to',
+        color: { color: 'rgba(100, 116, 139, 0.55)' },
+        width: 1.5,
+        dashes: true,
+        font: { size: 10, align: 'horizontal', color: '#64748b', strokeWidth: 2, strokeColor: '#ffffff' },
+        smooth: { type: 'curvedCW', roundness: 0.08 }
+      });
+    });
+
+    return { nodesArray, edgesArray };
+  }
+
   renderDiscoverySubGraph(discoveryData) {
-    const container = document.getElementById('ontologySubGraphHost'); // Target right side tab instead
-    if (!container) return;
+    const runtimeContainer = document.getElementById('ontologyRuntimeCanvas') || document.getElementById('ontologySubGraphHost');
+    if (!runtimeContainer) return;
     
     if (!discoveryData || (!discoveryData.new_nodes?.length && !discoveryData.new_edges?.length)) {
-      container.innerHTML = '<span style="color:#94a3b8; padding: 16px;">本次分析未产生新的图谱节点或边。</span>';
+      runtimeContainer.innerHTML = '<span style="color:#94a3b8; padding: 16px;">本次分析未产生新的图谱节点或边。</span>';
+      this.updateOntologyRuntimeMeta({
+        type: 'discovery',
+        label: '当前来源：知识发现，但本次未生成子图',
+        footer: '说明：知识发现子图当前保留在运行时子图中展示，知识发现 Tab 仅保留过程、结论和 JSON 结构。',
+        nodeCount: 0,
+        edgeCount: 0,
+        workspaceTarget: 'termDiscoveryTabContent',
+        summary: '当前步骤没有新增图谱节点或边，但知识发现过程与 JSON 结果仍保留在知识发现 Tab 中。',
+      });
       return;
     }
     
-    container.innerHTML = '';
-    
-    const nodes = new DataSet((discoveryData.new_nodes || []).map(n => ({
-      id: n.id,
-      label: n.type + '\n' + (n.content?.substring(0, 15) || '') + (n.content?.length > 15 ? '...' : ''),
-      shape: 'box',
-      color: { background: '#fef08a', border: '#f59e0b' },
-      font: { size: 12, multi: 'html' }
-    })));
-    
-    const edges = new DataSet((discoveryData.new_edges || []).map(e => ({
-      id: e.id,
-      from: e.from,
-      to: e.to,
-      label: e.label || '',
-      arrows: 'to',
-      color: { color: '#f59e0b' },
-      font: { size: 10, align: 'horizontal' },
-      dashes: true
-    })));
+    runtimeContainer.innerHTML = '';
+    const activeRecord = (this.discoveryHistory || [])[this.activeDiscoveryIdx] || null;
+    const { nodesArray, edgesArray } = this.buildDiscoverySubGraphModel(discoveryData);
+    this.updateOntologyRuntimeMeta({
+      type: 'discovery',
+      label: `当前来源：知识发现 · ${activeRecord?.type || '当前步骤'}`,
+      footer: '说明：知识发现子图当前保留在运行时子图中展示，知识发现 Tab 仅保留过程、结论和 JSON 结构。',
+      nodeCount: nodesArray.length,
+      edgeCount: edgesArray.length,
+      workspaceTarget: 'termDiscoveryTabContent',
+      summary: `当前知识发现步骤为「${activeRecord?.type || '当前步骤'}」，子图已自动补入与新增节点相连的解析图原始锚点节点。`,
+    });
+    const nodes = new DataSet(nodesArray);
+    const edges = new DataSet(edgesArray);
     
     const options = {
-      layout: {
-        hierarchical: {
-          enabled: true,
-          direction: 'UD',
-          sortMethod: 'directed',
-          levelSeparation: 100,
-          nodeSpacing: 150
-        }
+      physics: {
+        enabled: true,
+        forceAtlas2Based: { gravitationalConstant: -50, centralGravity: 0.01, springLength: 100 },
+        solver: 'forceAtlas2Based'
       },
-      physics: false,
-      interaction: { dragNodes: true, dragView: true, zoomView: true }
+      interaction: { dragNodes: true, dragView: true, zoomView: true, hover: true },
+      layout: { randomSeed: 42 }
     };
     
     // We must ensure it's visible before rendering or redraw afterwards
     setTimeout(() => {
-      this.subNetwork = new Network(container, { nodes, edges }, options);
-      this.subNetwork.fit();
+      if (this.runtimeSubNetwork) {
+        this.runtimeSubNetwork.destroy();
+        this.runtimeSubNetwork = null;
+      }
+      if (this.discoverySubNetwork) {
+        this.discoverySubNetwork.destroy();
+        this.discoverySubNetwork = null;
+      }
+      this.runtimeSubNetwork = new Network(runtimeContainer, { nodes, edges }, options);
+
+      const bindDiscoveryClick = (networkInstance, nodeStore, edgeStore) => {
+        if (!networkInstance) return;
+        networkInstance.on('click', (params) => {
+          if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const nodeData = nodeStore.get(nodeId);
+            store.setState({
+              selectedNodeId: nodeId,
+              selectedEdgeId: null,
+              selectedGraph: 'parse',
+              isPanelOpen: true,
+              parseNodeData: {
+                id: nodeData.id,
+                nodeType: nodeData.nodeType,
+                content: nodeData.content,
+                isVirtual: true
+              }
+            });
+          } else if (params.edges.length > 0) {
+            const edgeId = params.edges[0];
+            store.setState({
+              selectedNodeId: null,
+              selectedEdgeId: edgeId,
+              selectedGraph: 'parse',
+              isPanelOpen: true,
+              parseEdgeData: edgeStore.get(edgeId)
+            });
+          }
+        });
+      };
+
+      bindDiscoveryClick(this.runtimeSubNetwork, nodes, edges);
+      this.runtimeSubNetwork?.fit();
     }, 50);
   }
 

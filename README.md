@@ -51,22 +51,30 @@
 
 ### 1. 启动后端 API 服务
 
-优先使用 Hermes venv 启动后端服务。后端运行在 `9120` 端口。
+使用本仓库专属的 `ontology` 虚拟环境启动后端服务。后端运行在 `9120` 端口。
 
 ```bash
-cd /root/remote-test/backend
-/root/.hermes/hermes-agent/venv/bin/python app.py
+cd /home/sxc/wendao/remote-test/backend
+../ontology/bin/python app.py
 ```
 *(注意：重构后的前端不再依赖 Flask 托管静态文件，所以不需要 `--serve-files` 参数，端口默认为 9120)*
 
-### 2. 启动前端 Vite 开发服务器
+### 2. 启动前端可视化服务
 
-前端由 Vite 构建，通过代理转发请求到后端的 9120 端口。
+前端 `ontology-refactored` 目录是基于 Vite 的现代前端工程。
 
+**安装依赖（首次或依赖丢失时）：**
 ```bash
-cd /root/remote-test/visualization/ontology-refactored
+export PATH=/home/sxc/wendao/remote-test/node-v20.12.2-linux-x64/bin:$PATH
+cd /home/sxc/wendao/remote-test/visualization/ontology-refactored
 npm install
-npm run dev -- --host 0.0.0.0
+```
+
+**启动开发服务器：**
+```bash
+export PATH=/home/sxc/wendao/remote-test/node-v20.12.2-linux-x64/bin:$PATH
+cd /home/sxc/wendao/remote-test/visualization/ontology-refactored
+npm run dev
 ```
 前端开发服务器将运行在 `5174` 端口。你可以通过 `http://<your-ip>:5174` 访问重构后的可视化页面。
 

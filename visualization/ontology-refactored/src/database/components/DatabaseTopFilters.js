@@ -87,6 +87,7 @@ export class DatabaseTopFilters {
       if (reset) {
         this.store.update('filters', {
           sources: [],
+          neo4jSyncStates: [],
           caseCategories: [],
           caseReasons: [],
           trialLevels: [],
@@ -278,6 +279,9 @@ export class DatabaseTopFilters {
                 </div>
                 <div class="db-top-filter-cell span-2">
                   ${this.renderFilterGroup('sources', '数据来源', options.sources, state.filters.sources)}
+                </div>
+                <div class="db-top-filter-cell span-2">
+                  ${this.renderFilterGroup('neo4jSyncStates', '图数据库状态', options.neo4jSyncStates, state.filters.neo4jSyncStates)}
                 </div>
               </div>
             </div>

@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^8.0.12"
+    "vite": "^5.2.8"
   },
   "dependencies": {
-    "vis-data": "^8.0.4",
+    "vis-data": "^8.0.3",
     "vis-network": "^10.1.0"
   }
 }
