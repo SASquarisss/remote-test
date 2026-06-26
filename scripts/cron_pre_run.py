@@ -10,8 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path("/root/.hermes/hermes-agent/remote-test")
-os.chdir(REPO)
+REPO = Path(__file__).resolve().parent.parentos.chdir(REPO)
 
 # 加载 .env 到环境变量
 env = os.environ.copy()
