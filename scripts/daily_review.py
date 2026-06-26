@@ -447,6 +447,7 @@ def append_reply(file_path, content):
     """在文件末尾追加回复内容（带冲突标记检测和备份）"""
     text = file_path.read_text(encoding="utf-8") if file_path.exists() else ""
     # 检测 git 冲突标记（仅限行首，避免误判正文描述）
+    # 仅匹配行首的 git 冲突标记（<<<<<<< / ======= / >>>>>>>），避免误判正文中的 markdown 引用符号
     if re.search(r'^(<{7}|={7}|>{7})', text, re.MULTILINE):
         raise RuntimeError(
             f"文件 {file_path.name} 包含未解决的 git 冲突标记，"
